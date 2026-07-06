@@ -45,7 +45,7 @@
         </div>
         <div class="commonsearch-actions">
           <button class="btn btn-success" type="button" @click="applySearch">提交</button>
-          <button class="btn btn-default" type="button" @click="resetSearch">重置</button>
+          <button class="btn btn-default" type="button" @click="resetSearch()">重置</button>
         </div>
       </div>
 
@@ -304,6 +304,14 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import {
+  createSkitAdminRecord,
+  deleteSkitAdminRecord,
+  deleteSkitAdminRecordList,
+  getSkitAdminRecordPage,
+  updateSkitAdminRecord,
+  type SkitAdminRecordRespVO
+} from '@/api/skit/adminRecord'
 import { skitPageConfigs, type SkitColumn, type SkitSearchField } from './pageConfig'
 
 defineOptions({ name: 'SkitAdminTable' })
@@ -312,7 +320,8 @@ const props = defineProps<{
   pageKey?: string
 }>()
 
-type TableRow = Record<string, string | number>
+type CellValue = string | number | null | undefined
+type TableRow = Record<string, CellValue>
 
 const route = useRoute()
 const pageKey = computed(() => (props.pageKey || route.meta?.skitPageKey || 'adRecord') as string)
@@ -329,6 +338,8 @@ const advancedVisible = ref(false)
 const columnMenuOpen = ref(false)
 const exportMenuOpen = ref(false)
 const loading = ref(false)
+const backendAvailable = ref(false)
+const backendLoadSeq = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const pageSizes = [10, 25, 50, 100]
@@ -438,6 +449,82 @@ const buildRow = (index: number) => {
   return row
 }
 
+const loadPageRows = async (fallback = true) => {
+  const seq = backendLoadSeq.value + 1
+  backendLoadSeq.value = seq
+  loading.value = true
+  try {
+    const result = await getSkitAdminRecordPage({
+      pageNo: 1,
+      pageSize: -1,
+      pageKey: page.value.key
+    })
+    if (seq !== backendLoadSeq.value) return
+    backendAvailable.value = true
+    tableRows.value = result.list.map((record) => mapBackendRecord(record))
+  } catch {
+    if (seq !== backendLoadSeq.value) return
+    backendAvailable.value = false
+    if (fallback) {
+      tableRows.value = buildRows()
+    }
+  } finally {
+    if (seq === backendLoadSeq.value) {
+      loading.value = false
+    }
+  }
+}
+
+const mapBackendRecord = (record: SkitAdminRecordRespVO) => {
+  const row: TableRow = {}
+  const data = record.recordData || {}
+  page.value.columns.forEach((column) => {
+    row[column.prop] = normalizeCellValue(data[column.prop])
+  })
+  Object.entries(data).forEach(([key, value]) => {
+    if (row[key] === undefined) {
+      row[key] = normalizeCellValue(value)
+    }
+  })
+  row.__rowKey = record.rowKey || `${record.pageKey}-${record.id}`
+  row.__backendId = record.id
+  row.__backendSort = record.sort || 0
+  return row
+}
+
+const normalizeCellValue = (value: unknown): CellValue => {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'string' || typeof value === 'number') return value
+  if (typeof value === 'boolean') return value ? '是' : '否'
+  return JSON.stringify(value)
+}
+
+const buildRecordData = (source: Record<string, unknown>) => {
+  const data: Record<string, unknown> = {}
+  page.value.columns.forEach((column) => {
+    if (['operate', 'state', '0'].includes(column.prop)) return
+    data[column.prop] = source[column.prop] ?? ''
+  })
+  Object.entries(source).forEach(([key, value]) => {
+    if (!key.startsWith('__')) {
+      data[key] = value ?? ''
+    }
+  })
+  return data
+}
+
+const deriveBackendStatus = (data: Record<string, unknown>) => {
+  const text = String(data.status || data.payment_status_text || data.ban_status_text || '')
+  if (text.includes('待') || text.includes('审核')) return 1
+  if (text.includes('禁') || text.includes('拒')) return 2
+  return 0
+}
+
+const backendId = (row: TableRow) => {
+  const id = Number(row.__backendId)
+  return Number.isFinite(id) && id > 0 ? id : undefined
+}
+
 const valueFor = (prop: string, index: number): string | number => {
   const id = 1000 + index
   if (prop === 'id') return sampleId(index)
@@ -529,7 +616,7 @@ const columnStyle = (column: SkitColumn) => ({
 })
 
 const isStatusColumn = (prop: string) => prop === 'status' || prop.includes('status') || prop.startsWith('is_')
-const statusClass = (value: string | number) => {
+const statusClass = (value: CellValue) => {
   const text = String(value)
   if (text.includes('待')) return 'label label-warning'
   if (text.includes('是') || text.includes('禁') || text.includes('拒')) return 'label label-danger'
@@ -549,12 +636,10 @@ const resetSearch = (message = true) => {
   if (message) ElMessage.success('已重置搜索')
 }
 
-const refreshTable = () => {
-  loading.value = true
-  window.setTimeout(() => {
-    loading.value = false
-    ElMessage.success('刷新成功')
-  }, 350)
+const refreshTable = async () => {
+  await loadPageRows()
+  clearSelection()
+  ElMessage.success('刷新成功')
 }
 
 const toggleColumn = (prop: string) => {
@@ -604,13 +689,25 @@ const deleteSelected = async () => {
   } catch {
     return
   }
+  if (backendAvailable.value) {
+    const ids = selectedRows.value.map((row) => backendId(row)).filter(Boolean) as number[]
+    if (ids.length > 1) {
+      await deleteSkitAdminRecordList(ids)
+    } else if (ids.length === 1) {
+      await deleteSkitAdminRecord(ids[0])
+    }
+    await loadPageRows(false)
+    clearSelection()
+    ElMessage.success('删除成功')
+    return
+  }
   const removing = new Set(selectedRows.value.map((row) => String(row.__rowKey)))
   tableRows.value = tableRows.value.filter((row) => !removing.has(String(row.__rowKey)))
   clearSelection()
   ElMessage.success('删除成功')
 }
 
-const batchSetStatus = (status: string) => {
+const batchSetStatus = async (status: string) => {
   if (!selectedRows.value.length) {
     ElMessage.warning('请先选择记录')
     return
@@ -619,6 +716,25 @@ const batchSetStatus = (status: string) => {
     if ('status' in row) row.status = status
     if ('payment_status_text' in row && status === '审核通过') row.payment_status_text = '待打款'
   })
+  if (backendAvailable.value) {
+    await Promise.all(
+      selectedRows.value
+        .map((row) => {
+          const id = backendId(row)
+          if (!id) return undefined
+          const data = buildRecordData(row)
+          return updateSkitAdminRecord({
+            id,
+            pageKey: page.value.key,
+            rowKey: String(row.__rowKey || ''),
+            recordData: data,
+            status: deriveBackendStatus(data),
+            sort: Number(row.__backendSort || 0)
+          })
+        })
+        .filter((request): request is Promise<boolean> => Boolean(request))
+    )
+  }
   ElMessage.success(status)
 }
 
@@ -637,8 +753,23 @@ const openEditor = (mode: 'add' | 'edit' | 'view', row?: TableRow) => {
   editorVisible.value = true
 }
 
-const saveEditor = () => {
+const saveEditor = async () => {
   if (editorMode.value === 'add') {
+    if (backendAvailable.value) {
+      const rowKey = `${page.value.key}-custom-${Date.now()}`
+      const data = buildRecordData(editorModel)
+      await createSkitAdminRecord({
+        pageKey: page.value.key,
+        rowKey,
+        recordData: data,
+        status: deriveBackendStatus(data),
+        sort: 0
+      })
+      await loadPageRows(false)
+      editorVisible.value = false
+      ElMessage.success('保存成功')
+      return
+    }
     const row: TableRow = { __rowKey: `${page.value.key}-custom-${Date.now()}` }
     page.value.columns.forEach((column) => {
       row[column.prop] =
@@ -647,7 +778,24 @@ const saveEditor = () => {
     tableRows.value.unshift(row)
   } else {
     const row = tableRows.value.find((item) => String(item.__rowKey) === editingKey.value)
-    if (row) Object.assign(row, editorModel)
+    if (row) {
+      Object.assign(row, editorModel)
+      if (backendAvailable.value) {
+        const id = backendId(row)
+        if (id) {
+          const data = buildRecordData(row)
+          await updateSkitAdminRecord({
+            id,
+            pageKey: page.value.key,
+            rowKey: String(row.__rowKey || ''),
+            recordData: data,
+            status: deriveBackendStatus(data),
+            sort: Number(row.__backendSort || 0)
+          })
+          await loadPageRows(false)
+        }
+      }
+    }
   }
   editorVisible.value = false
   ElMessage.success('保存成功')
@@ -688,7 +836,7 @@ const exportRows = (format: 'json' | 'csv' | 'txt' | 'xls') => {
   ElMessage.success('导出成功')
 }
 
-const csvCell = (value: string | number) => {
+const csvCell = (value: CellValue) => {
   const text = String(value ?? '')
   return `"${text.replace(/"/g, '""')}"`
 }
@@ -732,8 +880,8 @@ const defaultProfileValue = (prop: string) => {
 
 watch(
   pageKey,
-  () => {
-    tableRows.value = buildRows()
+  async () => {
+    tableRows.value = []
     selectedKeys.value = new Set()
     visibleColumnKeys.value = new Set(availableColumns.value.map((column) => column.prop))
     resetSearch(false)
@@ -743,6 +891,7 @@ watch(
     advancedVisible.value = false
     columnMenuOpen.value = false
     exportMenuOpen.value = false
+    await loadPageRows()
   },
   { immediate: true }
 )

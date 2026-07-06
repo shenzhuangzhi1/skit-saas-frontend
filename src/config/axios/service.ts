@@ -35,6 +35,10 @@ let isRefreshToken = false
 // 请求白名单，无须 token 的接口
 const whiteList: string[] = ['/login', '/refresh-token']
 
+const shouldSkipErrorMessage = (axiosConfig?: any) => {
+  return axiosConfig?.skipErrorMessage === true || axiosConfig?.headers?.skipErrorMessage === true
+}
+
 // 创建axios实例
 const service: AxiosInstance = axios.create({
   baseURL: base_url, // api 的 base_url
@@ -150,6 +154,9 @@ service.interceptors.response.use(
       // 如果是忽略的错误码，直接返回 msg 异常
       return Promise.reject(msg)
     } else if (code === 401) {
+      if (shouldSkipErrorMessage(config)) {
+        return Promise.reject(new Error(msg))
+      }
       // 如果未认证，并且未进行刷新令牌，说明可能是访问令牌过期了
       if (!isRefreshToken) {
         isRefreshToken = true
@@ -193,9 +200,15 @@ service.interceptors.response.use(
         })
       }
     } else if (code === 500) {
+      if (shouldSkipErrorMessage(config)) {
+        return Promise.reject(new Error(msg))
+      }
       ElMessage.error(t('sys.api.errMsg500'))
       return Promise.reject(new Error(msg))
     } else if (code === 901) {
+      if (shouldSkipErrorMessage(config)) {
+        return Promise.reject(new Error(msg))
+      }
       ElMessage.error({
         offset: 300,
         dangerouslyUseHTMLString: true,
@@ -210,6 +223,9 @@ service.interceptors.response.use(
       })
       return Promise.reject(new Error(msg))
     } else if (code !== 0 && code !== 200) {
+      if (shouldSkipErrorMessage(config)) {
+        return Promise.reject(new Error(msg))
+      }
       if (msg === '无效的刷新令牌') {
         // hard coding：忽略这个提示，直接登出
         console.log(msg)
@@ -223,6 +239,9 @@ service.interceptors.response.use(
     }
   },
   (error: AxiosError) => {
+    if (shouldSkipErrorMessage(error.config)) {
+      return Promise.reject(error)
+    }
     console.log('err' + error) // for debug
     let { message } = error
     const { t } = useI18n()

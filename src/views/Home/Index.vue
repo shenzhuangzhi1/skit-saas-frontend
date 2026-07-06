@@ -70,7 +70,7 @@
         <template #header>
           <div class="skit-panel__header">
             <span>关键数据面</span>
-            <el-button :icon="Refresh" @click="refreshAt = new Date()">刷新</el-button>
+            <el-button :icon="Refresh" @click="refreshDashboard">刷新</el-button>
           </div>
         </template>
         <el-table :data="rankRows" border stripe height="372">
@@ -90,55 +90,73 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Grid, Refresh } from '@element-plus/icons-vue'
+import { getSkitDashboardSummary, type SkitDashboardSummaryRespVO } from '@/api/skit/adminRecord'
 import { skitMenuGroups } from '@/views/skit/admin/pageConfig'
 
 defineOptions({ name: 'Index' })
 
 const router = useRouter()
 const refreshAt = ref(new Date())
+const dashboardSummary = ref<SkitDashboardSummaryRespVO | null>(null)
 
-const primaryStats = [
+const defaultSummary: SkitDashboardSummaryRespVO = {
+  totalMembers: 63,
+  totalAdCount: 943,
+  totalRevenue: 487.14,
+  totalProfit: -179.76,
+  todayRegisterCount: 0,
+  todayAdCount: 1,
+  todayRevenue: 0.02,
+  todayProfit: 0,
+  rewardExchange: 666.91,
+  scorePerYuan: 1000
+}
+
+const summary = computed(() => dashboardSummary.value || defaultSummary)
+const money = (value: number) => `￥${Number(value || 0).toFixed(2)}`
+
+const primaryStats = computed(() => [
   {
     label: '总会员数',
-    value: '63',
+    value: String(summary.value.totalMembers),
     icon: 'ep:user-filled',
     color: '#2f80ed',
     routeName: 'SkitUser'
   },
   {
     label: '总广告次数',
-    value: '943',
+    value: String(summary.value.totalAdCount),
     icon: 'ep:histogram',
     color: '#16a34a',
     routeName: 'SkitAdRecord'
   },
   {
     label: '总收益',
-    value: '￥487.14',
+    value: money(summary.value.totalRevenue),
     icon: 'ep:money',
     color: '#b7791f',
     routeName: 'SkitAdRecord'
   },
   {
     label: '总利润',
-    value: '￥-179.76',
+    value: money(summary.value.totalProfit),
     icon: 'ep:trend-charts',
     color: '#d92d20',
     routeName: 'SkitWithdraw'
   }
-]
+])
 
-const operationStats = [
-  { label: '今日注册', value: '0' },
-  { label: '今日广告次数', value: '1' },
-  { label: '今日收益', value: '￥0.02' },
-  { label: '今日利润', value: '￥0.00' },
-  { label: '奖励折算', value: '￥666.91' },
-  { label: '积分/元', value: '1000' }
-]
+const operationStats = computed(() => [
+  { label: '今日注册', value: String(summary.value.todayRegisterCount) },
+  { label: '今日广告次数', value: String(summary.value.todayAdCount) },
+  { label: '今日收益', value: money(summary.value.todayRevenue) },
+  { label: '今日利润', value: money(summary.value.todayProfit) },
+  { label: '奖励折算', value: money(summary.value.rewardExchange) },
+  { label: '积分/元', value: String(summary.value.scorePerYuan) }
+])
 
 const rankRows = [
   {
@@ -189,9 +207,21 @@ const refreshText = computed(() => {
   return refreshAt.value.toLocaleString('zh-CN', { hour12: false })
 })
 
+const refreshDashboard = async () => {
+  try {
+    dashboardSummary.value = await getSkitDashboardSummary()
+  } catch {
+    dashboardSummary.value = null
+  } finally {
+    refreshAt.value = new Date()
+  }
+}
+
 const go = (routeName: string) => {
   router.push({ name: routeName })
 }
+
+onMounted(refreshDashboard)
 </script>
 
 <style scoped lang="scss">

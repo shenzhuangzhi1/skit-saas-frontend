@@ -5,9 +5,10 @@ import { config } from './config'
 const { default_headers } = config
 
 const request = (option: any) => {
-  const { headersType, headers, ...otherOption } = option
+  const { headersType, headers, skipErrorMessage, ...otherOption } = option
   return service({
     ...otherOption,
+    skipErrorMessage,
     headers: {
       'Content-Type': headersType || default_headers,
       ...headers
