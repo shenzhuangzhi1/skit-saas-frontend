@@ -1,5 +1,35 @@
 import request from '@/config/axios'
 
+const demoDictList: DictDataVO[] = [
+  {
+    label: '正常',
+    value: '0',
+    dictType: 'common_status',
+    status: 0,
+    colorType: 'success',
+    cssClass: '',
+    remark: '本地演示'
+  },
+  {
+    label: '禁用',
+    value: '1',
+    dictType: 'common_status',
+    status: 0,
+    colorType: 'danger',
+    cssClass: '',
+    remark: '本地演示'
+  },
+  {
+    label: '待审核',
+    value: 'pending',
+    dictType: 'skit_review_status',
+    status: 0,
+    colorType: 'warning',
+    cssClass: '',
+    remark: '本地演示'
+  }
+]
+
 export interface DictDataVO {
   id?: number
   sort?: number
@@ -15,6 +45,9 @@ export interface DictDataVO {
 
 // 查询字典数据（精简)列表
 export const getSimpleDictDataList = () => {
+  if (import.meta.env.VITE_SKIT_DEMO_LOGIN === 'true') {
+    return Promise.resolve(demoDictList)
+  }
   return request.get({ url: '/system/dict-data/simple-list' })
 }
 

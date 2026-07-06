@@ -71,6 +71,162 @@ const remainingRouter: AppRouteRecordRaw[] = [
     ]
   },
   {
+    path: '/skit',
+    component: Layout,
+    redirect: '/skit/dashboard',
+    name: 'SkitSaas',
+    meta: {
+      title: '短剧 SaaS',
+      icon: 'ep:video-play',
+      alwaysShow: true
+    },
+    children: [
+      {
+        path: 'dashboard',
+        component: () => import('@/views/Home/Index.vue'),
+        name: 'SkitDashboard',
+        meta: {
+          title: '控制台',
+          icon: 'ep:data-analysis',
+          noCache: false
+        }
+      },
+      {
+        path: 'attachment',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitAttachment',
+        props: { pageKey: 'attachment' },
+        meta: { title: '附件管理', icon: 'ep:folder-opened', noCache: false }
+      },
+      {
+        path: 'profile',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitProfile',
+        props: { pageKey: 'profile' },
+        meta: { title: '个人资料', icon: 'ep:user', noCache: false }
+      },
+      {
+        path: 'operation-log',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitOperationLog',
+        props: { pageKey: 'operationLog' },
+        meta: { title: '操作日志', icon: 'ep:document', noCache: false }
+      },
+      {
+        path: 'admin-user',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitAdminUser',
+        props: { pageKey: 'adminUser' },
+        meta: { title: '管理员管理', icon: 'ep:user-filled', noCache: false }
+      },
+      {
+        path: 'admin-log',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitAdminLog',
+        props: { pageKey: 'adminLog' },
+        meta: { title: '管理员日志', icon: 'ep:document-copy', noCache: false }
+      },
+      {
+        path: 'group',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitGroup',
+        props: { pageKey: 'group' },
+        meta: { title: '角色组', icon: 'ep:collection-tag', noCache: false }
+      },
+      {
+        path: 'drama',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitDrama',
+        props: { pageKey: 'drama' },
+        meta: { title: '短剧管理', icon: 'ep:video-camera', noCache: false }
+      },
+      {
+        path: 'ad-record',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitAdRecord',
+        props: { pageKey: 'adRecord' },
+        meta: { title: '广告记录', icon: 'ep:histogram', noCache: false }
+      },
+      {
+        path: 'withdraw',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitWithdraw',
+        props: { pageKey: 'withdraw' },
+        meta: { title: '积分提现', icon: 'ep:wallet', noCache: false }
+      },
+      {
+        path: 'score-log',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitScoreLog',
+        props: { pageKey: 'scoreLog' },
+        meta: { title: '积分记录', icon: 'ep:coin', noCache: false }
+      },
+      {
+        path: 'promotion-agent',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitPromotionAgent',
+        props: { pageKey: 'promotionAgent' },
+        meta: { title: '代理管理', icon: 'ep:share', noCache: false }
+      },
+      {
+        path: 'login-record',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitLoginRecord',
+        props: { pageKey: 'loginRecord' },
+        meta: { title: '登录记录', icon: 'ep:key', noCache: false }
+      },
+      {
+        path: 'device-log',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitDeviceLog',
+        props: { pageKey: 'deviceLog' },
+        meta: { title: '设备日志', icon: 'ep:monitor', noCache: false }
+      },
+      {
+        path: 'user',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitUser',
+        props: { pageKey: 'user' },
+        meta: { title: '用户管理', icon: 'ep:user', noCache: false }
+      },
+      {
+        path: 'announcement',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitAnnouncement',
+        props: { pageKey: 'announcement' },
+        meta: { title: '公告管理', icon: 'ep:bell', noCache: false }
+      },
+      {
+        path: 'douyin-mini-program',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitDouyinMiniProgram',
+        props: { pageKey: 'douyinMiniProgram' },
+        meta: { title: '抖音小程序', icon: 'ep:cellphone', noCache: false }
+      },
+      {
+        path: 'douyin-login-record',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitDouyinLoginRecord',
+        props: { pageKey: 'douyinLoginRecord' },
+        meta: { title: '抖音登录记录', icon: 'ep:connection', noCache: false }
+      },
+      {
+        path: 'douyin-ad-record',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitDouyinAdRecord',
+        props: { pageKey: 'douyinAdRecord' },
+        meta: { title: '抖音广告记录', icon: 'ep:postcard', noCache: false }
+      },
+      {
+        path: 'douyin-traffic-record',
+        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        name: 'SkitDouyinTrafficRecord',
+        props: { pageKey: 'douyinTrafficRecord' },
+        meta: { title: '抖音投流记录', icon: 'ep:position', noCache: false }
+      }
+    ]
+  },
+  {
     path: '/user',
     component: Layout,
     name: 'UserInfo',
