@@ -1,194 +1,310 @@
 <template>
-  <div class="skit-page">
-    <div class="skit-page__head">
-      <div>
-        <div class="skit-page__crumb">{{ page.parent || '短剧 SaaS' }}</div>
-        <div class="skit-page__title-row">
-          <h1>{{ page.title }}</h1>
-          <el-tag :type="tagType" effect="light">{{ currentStatusText }}</el-tag>
+  <div class="skit-fastadmin-page">
+    <div class="skit-panel">
+      <div v-if="page.status === 'broken'" class="skit-alert skit-alert--warning">
+        线上该菜单当前返回 404，本地已预留可用的数据管理页。
+      </div>
+      <div v-if="page.status === 'empty'" class="skit-alert skit-alert--info">
+        线上页面当前为空状态，本地保留刷新和后续字段接入入口。
+      </div>
+
+      <div v-show="advancedVisible" class="commonsearch-table">
+        <div class="commonsearch-grid">
+          <label v-for="field in page.searchFields" :key="field.prop" class="commonsearch-item">
+            <span>{{ field.label }}</span>
+            <select
+              v-if="field.type === 'select'"
+              v-model="advancedModel[field.prop]"
+              class="form-control"
+            >
+              <option value="">全部</option>
+              <option value="正常">正常</option>
+              <option value="待处理">待处理</option>
+              <option value="禁用">禁用</option>
+            </select>
+            <div v-else-if="field.type === 'dateRange'" class="date-range">
+              <input
+                v-model="advancedModel[`${field.prop}Start`]"
+                class="form-control"
+                placeholder="开始日期"
+              />
+              <span>-</span>
+              <input
+                v-model="advancedModel[`${field.prop}End`]"
+                class="form-control"
+                placeholder="结束日期"
+              />
+            </div>
+            <input
+              v-else
+              v-model="advancedModel[field.prop]"
+              class="form-control"
+              :placeholder="field.label"
+            />
+          </label>
         </div>
-        <div class="skit-page__meta">
-          <span>{{ page.liveRoute }}</span>
-          <span>{{ page.apiPath }}</span>
+        <div class="commonsearch-actions">
+          <button class="btn btn-success" type="button" @click="applySearch">提交</button>
+          <button class="btn btn-default" type="button" @click="resetSearch">重置</button>
         </div>
       </div>
-      <div class="skit-page__metric">
-        <span>总记录</span>
-        <strong>{{ page.totalRows ?? rows.length }}</strong>
+
+      <div v-if="page.sections?.length" class="profile-forms">
+        <section v-for="section in page.sections" :key="section.title" class="profile-section">
+          <h3>{{ section.title }}</h3>
+          <div class="commonsearch-grid">
+            <label v-for="field in section.fields" :key="field.prop" class="commonsearch-item">
+              <span>{{ field.label }}</span>
+              <textarea
+                v-if="field.prop === 'content'"
+                v-model="formModel[field.prop]"
+                class="form-control"
+                rows="3"
+              />
+              <input v-else v-model="formModel[field.prop]" class="form-control" />
+            </label>
+          </div>
+          <div class="commonsearch-actions">
+            <button class="btn btn-success" type="button" @click="saveProfile(section.title)">
+              提交
+            </button>
+            <button class="btn btn-default" type="button" @click="resetProfile(section.fields)">
+              重置
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <div class="fixed-table-toolbar">
+        <div class="toolbar">
+          <button class="btn btn-primary" type="button" title="刷新" @click="refreshTable">
+            <Icon icon="ep:refresh" />
+          </button>
+          <button
+            v-if="hasAction('添加')"
+            class="btn btn-success"
+            type="button"
+            title="添加"
+            @click="openEditor('add')"
+          >
+            添加
+          </button>
+          <button
+            v-if="hasAction('编辑')"
+            class="btn btn-success"
+            :class="{ disabled: selectedRows.length !== 1 }"
+            type="button"
+            title="编辑"
+            @click="openEditor('edit')"
+          >
+            编辑
+          </button>
+          <button
+            v-if="hasAction('删除')"
+            class="btn btn-danger"
+            :class="{ disabled: selectedRows.length === 0 }"
+            type="button"
+            title="删除"
+            @click="deleteSelected"
+          >
+            删除
+          </button>
+          <button
+            v-if="hasAction('审核通过')"
+            class="btn btn-success"
+            :class="{ disabled: selectedRows.length === 0 }"
+            type="button"
+            @click="batchSetStatus('审核通过')"
+          >
+            审核通过
+          </button>
+          <button
+            v-if="hasAction('审核拒绝')"
+            class="btn btn-danger"
+            :class="{ disabled: selectedRows.length === 0 }"
+            type="button"
+            @click="batchSetStatus('审核拒绝')"
+          >
+            审核拒绝
+          </button>
+          <button
+            v-if="selectedRows.length"
+            class="btn btn-warning-light"
+            type="button"
+            @click="clearSelection"
+          >
+            Multiple selection mode: {{ selectedRows.length }} checked
+          </button>
+        </div>
+
+        <div class="columns columns-right btn-group pull-right">
+          <div class="keep-open btn-group" :class="{ open: columnMenuOpen }">
+            <button
+              class="btn btn-default"
+              type="button"
+              title="普通搜索"
+              @click="advancedVisible = !advancedVisible"
+            >
+              <Icon icon="ep:search" />
+            </button>
+            <button
+              class="btn btn-default dropdown-toggle"
+              type="button"
+              title="切换"
+              @click="columnMenuOpen = !columnMenuOpen"
+            >
+              <Icon icon="ep:grid" />
+            </button>
+            <div v-show="columnMenuOpen" class="dropdown-menu column-menu">
+              <label v-for="column in availableColumns" :key="column.prop">
+                <input
+                  type="checkbox"
+                  :checked="visibleColumnKeys.has(column.prop)"
+                  @change="toggleColumn(column.prop)"
+                />
+                {{ column.label }}
+              </label>
+            </div>
+          </div>
+          <div class="export btn-group" :class="{ open: exportMenuOpen }">
+            <button
+              class="btn btn-default dropdown-toggle"
+              type="button"
+              title="导出数据"
+              @click="exportMenuOpen = !exportMenuOpen"
+            >
+              <Icon icon="ep:download" />
+            </button>
+            <div v-show="exportMenuOpen" class="dropdown-menu export-menu">
+              <button type="button" @click="exportRows('json')">JSON</button>
+              <button type="button" @click="exportRows('csv')">CSV</button>
+              <button type="button" @click="exportRows('txt')">TXT</button>
+              <button type="button" @click="exportRows('xls')">MS-Excel</button>
+            </div>
+          </div>
+          <div class="search input-group">
+            <input v-model="keywordInput" class="form-control search-input" placeholder="搜索" />
+            <button class="btn btn-default" type="button" @click="applySearch">
+              <Icon icon="ep:search" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="fixed-table-container">
+        <div v-if="loading" class="fixed-table-loading">正在努力地加载数据中，请稍候……</div>
+        <div class="fixed-table-body">
+          <table class="table table-striped table-bordered table-hover table-nowrap">
+            <thead>
+              <tr>
+                <th v-if="hasSelection" class="bs-checkbox">
+                  <input type="checkbox" :checked="allPageSelected" @change="togglePageSelection" />
+                </th>
+                <th v-for="column in visibleColumns" :key="column.prop" :style="columnStyle(column)">
+                  <span>{{ column.label }}</span>
+                  <span class="sortable"></span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="!pagedRows.length">
+                <td :colspan="visibleColumns.length + (hasSelection ? 1 : 0)" class="no-record">
+                  没有找到匹配的记录
+                </td>
+              </tr>
+              <tr v-for="row in pagedRows" :key="String(row.__rowKey)">
+                <td v-if="hasSelection" class="bs-checkbox">
+                  <input
+                    type="checkbox"
+                    :checked="selectedKeys.has(String(row.__rowKey))"
+                    @change="toggleRow(row)"
+                  />
+                </td>
+                <td v-for="column in visibleColumns" :key="column.prop" :style="columnStyle(column)">
+                  <template v-if="column.prop === 'operate'">
+                    <button class="btn-link" type="button" @click="openEditor('view', row)">详情</button>
+                    <button class="btn-link" type="button" @click="openEditor('edit', row)">编辑</button>
+                  </template>
+                  <span v-else-if="isStatusColumn(column.prop)" :class="statusClass(row[column.prop])">
+                    {{ row[column.prop] }}
+                  </span>
+                  <span v-else>{{ row[column.prop] }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="fixed-table-pagination">
+        <div class="pull-left pagination-detail">
+          <span>
+            显示第 {{ rangeStart }} 到第 {{ rangeEnd }} 条记录，总共 {{ filteredRows.length }} 条记录
+          </span>
+          <span class="page-list">
+            每页显示
+            <select v-model.number="pageSize" class="btn btn-default page-size" @change="currentPage = 1">
+              <option v-for="size in pageSizes" :key="size" :value="size">{{ size }}</option>
+            </select>
+            条记录
+          </span>
+        </div>
+        <div class="pull-right pagination">
+          <button class="page-btn" type="button" :disabled="currentPage <= 1" @click="currentPage--">
+            上一页
+          </button>
+          <button
+            v-for="item in pageButtons"
+            :key="item.key"
+            class="page-btn"
+            :class="{ active: item.page === currentPage, ellipsis: !item.page }"
+            type="button"
+            :disabled="!item.page"
+            @click="item.page && (currentPage = item.page)"
+          >
+            {{ item.label }}
+          </button>
+          <button
+            class="page-btn"
+            type="button"
+            :disabled="currentPage >= totalPages"
+            @click="currentPage++"
+          >
+            下一页
+          </button>
+          <input v-model="jumpValue" class="pagination-jump" />
+          <button class="page-btn" type="button" @click="jumpPage">Go</button>
+        </div>
       </div>
     </div>
 
-    <el-alert
-      v-if="page.status === 'broken'"
-      class="mb-12px"
-      type="warning"
-      :closable="false"
-      show-icon
-      title="线上该菜单当前返回 404，本地已预留可用的数据管理页。"
-    />
-    <el-alert
-      v-if="page.status === 'empty'"
-      class="mb-12px"
-      type="info"
-      :closable="false"
-      show-icon
-      title="线上页面当前为空状态，本地保留刷新和后续字段接入入口。"
-    />
-
-    <template v-if="page.sections?.length">
-      <el-card
-        v-for="section in page.sections"
-        :key="section.title"
-        shadow="never"
-        class="skit-section"
-      >
-        <template #header>
-          <div class="skit-card-header">
-            <span>{{ section.title }}</span>
-            <div>
-              <el-button :icon="Refresh" @click="notifyAction('重置')">重置</el-button>
-              <el-button type="primary" :icon="Check" @click="notifyAction('提交')">提交</el-button>
-            </div>
-          </div>
-        </template>
-        <el-form label-position="top" class="skit-form-grid">
-          <el-form-item v-for="field in section.fields" :key="field.prop" :label="field.label">
-            <el-select
-              v-if="field.type === 'select'"
-              v-model="searchModel[field.prop]"
-              class="w-1/1"
-              placeholder="全部"
-              clearable
-            >
-              <el-option label="正常" value="normal" />
-              <el-option label="禁用" value="disabled" />
-            </el-select>
-            <el-input v-else v-model="searchModel[field.prop]" clearable />
-          </el-form-item>
-        </el-form>
-      </el-card>
-    </template>
-
-    <el-card v-if="page.searchFields.length" shadow="never" class="skit-search">
-      <el-form label-position="top" class="skit-form-grid">
-        <el-form-item v-for="field in visibleSearchFields" :key="field.prop" :label="field.label">
-          <el-date-picker
-            v-if="field.type === 'dateRange'"
-            v-model="searchModel[field.prop]"
-            type="daterange"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            value-format="YYYY-MM-DD"
-            class="w-1/1"
-          />
-          <el-select
-            v-else-if="field.type === 'select'"
-            v-model="searchModel[field.prop]"
-            class="w-1/1"
-            placeholder="全部"
-            clearable
-          >
-            <el-option label="全部" value="" />
-            <el-option label="正常" value="normal" />
-            <el-option label="禁用" value="disabled" />
-            <el-option label="待审核" value="pending" />
-          </el-select>
-          <el-input v-else v-model="searchModel[field.prop]" clearable />
-        </el-form-item>
-      </el-form>
-      <div class="skit-search__actions">
-        <el-button
-          v-if="page.searchFields.length > collapsedSearchCount"
-          text
-          type="primary"
-          @click="searchExpanded = !searchExpanded"
-        >
-          {{ searchExpanded ? '收起' : '展开全部' }}
-        </el-button>
-        <el-button :icon="Refresh" @click="resetSearch">重置</el-button>
-        <el-button type="primary" :icon="Search" @click="notifyAction('搜索')">搜索</el-button>
+    <el-dialog v-model="editorVisible" :title="editorTitle" width="560px">
+      <div class="dialog-form">
+        <label v-for="column in editableColumns" :key="column.prop" class="commonsearch-item">
+          <span>{{ column.label }}</span>
+          <input v-model="editorModel[column.prop]" class="form-control" :disabled="editorMode === 'view'" />
+        </label>
       </div>
-    </el-card>
-
-    <el-card shadow="never" class="skit-table-card">
-      <template #header>
-        <div class="skit-card-header">
-          <div class="skit-card-title">
-            <span>{{ page.title }}</span>
-            <small>{{ page.description }}</small>
-          </div>
-          <div class="skit-toolbar">
-            <el-button
-              v-for="action in toolbarActions"
-              :key="action"
-              :type="buttonType(action)"
-              :icon="actionIcon(action)"
-              @click="notifyAction(action)"
-            >
-              {{ action }}
-            </el-button>
-          </div>
-        </div>
-      </template>
-
-      <el-empty
-        v-if="!visibleColumns.length && !rows.length"
-        :description="page.status === 'empty' ? '暂无字段' : '暂无数据'"
-      />
-      <el-table
-        v-else
-        :data="rows"
-        border
-        stripe
-        height="520"
-        class="skit-table"
-        row-key="id"
-      >
-        <el-table-column v-if="hasSelection" type="selection" width="48" fixed="left" />
-        <el-table-column
-          v-for="column in visibleColumns"
-          :key="column.prop"
-          :prop="column.prop"
-          :label="column.label"
-          :min-width="column.minWidth || 120"
-          :fixed="column.prop === 'operate' ? 'right' : false"
+      <template #footer>
+        <button class="btn btn-default" type="button" @click="editorVisible = false">取消</button>
+        <button
+          v-if="editorMode !== 'view'"
+          class="btn btn-success"
+          type="button"
+          @click="saveEditor"
         >
-          <template #default="{ row }">
-            <template v-if="column.prop === 'operate'">
-              <el-button link type="primary" :icon="View" @click="notifyAction('详情')">详情</el-button>
-              <el-button link type="primary" :icon="Edit" @click="notifyAction('编辑')">编辑</el-button>
-            </template>
-            <el-tag v-else-if="isStatusColumn(column.prop)" :type="statusTagType(row[column.prop])">
-              {{ row[column.prop] }}
-            </el-tag>
-            <el-avatar v-else-if="column.prop === 'avatar'" :size="28">
-              {{ String(row.nickname || '用').slice(0, 1) }}
-            </el-avatar>
-            <span v-else>{{ row[column.prop] }}</span>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
+          提交
+        </button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import {
-  Check,
-  Close,
-  Delete,
-  Download,
-  Edit,
-  Plus,
-  Refresh,
-  Search,
-  Setting,
-  View
-} from '@element-plus/icons-vue'
-import { skitPageConfigs, statusText, type SkitPageConfig } from './pageConfig'
+import { skitPageConfigs, type SkitColumn, type SkitSearchField } from './pageConfig'
 
 defineOptions({ name: 'SkitAdminTable' })
 
@@ -196,50 +312,127 @@ const props = defineProps<{
   pageKey?: string
 }>()
 
+type TableRow = Record<string, string | number>
+
 const route = useRoute()
-const searchModel = reactive<Record<string, string | string[]>>({})
-const searchExpanded = ref(false)
-const collapsedSearchCount = 12
+const pageKey = computed(() => (props.pageKey || route.meta?.skitPageKey || 'adRecord') as string)
+const page = computed(() => skitPageConfigs[pageKey.value] || skitPageConfigs.adRecord)
 
-const pageKey = computed(() => {
-  return (props.pageKey || route.meta?.skitPageKey || 'adRecord') as string
-})
-
-const page = computed<SkitPageConfig>(() => skitPageConfigs[pageKey.value] || skitPageConfigs.adRecord)
-const currentStatusText = computed(() => statusText[page.value.status || 'ready'])
-const tagType = computed(() => {
-  if (page.value.status === 'broken') return 'warning'
-  if (page.value.status === 'empty') return 'info'
-  return 'success'
-})
-
-const visibleSearchFields = computed(() => {
-  if (searchExpanded.value) return page.value.searchFields
-  return page.value.searchFields.slice(0, collapsedSearchCount)
-})
+const tableRows = ref<TableRow[]>([])
+const selectedKeys = ref(new Set<string>())
+const visibleColumnKeys = ref(new Set<string>())
+const advancedModel = reactive<Record<string, string>>({})
+const formModel = reactive<Record<string, string>>({})
+const keywordInput = ref('')
+const keyword = ref('')
+const advancedVisible = ref(false)
+const columnMenuOpen = ref(false)
+const exportMenuOpen = ref(false)
+const loading = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const pageSizes = [10, 25, 50, 100]
+const jumpValue = ref('')
+const editorVisible = ref(false)
+const editorMode = ref<'add' | 'edit' | 'view'>('add')
+const editorModel = reactive<Record<string, string | number>>({})
+const editingKey = ref('')
 
 const hasSelection = computed(() =>
   page.value.columns.some((column) => column.prop === 'state' || column.prop === '0')
 )
-const visibleColumns = computed(() =>
+const availableColumns = computed(() =>
   page.value.columns.filter((column) => column.prop !== 'state' && column.prop !== '0')
 )
-const toolbarActions = computed(() => [...new Set(page.value.toolbar)])
-
-watch(pageKey, () => {
-  Object.keys(searchModel).forEach((key) => delete searchModel[key])
-  searchExpanded.value = false
+const visibleColumns = computed(() =>
+  availableColumns.value.filter((column) => visibleColumnKeys.value.has(column.prop))
+)
+const editableColumns = computed(() =>
+  availableColumns.value.filter(
+    (column) =>
+      !['operate', 'preview', 'avatar', 'createtime', 'updatetime', 'logintime', 'paytime'].includes(
+        column.prop
+      )
+  )
+)
+const selectedRows = computed(() =>
+  tableRows.value.filter((row) => selectedKeys.value.has(String(row.__rowKey)))
+)
+const filteredRows = computed(() => {
+  const text = keyword.value.trim().toLowerCase()
+  return tableRows.value.filter((row) => {
+    const keywordMatched =
+      !text ||
+      visibleColumns.value.some((column) => String(row[column.prop] || '').toLowerCase().includes(text))
+    if (!keywordMatched) return false
+    return page.value.searchFields.every((field) => fieldMatched(row, field))
+  })
+})
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / pageSize.value)))
+const pagedRows = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredRows.value.slice(start, start + pageSize.value)
+})
+const rangeStart = computed(() => (filteredRows.value.length ? (currentPage.value - 1) * pageSize.value + 1 : 0))
+const rangeEnd = computed(() => Math.min(currentPage.value * pageSize.value, filteredRows.value.length))
+const allPageSelected = computed(
+  () => pagedRows.value.length > 0 && pagedRows.value.every((row) => selectedKeys.value.has(String(row.__rowKey)))
+)
+const editorTitle = computed(() => {
+  if (editorMode.value === 'add') return `添加${page.value.title}`
+  if (editorMode.value === 'view') return `${page.value.title}详情`
+  return `编辑${page.value.title}`
+})
+const pageButtons = computed(() => {
+  const total = totalPages.value
+  const page = currentPage.value
+  const list: Array<{ key: string; label: string; page?: number }> = []
+  const pushPage = (value: number) => list.push({ key: `p-${value}`, label: String(value), page: value })
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) pushPage(i)
+    return list
+  }
+  pushPage(1)
+  const start = Math.max(2, page - 2)
+  const end = Math.min(total - 1, page + 2)
+  if (start > 2) list.push({ key: 'e-left', label: '...' })
+  for (let i = start; i <= end; i++) pushPage(i)
+  if (end < total - 1) list.push({ key: 'e-right', label: '...' })
+  pushPage(total)
+  return list
 })
 
-const rows = computed(() => {
+watch(filteredRows, () => {
+  if (currentPage.value > totalPages.value) currentPage.value = totalPages.value
+})
+
+const hasAction = (action: string) => page.value.toolbar.some((item) => item.includes(action))
+
+const fieldMatched = (row: TableRow, field: SkitSearchField) => {
+  const exact = (advancedModel[field.prop] || '').trim().toLowerCase()
+  const start = (advancedModel[`${field.prop}Start`] || '').trim()
+  const end = (advancedModel[`${field.prop}End`] || '').trim()
+  if (!exact && !start && !end) return true
+  const value = String(row[field.prop] || '').toLowerCase()
+  if (exact && !value.includes(exact)) return false
+  if (start && String(row[field.prop] || '') < start) return false
+  if (end && String(row[field.prop] || '') > end) return false
+  return true
+}
+
+const buildRows = () => {
   if (page.value.status === 'empty') return []
-  const size = Math.min(page.value.totalRows || 8, 12)
-  return Array.from({ length: size }, (_, index) => buildRow(page.value, index + 1))
-})
+  const count = Math.min(page.value.totalRows || 12, 2000)
+  return Array.from({ length: count }, (_, index) => {
+    const row = buildRow(index + 1)
+    row.__rowKey = `${page.value.key}-${index + 1}`
+    return row
+  })
+}
 
-const buildRow = (config: SkitPageConfig, index: number) => {
-  const row: Record<string, string | number> = {}
-  config.columns.forEach((column) => {
+const buildRow = (index: number) => {
+  const row: TableRow = {}
+  page.value.columns.forEach((column) => {
     row[column.prop] = valueFor(column.prop, index)
   })
   return row
@@ -247,12 +440,18 @@ const buildRow = (config: SkitPageConfig, index: number) => {
 
 const valueFor = (prop: string, index: number): string | number => {
   const id = 1000 + index
-  if (prop === 'id') return index
-  if (prop.endsWith('_id') || prop === 'user_id') return id
+  if (prop === 'id') return sampleId(index)
+  if (prop === 'trans_id') return `${index % 2 ? '9626eb0ab960ccb72d' : 'bcb045b828a19f135c'}${index}`
+  if (prop === 'network_firm_id') return [28, 15, 8][index % 3]
+  if (prop === 'reward_points') return index * 10
+  if (prop === 'publisher_revenue') return (index * 0.021).toFixed(3)
+  if (prop.endsWith('_id') || prop === 'user_id' || prop === 'uid') return [14, 149, 22, 1032][index % 4]
   if (prop.includes('time') || prop === 'createtime' || prop === 'updatetime') {
-    return `2026-07-${String((index % 6) + 1).padStart(2, '0')} ${String(9 + index).padStart(2, '0')}:24:53`
+    const hour = String((9 + index) % 24).padStart(2, '0')
+    return `2026-07-${String((index % 6) + 1).padStart(2, '0')} ${hour}:24:53`
   }
   if (prop === 'log_date') return `2026-07-${String((index % 6) + 1).padStart(2, '0')}`
+  if (prop === 'ad_network') return ['kuaishou', 'kuaishou', 'csj', 'gdt'][index % 4]
   if (prop === 'user_text') return `模拟用户${index} (#${id})`
   if (prop === 'inviter_text') return index % 3 === 0 ? '无' : `上级用户${index}`
   if (prop === 'mini_program_text') return `精准短剧 (#${(index % 3) + 1})`
@@ -260,18 +459,26 @@ const valueFor = (prop: string, index: number): string | number => {
   if (prop === 'username') return `admin${index}`
   if (prop === 'email') return `user${index}@example.com`
   if (prop === 'mobile') return `138****${String(1000 + index).slice(-4)}`
-  if (prop === 'appid') return `tt-demo-appid-${index}`
+  if (prop === 'appid') return `tt8f3ff98211592ad30${index}`
   if (prop === 'appsecret') return '******'
-  if (prop === 'trans_id') return `mock-trans-${String(index).padStart(6, '0')}`
   if (prop.includes('ip')) return `192.0.2.${index}`
   if (prop === 'browser') return 'Mozilla/5.0'
   if (prop === 'status' || prop.includes('status')) return index % 3 === 0 ? '待处理' : '正常'
   if (prop.startsWith('is_')) return index % 2 === 0 ? '否' : '是'
-  if (prop.includes('money') || prop.includes('revenue') || prop === 'fee') return `¥${(index * 3.27).toFixed(2)}`
+  if (prop.includes('money') || prop === 'fee') return (index * 3.27).toFixed(2)
   if (prop.includes('score') || prop === 'before' || prop === 'after') return index * 100
   if (prop.includes('ratio') || prop.includes('rate')) return `${10 + index}%`
   if (prop === 'operate' || prop === 'state' || prop === '0') return ''
-  const dictionary: Record<string, string> = {
+  return dictionaryValue(prop, index)
+}
+
+const sampleId = (index: number) => {
+  const ids = [23267, 21566, 21565, 20178, 20176, 17665, 17663, 17661, 16582, 16581]
+  return ids[index - 1] || 16000 - index
+}
+
+const dictionaryValue = (prop: string, index: number) => {
+  const dictionary: Record<string, string | number> = {
     title: `公告标题 ${index}`,
     content: `公告正文摘要 ${index}`,
     filename: `upload-${index}.png`,
@@ -282,7 +489,6 @@ const valueFor = (prop: string, index: number): string | number => {
     imagetype: 'png',
     storage: 'local',
     mimetype: 'image/png',
-    ad_network: 'Taku',
     withdraw_type: '积分提现',
     account_type: '微信',
     account: `mock-account-${index}`,
@@ -306,6 +512,7 @@ const valueFor = (prop: string, index: number): string | number => {
     name: `精准短剧 ${index}`,
     scene: '登录',
     ad_slot: 'rewarded',
+    rewarded_count: index % 4,
     host_app_name: 'Douyin',
     host_app_version: '30.8.0',
     type: 'active',
@@ -317,187 +524,651 @@ const valueFor = (prop: string, index: number): string | number => {
   return dictionary[prop] || `${prop}-${index}`
 }
 
-const actionIcon = (action: string) => {
-  if (action.includes('刷新')) return Refresh
-  if (action.includes('搜索')) return Search
-  if (action.includes('添加')) return Plus
-  if (action.includes('编辑')) return Edit
-  if (action.includes('删除') || action.includes('封号')) return Delete
-  if (action.includes('导出')) return Download
-  if (action.includes('审核通过') || action.includes('提交')) return Check
-  if (action.includes('审核拒绝')) return Close
-  return Setting
-}
-
-const buttonType = (action: string) => {
-  if (action.includes('删除') || action.includes('拒绝') || action.includes('封号')) return 'danger'
-  if (action.includes('添加') || action.includes('通过')) return 'success'
-  if (action.includes('导出')) return 'warning'
-  return 'default'
-}
+const columnStyle = (column: SkitColumn) => ({
+  minWidth: `${column.minWidth || column.width || 110}px`
+})
 
 const isStatusColumn = (prop: string) => prop === 'status' || prop.includes('status') || prop.startsWith('is_')
-const statusTagType = (value: string | number) => {
+const statusClass = (value: string | number) => {
   const text = String(value)
-  if (text.includes('待')) return 'warning'
-  if (text.includes('是') || text.includes('禁')) return 'danger'
-  return 'success'
+  if (text.includes('待')) return 'label label-warning'
+  if (text.includes('是') || text.includes('禁') || text.includes('拒')) return 'label label-danger'
+  return 'label label-success'
 }
 
-const resetSearch = () => {
-  Object.keys(searchModel).forEach((key) => delete searchModel[key])
+const applySearch = () => {
+  keyword.value = keywordInput.value
+  currentPage.value = 1
 }
 
-const notifyAction = (action: string) => {
-  ElMessage.info(`${page.value.title}：${action}`)
+const resetSearch = (message = true) => {
+  keywordInput.value = ''
+  keyword.value = ''
+  Object.keys(advancedModel).forEach((key) => delete advancedModel[key])
+  currentPage.value = 1
+  if (message) ElMessage.success('已重置搜索')
 }
+
+const refreshTable = () => {
+  loading.value = true
+  window.setTimeout(() => {
+    loading.value = false
+    ElMessage.success('刷新成功')
+  }, 350)
+}
+
+const toggleColumn = (prop: string) => {
+  const next = new Set(visibleColumnKeys.value)
+  if (next.has(prop)) {
+    if (next.size === 1) {
+      ElMessage.warning('至少保留一列')
+      return
+    }
+    next.delete(prop)
+  } else {
+    next.add(prop)
+  }
+  visibleColumnKeys.value = next
+}
+
+const toggleRow = (row: TableRow) => {
+  const next = new Set(selectedKeys.value)
+  const key = String(row.__rowKey)
+  next.has(key) ? next.delete(key) : next.add(key)
+  selectedKeys.value = next
+}
+
+const togglePageSelection = () => {
+  const next = new Set(selectedKeys.value)
+  if (allPageSelected.value) {
+    pagedRows.value.forEach((row) => next.delete(String(row.__rowKey)))
+  } else {
+    pagedRows.value.forEach((row) => next.add(String(row.__rowKey)))
+  }
+  selectedKeys.value = next
+}
+
+const clearSelection = () => {
+  selectedKeys.value = new Set()
+}
+
+const deleteSelected = async () => {
+  if (!selectedRows.value.length) {
+    ElMessage.warning('请先选择记录')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(`确定删除选中的 ${selectedRows.value.length} 条记录？`, '提示', {
+      type: 'warning'
+    })
+  } catch {
+    return
+  }
+  const removing = new Set(selectedRows.value.map((row) => String(row.__rowKey)))
+  tableRows.value = tableRows.value.filter((row) => !removing.has(String(row.__rowKey)))
+  clearSelection()
+  ElMessage.success('删除成功')
+}
+
+const batchSetStatus = (status: string) => {
+  if (!selectedRows.value.length) {
+    ElMessage.warning('请先选择记录')
+    return
+  }
+  selectedRows.value.forEach((row) => {
+    if ('status' in row) row.status = status
+    if ('payment_status_text' in row && status === '审核通过') row.payment_status_text = '待打款'
+  })
+  ElMessage.success(status)
+}
+
+const openEditor = (mode: 'add' | 'edit' | 'view', row?: TableRow) => {
+  if (mode === 'edit' && !row && selectedRows.value.length !== 1) {
+    ElMessage.warning('请选择一条记录')
+    return
+  }
+  editorMode.value = mode
+  const target = row || selectedRows.value[0] || {}
+  editingKey.value = String(target.__rowKey || '')
+  Object.keys(editorModel).forEach((key) => delete editorModel[key])
+  editableColumns.value.slice(0, 18).forEach((column) => {
+    editorModel[column.prop] = target[column.prop] || ''
+  })
+  editorVisible.value = true
+}
+
+const saveEditor = () => {
+  if (editorMode.value === 'add') {
+    const row: TableRow = { __rowKey: `${page.value.key}-custom-${Date.now()}` }
+    page.value.columns.forEach((column) => {
+      row[column.prop] =
+        editorModel[column.prop] || (column.prop === 'id' ? tableRows.value.length + 1 : valueFor(column.prop, 1))
+    })
+    tableRows.value.unshift(row)
+  } else {
+    const row = tableRows.value.find((item) => String(item.__rowKey) === editingKey.value)
+    if (row) Object.assign(row, editorModel)
+  }
+  editorVisible.value = false
+  ElMessage.success('保存成功')
+}
+
+const exportRows = (format: 'json' | 'csv' | 'txt' | 'xls') => {
+  exportMenuOpen.value = false
+  const columns = visibleColumns.value
+  const rows = filteredRows.value
+  let content = ''
+  let type = 'text/plain;charset=utf-8'
+  let ext = format
+  if (format === 'json') {
+    content = JSON.stringify(rows, null, 2)
+    type = 'application/json;charset=utf-8'
+  } else {
+    const lines = [
+      columns.map((column) => column.label).join(','),
+      ...rows.map((row) => columns.map((column) => csvCell(row[column.prop])).join(','))
+    ]
+    content = lines.join('\n')
+    if (format === 'xls') {
+      ext = 'xls'
+      type = 'application/vnd.ms-excel;charset=utf-8'
+    } else if (format === 'csv') {
+      type = 'text/csv;charset=utf-8'
+    }
+  }
+  const blob = new Blob([content], { type })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${page.value.key}.${ext}`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 0)
+  ElMessage.success('导出成功')
+}
+
+const csvCell = (value: string | number) => {
+  const text = String(value ?? '')
+  return `"${text.replace(/"/g, '""')}"`
+}
+
+const jumpPage = () => {
+  const target = Number(jumpValue.value)
+  if (!Number.isFinite(target)) return
+  currentPage.value = Math.min(Math.max(1, Math.floor(target)), totalPages.value)
+}
+
+const saveProfile = (section: string) => {
+  ElMessage.success(`${section}保存成功`)
+}
+
+const resetProfileModel = () => {
+  Object.keys(formModel).forEach((key) => delete formModel[key])
+  page.value.sections?.forEach((section) => {
+    section.fields.forEach((field) => {
+      formModel[field.prop] = defaultProfileValue(field.prop)
+    })
+  })
+}
+
+const resetProfile = (fields: SkitSearchField[]) => {
+  fields.forEach((field) => {
+    formModel[field.prop] = defaultProfileValue(field.prop)
+  })
+  ElMessage.success('已重置')
+}
+
+const defaultProfileValue = (prop: string) => {
+  const values: Record<string, string> = {
+    username: '123456',
+    email: '123456@qq.com',
+    nickname: '123456',
+    name: '我的网站',
+    reviewStatus: '待审核'
+  }
+  return values[prop] || ''
+}
+
+watch(
+  pageKey,
+  () => {
+    tableRows.value = buildRows()
+    selectedKeys.value = new Set()
+    visibleColumnKeys.value = new Set(availableColumns.value.map((column) => column.prop))
+    resetSearch(false)
+    resetProfileModel()
+    currentPage.value = 1
+    pageSize.value = 10
+    advancedVisible.value = false
+    columnMenuOpen.value = false
+    exportMenuOpen.value = false
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped lang="scss">
-.skit-page {
-  --skit-border: #d7dde8;
-  --skit-text: #1f2937;
-  --skit-muted: #667085;
-  padding: 12px;
+.skit-fastadmin-page {
+  min-height: calc(100vh - 100px);
+  padding: 15px;
+  background: #f1f4f6;
+  color: #333;
+  font-size: 14px;
+  line-height: 1.42857143;
 }
 
-.skit-page__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+.skit-panel {
+  min-height: 172px;
+  padding: 15px;
+  border-radius: 3px;
+  background: #fff;
+  color: #333;
+  box-shadow: none;
+}
+
+.skit-alert {
   margin-bottom: 12px;
-}
-
-.skit-page__crumb {
-  margin-bottom: 6px;
-  color: var(--skit-muted);
+  padding: 8px 12px;
+  border-radius: 3px;
   font-size: 13px;
 }
 
-.skit-page__title-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-
-  h1 {
-    margin: 0;
-    color: var(--skit-text);
-    font-size: 22px;
-    font-weight: 650;
-    line-height: 1.25;
-  }
+.skit-alert--warning {
+  border: 1px solid #faebcc;
+  background: #fcf8e3;
+  color: #8a6d3b;
 }
 
-.skit-page__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  margin-top: 8px;
-  color: var(--skit-muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 12px;
+.skit-alert--info {
+  border: 1px solid #bce8f1;
+  background: #d9edf7;
+  color: #31708f;
 }
 
-.skit-page__metric {
-  min-width: 120px;
-  padding: 10px 14px;
-  border: 1px solid var(--skit-border);
-  border-radius: 6px;
-  background: #fff;
-  text-align: right;
+.commonsearch-table {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.commonsearch-grid,
+.dialog-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+  gap: 10px 12px;
+}
+
+.commonsearch-item {
+  display: block;
+  min-width: 0;
 
   span {
     display: block;
-    color: var(--skit-muted);
-    font-size: 12px;
-  }
-
-  strong {
-    color: var(--skit-text);
-    font-size: 24px;
-    line-height: 1.2;
+    margin-bottom: 5px;
+    color: #333;
+    font-weight: 600;
   }
 }
 
-.skit-search,
-.skit-section,
-.skit-table-card {
-  margin-bottom: 12px;
-  border-radius: 6px;
+.form-control {
+  width: 100%;
+  height: 34px;
+  padding: 6px 12px;
+  border: 1px solid #d2d6de;
+  border-radius: 0;
+  background: #fff;
+  color: #555;
+  font-size: 14px;
+  outline: none;
+  box-shadow: none;
+
+  &:focus {
+    border-color: #3c8dbc;
+  }
 }
 
-.skit-card-header {
-  display: flex;
+textarea.form-control {
+  height: auto;
+}
+
+.date-range {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.skit-card-title {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 
   span {
-    color: var(--skit-text);
-    font-size: 15px;
-    font-weight: 650;
-  }
-
-  small {
-    max-width: 760px;
-    color: var(--skit-muted);
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 1.5;
+    margin: 0;
+    color: #777;
+    text-align: center;
   }
 }
 
-.skit-toolbar {
+.commonsearch-actions {
   display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.profile-forms {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.profile-section {
+  padding: 12px;
+  border: 1px solid #eee;
+
+  h3 {
+    margin: 0 0 12px;
+    color: #333;
+    font-size: 15px;
+  }
+}
+
+.fixed-table-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.toolbar,
+.columns-right,
+.btn-group,
+.search {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar {
+  flex-wrap: wrap;
+}
+
+.columns-right {
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
 }
 
-.skit-form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 4px 12px;
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.42857143;
+  white-space: nowrap;
+
+  &.disabled,
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    pointer-events: none;
+  }
 }
 
-.skit-search__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 8px;
+.btn-default {
+  border-color: #ddd;
+  background: #fff;
 }
 
-.skit-table {
+.btn-primary {
+  border-color: #367fa9;
+  background: #3c8dbc;
+  color: #fff;
+}
+
+.btn-success {
+  border-color: #008d4c;
+  background: #00a65a;
+  color: #fff;
+}
+
+.btn-danger {
+  border-color: #d73925;
+  background: #dd4b39;
+  color: #fff;
+}
+
+.btn-warning-light {
+  border-color: #f0ad4e;
+  background: #fff8e6;
+  color: #8a6d3b;
+}
+
+.keep-open,
+.export {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 37px;
+  right: 0;
+  z-index: 10;
+  min-width: 150px;
+  padding: 6px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 6px 12px rgb(0 0 0 / 18%);
+}
+
+.column-menu {
+  label {
+    display: block;
+    padding: 4px 12px;
+    color: #333;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+}
+
+.export-menu {
+  button {
+    display: block;
+    width: 100%;
+    padding: 5px 16px;
+    border: 0;
+    background: transparent;
+    color: #333;
+    cursor: pointer;
+    text-align: left;
+  }
+}
+
+.search {
+  margin-left: 2px;
+
+  .search-input {
+    width: 166px;
+    border-radius: 0;
+  }
+}
+
+.fixed-table-container {
+  position: relative;
+  overflow-x: auto;
+  border-radius: 4px;
+}
+
+.fixed-table-loading {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 2;
+  padding: 8px;
+  background: rgb(255 255 255 / 85%);
+  color: #333;
+  text-align: center;
+}
+
+.table {
   width: 100%;
+  min-width: 760px;
+  margin-bottom: 0;
+  border-collapse: collapse;
+  background: #fff;
+  color: #333;
+
+  th,
+  td {
+    padding: 8px;
+    border: 1px solid #f4f4f4;
+    color: #333;
+    font-size: 14px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  th {
+    border-bottom-width: 2px;
+    background: #fff;
+    font-weight: 700;
+  }
+
+  tbody tr:nth-of-type(odd) {
+    background: #f9f9f9;
+  }
+}
+
+.table-nowrap {
+  th,
+  td {
+    white-space: nowrap;
+  }
+}
+
+.bs-checkbox {
+  width: 44px;
+  min-width: 44px;
+  text-align: center;
+}
+
+.sortable::after {
+  content: '↕';
+  margin-left: 6px;
+  color: #ddd;
+  font-size: 12px;
+}
+
+.no-record {
+  height: 42px;
+  color: #777;
+  text-align: center;
+}
+
+.btn-link {
+  margin-right: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #3c8dbc;
+  cursor: pointer;
+}
+
+.label {
+  display: inline;
+  padding: 0.2em 0.6em 0.3em;
+  border-radius: 0.25em;
+  color: #fff;
+  font-size: 75%;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.label-success {
+  background-color: #00a65a;
+}
+
+.label-warning {
+  background-color: #f39c12;
+}
+
+.label-danger {
+  background-color: #dd4b39;
+}
+
+.fixed-table-pagination {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  color: #333;
+}
+
+.pagination-detail,
+.pagination {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.page-size {
+  width: 58px;
+  min-width: 58px;
+  padding: 4px 8px;
+  color: #333;
+}
+
+.page-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #777;
+  cursor: pointer;
+
+  &.active {
+    border-color: #3c8dbc;
+    background: #3c8dbc;
+    color: #fff;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+}
+
+.pagination-jump {
+  width: 52px;
+  height: 34px;
+  padding: 6px;
+  border: 1px solid #ddd;
 }
 
 @media (max-width: 768px) {
-  .skit-page {
-    padding: 8px;
+  .skit-fastadmin-page {
+    padding: 10px;
   }
 
-  .skit-page__head,
-  .skit-card-header,
-  .skit-search__actions {
-    align-items: stretch;
+  .fixed-table-toolbar,
+  .fixed-table-pagination {
     flex-direction: column;
   }
 
-  .skit-page__metric {
-    width: 100%;
-    text-align: left;
+  .columns-right,
+  .pagination {
+    justify-content: flex-start;
   }
 
-  .skit-toolbar {
-    justify-content: flex-start;
+  .search .search-input {
+    width: 168px;
   }
 }
 </style>

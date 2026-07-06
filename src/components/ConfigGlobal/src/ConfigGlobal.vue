@@ -30,7 +30,7 @@ const { width } = useWindowSize()
 watch(
   () => width.value,
   (width: number) => {
-    if (width < 768) {
+    if (width < 560) {
       !appStore.getMobile ? appStore.setMobile(true) : undefined
       setCssVar('--left-menu-min-width', '0')
       appStore.setCollapse(true)
