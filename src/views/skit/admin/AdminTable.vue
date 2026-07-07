@@ -60,7 +60,7 @@
                 v-model="formModel[field.prop]"
                 class="form-control"
                 rows="3"
-              />
+              ></textarea>
               <input v-else v-model="formModel[field.prop]" class="form-control" />
             </label>
           </div>
@@ -200,7 +200,11 @@
                 <th v-if="hasSelection" class="bs-checkbox">
                   <input type="checkbox" :checked="allPageSelected" @change="togglePageSelection" />
                 </th>
-                <th v-for="column in visibleColumns" :key="column.prop" :style="columnStyle(column)">
+                <th
+                  v-for="column in visibleColumns"
+                  :key="column.prop"
+                  :style="columnStyle(column)"
+                >
                   <span>{{ column.label }}</span>
                   <span class="sortable"></span>
                 </th>
@@ -220,12 +224,23 @@
                     @change="toggleRow(row)"
                   />
                 </td>
-                <td v-for="column in visibleColumns" :key="column.prop" :style="columnStyle(column)">
+                <td
+                  v-for="column in visibleColumns"
+                  :key="column.prop"
+                  :style="columnStyle(column)"
+                >
                   <template v-if="column.prop === 'operate'">
-                    <button class="btn-link" type="button" @click="openEditor('view', row)">详情</button>
-                    <button class="btn-link" type="button" @click="openEditor('edit', row)">编辑</button>
+                    <button class="btn-link" type="button" @click="openEditor('view', row)"
+                      >详情</button
+                    >
+                    <button class="btn-link" type="button" @click="openEditor('edit', row)"
+                      >编辑</button
+                    >
                   </template>
-                  <span v-else-if="isStatusColumn(column.prop)" :class="statusClass(row[column.prop])">
+                  <span
+                    v-else-if="isStatusColumn(column.prop)"
+                    :class="statusClass(row[column.prop])"
+                  >
                     {{ row[column.prop] }}
                   </span>
                   <span v-else>{{ row[column.prop] }}</span>
@@ -239,18 +254,28 @@
       <div class="fixed-table-pagination">
         <div class="pull-left pagination-detail">
           <span>
-            显示第 {{ rangeStart }} 到第 {{ rangeEnd }} 条记录，总共 {{ filteredRows.length }} 条记录
+            显示第 {{ rangeStart }} 到第 {{ rangeEnd }} 条记录，总共
+            {{ filteredRows.length }} 条记录
           </span>
           <span class="page-list">
             每页显示
-            <select v-model.number="pageSize" class="btn btn-default page-size" @change="currentPage = 1">
+            <select
+              v-model.number="pageSize"
+              class="btn btn-default page-size"
+              @change="currentPage = 1"
+            >
               <option v-for="size in pageSizes" :key="size" :value="size">{{ size }}</option>
             </select>
             条记录
           </span>
         </div>
         <div class="pull-right pagination">
-          <button class="page-btn" type="button" :disabled="currentPage <= 1" @click="currentPage--">
+          <button
+            class="page-btn"
+            type="button"
+            :disabled="currentPage <= 1"
+            @click="currentPage--"
+          >
             上一页
           </button>
           <button
@@ -282,7 +307,11 @@
       <div class="dialog-form">
         <label v-for="column in editableColumns" :key="column.prop" class="commonsearch-item">
           <span>{{ column.label }}</span>
-          <input v-model="editorModel[column.prop]" class="form-control" :disabled="editorMode === 'view'" />
+          <input
+            v-model="editorModel[column.prop]"
+            class="form-control"
+            :disabled="editorMode === 'view'"
+          />
         </label>
       </div>
       <template #footer>
@@ -343,6 +372,7 @@ const backendLoadSeq = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const pageSizes = [10, 25, 50, 100]
+const backendPageSize = 200
 const jumpValue = ref('')
 const editorVisible = ref(false)
 const editorMode = ref<'add' | 'edit' | 'view'>('add')
@@ -361,9 +391,15 @@ const visibleColumns = computed(() =>
 const editableColumns = computed(() =>
   availableColumns.value.filter(
     (column) =>
-      !['operate', 'preview', 'avatar', 'createtime', 'updatetime', 'logintime', 'paytime'].includes(
-        column.prop
-      )
+      ![
+        'operate',
+        'preview',
+        'avatar',
+        'createtime',
+        'updatetime',
+        'logintime',
+        'paytime'
+      ].includes(column.prop)
   )
 )
 const selectedRows = computed(() =>
@@ -374,20 +410,32 @@ const filteredRows = computed(() => {
   return tableRows.value.filter((row) => {
     const keywordMatched =
       !text ||
-      visibleColumns.value.some((column) => String(row[column.prop] || '').toLowerCase().includes(text))
+      visibleColumns.value.some((column) =>
+        String(row[column.prop] || '')
+          .toLowerCase()
+          .includes(text)
+      )
     if (!keywordMatched) return false
     return page.value.searchFields.every((field) => fieldMatched(row, field))
   })
 })
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / pageSize.value)))
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(filteredRows.value.length / pageSize.value))
+)
 const pagedRows = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   return filteredRows.value.slice(start, start + pageSize.value)
 })
-const rangeStart = computed(() => (filteredRows.value.length ? (currentPage.value - 1) * pageSize.value + 1 : 0))
-const rangeEnd = computed(() => Math.min(currentPage.value * pageSize.value, filteredRows.value.length))
+const rangeStart = computed(() =>
+  filteredRows.value.length ? (currentPage.value - 1) * pageSize.value + 1 : 0
+)
+const rangeEnd = computed(() =>
+  Math.min(currentPage.value * pageSize.value, filteredRows.value.length)
+)
 const allPageSelected = computed(
-  () => pagedRows.value.length > 0 && pagedRows.value.every((row) => selectedKeys.value.has(String(row.__rowKey)))
+  () =>
+    pagedRows.value.length > 0 &&
+    pagedRows.value.every((row) => selectedKeys.value.has(String(row.__rowKey)))
 )
 const editorTitle = computed(() => {
   if (editorMode.value === 'add') return `添加${page.value.title}`
@@ -398,7 +446,8 @@ const pageButtons = computed(() => {
   const total = totalPages.value
   const page = currentPage.value
   const list: Array<{ key: string; label: string; page?: number }> = []
-  const pushPage = (value: number) => list.push({ key: `p-${value}`, label: String(value), page: value })
+  const pushPage = (value: number) =>
+    list.push({ key: `p-${value}`, label: String(value), page: value })
   if (total <= 7) {
     for (let i = 1; i <= total; i++) pushPage(i)
     return list
@@ -454,14 +503,10 @@ const loadPageRows = async (fallback = true) => {
   backendLoadSeq.value = seq
   loading.value = true
   try {
-    const result = await getSkitAdminRecordPage({
-      pageNo: 1,
-      pageSize: -1,
-      pageKey: page.value.key
-    })
+    const records = await fetchAllBackendRows(page.value.key)
     if (seq !== backendLoadSeq.value) return
     backendAvailable.value = true
-    tableRows.value = result.list.map((record) => mapBackendRecord(record))
+    tableRows.value = records.map((record) => mapBackendRecord(record))
   } catch {
     if (seq !== backendLoadSeq.value) return
     backendAvailable.value = false
@@ -473,6 +518,26 @@ const loadPageRows = async (fallback = true) => {
       loading.value = false
     }
   }
+}
+
+const fetchAllBackendRows = async (targetPageKey: string) => {
+  const firstPage = await getSkitAdminRecordPage({
+    pageNo: 1,
+    pageSize: backendPageSize,
+    pageKey: targetPageKey
+  })
+  const records = [...(firstPage.list || [])]
+  const total = Math.min(Number(firstPage.total || records.length), 2000)
+  const pageCount = Math.ceil(total / backendPageSize)
+  for (let pageNo = 2; pageNo <= pageCount; pageNo++) {
+    const result = await getSkitAdminRecordPage({
+      pageNo,
+      pageSize: backendPageSize,
+      pageKey: targetPageKey
+    })
+    records.push(...(result.list || []))
+  }
+  return records.slice(0, total)
 }
 
 const mapBackendRecord = (record: SkitAdminRecordRespVO) => {
@@ -528,11 +593,13 @@ const backendId = (row: TableRow) => {
 const valueFor = (prop: string, index: number): string | number => {
   const id = 1000 + index
   if (prop === 'id') return sampleId(index)
-  if (prop === 'trans_id') return `${index % 2 ? '9626eb0ab960ccb72d' : 'bcb045b828a19f135c'}${index}`
+  if (prop === 'trans_id')
+    return `${index % 2 ? '9626eb0ab960ccb72d' : 'bcb045b828a19f135c'}${index}`
   if (prop === 'network_firm_id') return [28, 15, 8][index % 3]
   if (prop === 'reward_points') return index * 10
   if (prop === 'publisher_revenue') return (index * 0.021).toFixed(3)
-  if (prop.endsWith('_id') || prop === 'user_id' || prop === 'uid') return [14, 149, 22, 1032][index % 4]
+  if (prop.endsWith('_id') || prop === 'user_id' || prop === 'uid')
+    return [14, 149, 22, 1032][index % 4]
   if (prop.includes('time') || prop === 'createtime' || prop === 'updatetime') {
     const hour = String((9 + index) % 24).padStart(2, '0')
     return `2026-07-${String((index % 6) + 1).padStart(2, '0')} ${hour}:24:53`
@@ -615,7 +682,8 @@ const columnStyle = (column: SkitColumn) => ({
   minWidth: `${column.minWidth || column.width || 110}px`
 })
 
-const isStatusColumn = (prop: string) => prop === 'status' || prop.includes('status') || prop.startsWith('is_')
+const isStatusColumn = (prop: string) =>
+  prop === 'status' || prop.includes('status') || prop.startsWith('is_')
 const statusClass = (value: CellValue) => {
   const text = String(value)
   if (text.includes('待')) return 'label label-warning'
@@ -773,7 +841,8 @@ const saveEditor = async () => {
     const row: TableRow = { __rowKey: `${page.value.key}-custom-${Date.now()}` }
     page.value.columns.forEach((column) => {
       row[column.prop] =
-        editorModel[column.prop] || (column.prop === 'id' ? tableRows.value.length + 1 : valueFor(column.prop, 1))
+        editorModel[column.prop] ||
+        (column.prop === 'id' ? tableRows.value.length + 1 : valueFor(column.prop, 1))
     })
     tableRows.value.unshift(row)
   } else {
