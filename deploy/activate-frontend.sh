@@ -12,6 +12,10 @@ if [ ! -f docker-compose.prod.yml ]; then
   exit 1
 fi
 
+if grep -q 'image: skit-saas-frontend:${FRONTEND_IMAGE_TAG:-latest}' docker-compose.prod.yml; then
+  sed -i 's|image: skit-saas-frontend:${FRONTEND_IMAGE_TAG:-latest}|image: ${FRONTEND_IMAGE:-skit-saas-frontend}:${FRONTEND_IMAGE_TAG:-latest}|' docker-compose.prod.yml
+fi
+
 set -a
 if [ -f server.env ]; then
   # shellcheck disable=SC1091
