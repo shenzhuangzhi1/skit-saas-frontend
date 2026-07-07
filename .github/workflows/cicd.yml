@@ -62,7 +62,22 @@ jobs:
           docker save "${IMAGE_NAME}:${IMAGE_TAG}" | gzip > ".deploy/${IMAGE_NAME}-${IMAGE_TAG}.tar.gz"
           cp deploy/activate-frontend.sh .deploy/activate-frontend.sh
 
+      - name: Detect deployment secrets
+        id: deploy_config
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          if [ -n "${SERVER_HOST}" ] && [ -n "${SERVER_USER}" ] && [ -n "${SERVER_SSH_KEY}" ]; then
+            echo "enabled=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "::notice::Deployment skipped because SERVER_HOST, SERVER_USER, or SERVER_SSH_KEY is not configured."
+            echo "enabled=false" >> "${GITHUB_OUTPUT}"
+          fi
+
       - name: Prepare SSH
+        if: steps.deploy_config.outputs.enabled == 'true'
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_PORT: ${{ secrets.SERVER_PORT }}
@@ -78,6 +93,7 @@ jobs:
           ssh-keyscan -p "${SERVER_PORT}" "${SERVER_HOST}" >> ~/.ssh/known_hosts
 
       - name: Upload release bundle
+        if: steps.deploy_config.outputs.enabled == 'true'
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
@@ -97,6 +113,7 @@ jobs:
             "${SSH_TARGET}:${DEPLOY_PATH}/"
 
       - name: Activate frontend on server
+        if: steps.deploy_config.outputs.enabled == 'true'
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
