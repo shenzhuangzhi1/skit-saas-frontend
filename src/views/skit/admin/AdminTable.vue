@@ -223,12 +223,18 @@
                   :style="columnStyle(column)"
                 >
                   <template v-if="column.prop === 'operate'">
-                    <button class="btn-link" type="button" @click="openEditor('view', row)"
-                      >详情</button
+                    <button
+                      v-for="action in rowOperateActions"
+                      :key="action.mode"
+                      class="btn-operate"
+                      type="button"
+                      :title="action.label"
+                      :aria-label="action.label"
+                      @click="openEditor(action.mode, row)"
                     >
-                    <button class="btn-link" type="button" @click="openEditor('edit', row)"
-                      >编辑</button
-                    >
+                      <Icon v-if="action.icon" :icon="action.icon" />
+                      <span v-if="action.text">{{ action.text }}</span>
+                    </button>
                   </template>
                   <span
                     v-else-if="isStatusColumn(column.prop)"
@@ -252,13 +258,25 @@
           </span>
           <span class="page-list">
             每页显示
-            <select
-              v-model.number="pageSize"
-              class="btn btn-default page-size"
-              @change="currentPage = 1"
-            >
-              <option v-for="size in pageSizes" :key="size" :value="size">{{ size }}</option>
-            </select>
+            <span class="page-size-menu" :class="{ open: pageSizeMenuOpen }">
+              <button
+                class="btn btn-default page-size"
+                type="button"
+                @click="pageSizeMenuOpen = !pageSizeMenuOpen"
+              >
+                {{ pageSize }}
+              </button>
+              <span v-show="pageSizeMenuOpen" class="dropdown-menu page-size-dropdown">
+                <button
+                  v-for="size in pageSizes"
+                  :key="size"
+                  type="button"
+                  @click="changePageSize(size)"
+                >
+                  {{ size }}
+                </button>
+              </span>
+            </span>
             条记录
           </span>
         </div>
@@ -267,7 +285,7 @@
             class="page-btn"
             type="button"
             :disabled="currentPage <= 1"
-            @click="currentPage--"
+            @click="changePage(currentPage - 1)"
           >
             上一页
           </button>
@@ -278,7 +296,7 @@
             :class="{ active: item.page === currentPage, ellipsis: !item.page }"
             type="button"
             :disabled="!item.page"
-            @click="item.page && (currentPage = item.page)"
+            @click="item.page && changePage(item.page)"
           >
             {{ item.label }}
           </button>
@@ -286,7 +304,7 @@
             class="page-btn"
             type="button"
             :disabled="currentPage >= totalPages"
-            @click="currentPage++"
+            @click="changePage(currentPage + 1)"
           >
             下一页
           </button>
@@ -364,15 +382,22 @@ const exportMenuOpen = ref(false)
 const loading = ref(false)
 const backendAvailable = ref(false)
 const backendLoadSeq = ref(0)
+const backendTotalRows = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const pageSizes = [10, 25, 50, 100]
-const backendPageSize = 200
+const pageSizeMenuOpen = ref(false)
 const jumpValue = ref('')
 const editorVisible = ref(false)
 const editorMode = ref<'add' | 'edit' | 'view'>('add')
 const editorModel = reactive<Record<string, string | number>>({})
 const editingKey = ref('')
+type OperateAction = {
+  mode: 'edit' | 'view'
+  label: string
+  text: string
+  icon: string
+}
 
 const hasSelection = computed(() =>
   page.value.columns.some((column) => column.prop === 'state' || column.prop === '0')
@@ -421,20 +446,38 @@ const hasActiveFilters = computed(
     Boolean(keyword.value.trim()) ||
     Object.values(advancedModel).some((value) => String(value || '').trim())
 )
+const hasLocalFilters = computed(() =>
+  Object.values(advancedModel).some((value) => String(value || '').trim())
+)
+const rowOperateActions = computed<OperateAction[]>(() => {
+  if (page.value.operateMode === 'detail') {
+    return [{ mode: 'view', label: '详情', text: '详情', icon: '' }]
+  }
+  return [
+    { mode: 'view', label: '详情', text: '', icon: 'ep:view' },
+    { mode: 'edit', label: '编辑', text: '', icon: 'ep:edit' }
+  ]
+})
 const displayTotalRows = computed(() =>
-  !hasActiveFilters.value && page.value.totalRows !== undefined
-    ? page.value.totalRows
-    : filteredRows.value.length
+  backendAvailable.value && !hasLocalFilters.value
+    ? Math.max(
+        backendTotalRows.value,
+        !hasActiveFilters.value && page.value.totalRows !== undefined ? page.value.totalRows : 0
+      )
+    : !hasActiveFilters.value && page.value.totalRows !== undefined
+      ? page.value.totalRows
+      : filteredRows.value.length
 )
 const totalPages = computed(() =>
   Math.max(1, Math.ceil(displayTotalRows.value / pageSize.value))
 )
 const pagedRows = computed(() => {
+  if (backendAvailable.value) return filteredRows.value
   const start = (currentPage.value - 1) * pageSize.value
   return filteredRows.value.slice(start, start + pageSize.value)
 })
 const rangeStart = computed(() =>
-  displayTotalRows.value ? (currentPage.value - 1) * pageSize.value + 1 : 0
+  hasTable.value ? (displayTotalRows.value ? (currentPage.value - 1) * pageSize.value + 1 : 1) : 0
 )
 const rangeEnd = computed(() =>
   Math.min(currentPage.value * pageSize.value, displayTotalRows.value)
@@ -511,18 +554,21 @@ const loadPageRows = async (fallback = true) => {
   if (!hasTable.value) {
     tableRows.value = []
     backendAvailable.value = false
+    backendTotalRows.value = 0
     loading.value = false
     return
   }
   loading.value = true
   try {
-    const records = await fetchAllBackendRows(page.value.key)
+    const result = await fetchBackendRows(page.value.key)
     if (seq !== backendLoadSeq.value) return
     backendAvailable.value = true
-    tableRows.value = records.map((record) => mapBackendRecord(record))
+    backendTotalRows.value = Number(result.total || 0)
+    tableRows.value = (result.list || []).map((record) => mapBackendRecord(record))
   } catch {
     if (seq !== backendLoadSeq.value) return
     backendAvailable.value = false
+    backendTotalRows.value = 0
     if (fallback) {
       tableRows.value = buildRows()
     }
@@ -533,24 +579,13 @@ const loadPageRows = async (fallback = true) => {
   }
 }
 
-const fetchAllBackendRows = async (targetPageKey: string) => {
-  const firstPage = await getSkitAdminRecordPage({
-    pageNo: 1,
-    pageSize: backendPageSize,
-    pageKey: targetPageKey
+const fetchBackendRows = (targetPageKey: string) => {
+  return getSkitAdminRecordPage({
+    pageNo: currentPage.value,
+    pageSize: pageSize.value,
+    pageKey: targetPageKey,
+    keyword: keyword.value.trim() || undefined
   })
-  const records = [...(firstPage.list || [])]
-  const total = Math.min(Number(firstPage.total || records.length), 2000)
-  const pageCount = Math.ceil(total / backendPageSize)
-  for (let pageNo = 2; pageNo <= pageCount; pageNo++) {
-    const result = await getSkitAdminRecordPage({
-      pageNo,
-      pageSize: backendPageSize,
-      pageKey: targetPageKey
-    })
-    records.push(...(result.list || []))
-  }
-  return records.slice(0, total)
 }
 
 const mapBackendRecord = (record: SkitAdminRecordRespVO) => {
@@ -781,17 +816,34 @@ const statusClass = (value: CellValue) => {
   return 'label label-success'
 }
 
-const applySearch = () => {
+const applySearch = async () => {
   keyword.value = keywordInput.value
   currentPage.value = 1
+  await loadPageRows()
 }
 
-const resetSearch = (message = true) => {
+const resetSearch = async (message = true, reload = true) => {
   keywordInput.value = ''
   keyword.value = ''
   Object.keys(advancedModel).forEach((key) => delete advancedModel[key])
   currentPage.value = 1
+  if (reload) await loadPageRows()
   if (message) ElMessage.success('已重置搜索')
+}
+
+const changePageSize = async (size: number) => {
+  pageSizeMenuOpen.value = false
+  if (pageSize.value === size && currentPage.value === 1) return
+  pageSize.value = size
+  currentPage.value = 1
+  await loadPageRows()
+}
+
+const changePage = async (target: number) => {
+  const nextPage = Math.min(Math.max(1, Math.floor(target)), totalPages.value)
+  if (nextPage === currentPage.value) return
+  currentPage.value = nextPage
+  await loadPageRows()
 }
 
 const loadProfileModel = async () => {
@@ -1015,7 +1067,7 @@ const csvCell = (value: CellValue) => {
 const jumpPage = () => {
   const target = Number(jumpValue.value)
   if (!Number.isFinite(target)) return
-  currentPage.value = Math.min(Math.max(1, Math.floor(target)), totalPages.value)
+  changePage(target)
 }
 
 const saveProfile = async (section: string) => {
@@ -1110,10 +1162,11 @@ watch(
     tableRows.value = []
     selectedKeys.value = new Set()
     visibleColumnKeys.value = new Set(availableColumns.value.map((column) => column.prop))
-    resetSearch(false)
+    await resetSearch(false, false)
     await loadProfileModel()
     currentPage.value = 1
     pageSize.value = 10
+    pageSizeMenuOpen.value = false
     advancedVisible.value = false
     columnMenuOpen.value = false
     exportMenuOpen.value = false
@@ -1309,6 +1362,12 @@ textarea.form-control {
   position: relative;
 }
 
+.page-size-menu {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
 .dropdown-menu {
   position: absolute;
   top: 37px;
@@ -1342,6 +1401,27 @@ textarea.form-control {
     color: #333;
     cursor: pointer;
     text-align: left;
+  }
+}
+
+.page-size-dropdown {
+  left: 0;
+  right: auto;
+  min-width: 58px;
+
+  button {
+    display: block;
+    width: 100%;
+    padding: 5px 14px;
+    border: 0;
+    background: transparent;
+    color: #333;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      background: #f5f5f5;
+    }
   }
 }
 
@@ -1425,13 +1505,28 @@ textarea.form-control {
   text-align: center;
 }
 
-.btn-link {
-  margin-right: 8px;
-  padding: 0;
+.btn-operate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  margin-right: 4px;
+  padding: 0 4px;
   border: 0;
+  border-radius: 2px;
   background: transparent;
   color: #3c8dbc;
   cursor: pointer;
+  line-height: 1;
+
+  &:hover {
+    background: #eaf4fb;
+  }
+
+  span {
+    line-height: 20px;
+  }
 }
 
 .label {

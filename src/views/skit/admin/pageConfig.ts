@@ -28,6 +28,7 @@ export interface SkitPageConfig {
   columns: SkitColumn[]
   searchFields: SkitSearchField[]
   toolbar: string[]
+  operateMode?: 'icons' | 'detail'
   sections?: SkitFormSection[]
 }
 
@@ -264,7 +265,8 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['ip', 'IP地址'],
       ['createtime', '创建时间', 'dateRange']
     ]),
-    toolbar: ['刷新', '删除', '普通搜索', '切换列', '导出数据', '详情']
+    toolbar: ['刷新', '删除', '普通搜索', '切换列', '导出数据', '详情'],
+    operateMode: 'detail'
   },
   group: {
     key: 'group',
