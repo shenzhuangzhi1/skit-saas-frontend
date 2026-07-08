@@ -293,14 +293,15 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     title: '短剧管理',
     liveRoute: '/manystore/duanju?addtabs=1',
     apiPath: '/admin-api/skit/duanju/dramas',
-    status: 'broken',
-    description: '线上菜单存在但直接返回 404，本地保留修复入口。',
+    description: '管理短剧基础信息、封面、分类、剧集和上下架状态。',
     columns: cols([
       ['id', 'ID', 80],
       ['title', '短剧标题', 180],
+      ['cover', '封面', 140],
       ['category', '分类', 120],
       ['episodes', '集数', 90],
       ['status', '状态', 100],
+      ['createtime', '创建时间', 170],
       ['updatetime', '更新时间', 170],
       ['operate', '操作', 130]
     ]),
@@ -308,7 +309,9 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['id', 'ID'],
       ['title', '短剧标题'],
       ['category', '分类'],
-      ['status', '状态', 'select']
+      ['status', '状态', 'select'],
+      ['createtime', '创建时间', 'dateRange'],
+      ['updatetime', '更新时间', 'dateRange']
     ]),
     toolbar: ['刷新', '添加', '编辑', '上架', '下架']
   },
@@ -770,11 +773,39 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     parent: '抖音管理',
     liveRoute: '/manystore/duanju/douyin_mini_program_ad_record?addtabs=1',
     apiPath: '/admin-api/skit/douyin/ad-records',
-    status: 'empty',
-    description: '线上页面当前只加载语言包和刷新按钮，未暴露表格字段，本地先保留空状态入口。',
-    columns: [],
-    searchFields: [],
-    toolbar: ['刷新']
+    totalRows: 22,
+    description: '记录抖音小程序广告展示、交易、收益、积分和设备来源。',
+    columns: cols([
+      ['0', '选择', 48],
+      ['id', 'ID', 80],
+      ['mini_program_text', '小程序', 170],
+      ['appid', 'AppID', 190],
+      ['user_id', '用户ID', 100],
+      ['user_text', '用户', 170],
+      ['ad_slot', '广告位', 120],
+      ['trans_id', '交易ID', 220],
+      ['publisher_revenue', '展示收益', 120],
+      ['reward_points', '业务积分', 120],
+      ['device_platform', '设备平台', 120],
+      ['ip', 'IP', 140],
+      ['createtime', '创建时间', 170],
+      ['operate', '操作', 130]
+    ]),
+    searchFields: fields([
+      ['id', 'ID'],
+      ['mini_program_id', '小程序 ID'],
+      ['appid', 'AppID'],
+      ['user_id', '用户ID'],
+      ['user_text', '用户'],
+      ['ad_slot', '广告位'],
+      ['trans_id', '交易ID'],
+      ['publisher_revenue', '展示收益'],
+      ['reward_points', '业务积分'],
+      ['device_platform', '设备平台', 'select'],
+      ['ip', 'IP'],
+      ['createtime', '创建时间', 'dateRange']
+    ]),
+    toolbar: ['刷新', '普通搜索', '切换列', '导出数据']
   },
   douyinTrafficRecord: {
     key: 'douyinTrafficRecord',
@@ -863,7 +894,7 @@ export const skitMenuGroups: SkitMenuGroup[] = [
   {
     title: '短剧运营',
     items: [
-      { key: 'drama', title: '短剧管理', routeName: 'SkitDrama', status: 'broken' },
+      { key: 'drama', title: '短剧管理', routeName: 'SkitDrama' },
       { key: 'adRecord', title: '广告记录', routeName: 'SkitAdRecord', totalRows: 943 },
       { key: 'withdraw', title: '积分提现', routeName: 'SkitWithdraw', totalRows: 26 },
       { key: 'scoreLog', title: '积分记录', routeName: 'SkitScoreLog', totalRows: 1932 },
@@ -888,7 +919,7 @@ export const skitMenuGroups: SkitMenuGroup[] = [
         key: 'douyinAdRecord',
         title: '抖音广告记录',
         routeName: 'SkitDouyinAdRecord',
-        status: 'empty'
+        totalRows: 22
       },
       { key: 'douyinTrafficRecord', title: '抖音投流记录', routeName: 'SkitDouyinTrafficRecord' }
     ]

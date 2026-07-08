@@ -1,13 +1,6 @@
 <template>
   <div class="skit-fastadmin-page">
     <div class="skit-panel">
-      <div v-if="page.status === 'broken'" class="skit-alert skit-alert--warning">
-        线上该菜单当前返回 404，本地已预留可用的数据管理页。
-      </div>
-      <div v-if="page.status === 'empty'" class="skit-alert skit-alert--info">
-        线上页面当前为空状态，本地保留刷新和后续字段接入入口。
-      </div>
-
       <div v-show="advancedVisible" class="commonsearch-table">
         <div class="commonsearch-grid">
           <label v-for="field in page.searchFields" :key="field.prop" class="commonsearch-item">
@@ -133,7 +126,7 @@
             type="button"
             @click="clearSelection"
           >
-            Multiple selection mode: {{ selectedRows.length }} checked
+            已选择 {{ selectedRows.length }} 项
           </button>
         </div>
 
@@ -644,6 +637,8 @@ const sampleId = (index: number) => {
 const dictionaryValue = (prop: string, index: number) => {
   const dictionary: Record<string, string | number> = {
     title: `公告标题 ${index}`,
+    category: ['都市', '逆袭', '甜宠', '悬疑'][index % 4],
+    episodes: 80 + (index % 20),
     content: `公告正文摘要 ${index}`,
     filename: `upload-${index}.png`,
     preview: '预览',
@@ -1058,25 +1053,6 @@ watch(
   background: #fff;
   color: #333;
   box-shadow: none;
-}
-
-.skit-alert {
-  margin-bottom: 12px;
-  padding: 8px 12px;
-  border-radius: 3px;
-  font-size: 13px;
-}
-
-.skit-alert--warning {
-  border: 1px solid #faebcc;
-  background: #fcf8e3;
-  color: #8a6d3b;
-}
-
-.skit-alert--info {
-  border: 1px solid #bce8f1;
-  background: #d9edf7;
-  color: #31708f;
 }
 
 .commonsearch-table {
