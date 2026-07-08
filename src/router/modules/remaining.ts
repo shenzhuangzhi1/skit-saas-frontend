@@ -137,6 +137,7 @@ const remainingRouter: AppRouteRecordRaw[] = [
         children: [
           {
             path: 'admin-user',
+            alias: ['/skit/admin/user'],
             component: () => import('@/views/skit/admin/AdminTable.vue'),
             name: 'SkitAdminUser',
             props: { pageKey: 'adminUser' },
@@ -144,6 +145,7 @@ const remainingRouter: AppRouteRecordRaw[] = [
           },
           {
             path: 'admin-log',
+            alias: ['/skit/admin/log'],
             component: () => import('@/views/skit/admin/AdminTable.vue'),
             name: 'SkitAdminLog',
             props: { pageKey: 'adminLog' },
@@ -151,6 +153,7 @@ const remainingRouter: AppRouteRecordRaw[] = [
           },
           {
             path: 'group',
+            alias: ['/skit/admin/group'],
             component: () => import('@/views/skit/admin/AdminTable.vue'),
             name: 'SkitGroup',
             props: { pageKey: 'group' },
@@ -230,6 +233,7 @@ const remainingRouter: AppRouteRecordRaw[] = [
         children: [
           {
             path: 'mini-program',
+            alias: ['/skit/douyin-mini-program'],
             component: () => import('@/views/skit/admin/AdminTable.vue'),
             name: 'SkitDouyinMiniProgram',
             props: { pageKey: 'douyinMiniProgram' },
@@ -237,6 +241,7 @@ const remainingRouter: AppRouteRecordRaw[] = [
           },
           {
             path: 'login-record',
+            alias: ['/skit/douyin-login-record'],
             component: () => import('@/views/skit/admin/AdminTable.vue'),
             name: 'SkitDouyinLoginRecord',
             props: { pageKey: 'douyinLoginRecord' },
@@ -244,6 +249,7 @@ const remainingRouter: AppRouteRecordRaw[] = [
           },
           {
             path: 'ad-record',
+            alias: ['/skit/douyin-ad-record'],
             component: () => import('@/views/skit/admin/AdminTable.vue'),
             name: 'SkitDouyinAdRecord',
             props: { pageKey: 'douyinAdRecord' },
@@ -251,6 +257,7 @@ const remainingRouter: AppRouteRecordRaw[] = [
           },
           {
             path: 'traffic-record',
+            alias: ['/skit/douyin-traffic-record'],
             component: () => import('@/views/skit/admin/AdminTable.vue'),
             name: 'SkitDouyinTrafficRecord',
             props: { pageKey: 'douyinTrafficRecord' },

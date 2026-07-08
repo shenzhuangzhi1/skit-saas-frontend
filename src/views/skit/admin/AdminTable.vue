@@ -248,7 +248,7 @@
         <div class="pull-left pagination-detail">
           <span>
             显示第 {{ rangeStart }} 到第 {{ rangeEnd }} 条记录，总共
-            {{ filteredRows.length }} 条记录
+            {{ displayTotalRows }} 条记录
           </span>
           <span class="page-list">
             每页显示
@@ -416,18 +416,28 @@ const filteredRows = computed(() => {
     return page.value.searchFields.every((field) => fieldMatched(row, field))
   })
 })
+const hasActiveFilters = computed(
+  () =>
+    Boolean(keyword.value.trim()) ||
+    Object.values(advancedModel).some((value) => String(value || '').trim())
+)
+const displayTotalRows = computed(() =>
+  !hasActiveFilters.value && page.value.totalRows !== undefined
+    ? page.value.totalRows
+    : filteredRows.value.length
+)
 const totalPages = computed(() =>
-  Math.max(1, Math.ceil(filteredRows.value.length / pageSize.value))
+  Math.max(1, Math.ceil(displayTotalRows.value / pageSize.value))
 )
 const pagedRows = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   return filteredRows.value.slice(start, start + pageSize.value)
 })
 const rangeStart = computed(() =>
-  filteredRows.value.length ? (currentPage.value - 1) * pageSize.value + 1 : 0
+  displayTotalRows.value ? (currentPage.value - 1) * pageSize.value + 1 : 0
 )
 const rangeEnd = computed(() =>
-  Math.min(currentPage.value * pageSize.value, filteredRows.value.length)
+  Math.min(currentPage.value * pageSize.value, displayTotalRows.value)
 )
 const allPageSelected = computed(
   () =>

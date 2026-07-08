@@ -132,7 +132,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['imageheight', '高度', 90],
       ['imagetype', '图片类型', 110],
       ['storage', '存储引擎', 110],
-      ['mimetype', 'Mime 类型', 150],
+      ['mimetype', 'Mime类型', 150],
       ['createtime', '创建日期', 170],
       ['operate', '操作', 130]
     ]),
@@ -145,7 +145,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['imageheight', '高度'],
       ['imagetype', '图片类型'],
       ['storage', '存储引擎'],
-      ['mimetype', 'Mime 类型'],
+      ['mimetype', 'Mime类型'],
       ['createtime', '创建日期', 'dateRange']
     ]),
     toolbar: ['刷新', '添加', '编辑', '删除', '普通搜索', '切换列', '导出数据']
@@ -203,7 +203,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['id', 'ID', 80],
       ['title', '标题', 150],
       ['url', '链接', 220],
-      ['ip', 'IP 地址', 140],
+      ['ip', 'IP地址', 140],
       ['createtime', '操作时间', 170]
     ]),
     searchFields: [],
@@ -252,7 +252,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['username', '管理员名字', 140],
       ['title', '日志标题', 160],
       ['url', '操作页面', 220],
-      ['ip', 'IP 地址', 140],
+      ['ip', 'IP地址', 140],
       ['browser', '浏览器', 220],
       ['createtime', '创建时间', 170],
       ['operate', '操作', 130]
@@ -261,7 +261,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['username', '管理员名字'],
       ['title', '日志标题'],
       ['url', '操作页面'],
-      ['ip', 'IP 地址'],
+      ['ip', 'IP地址'],
       ['createtime', '创建时间', 'dateRange']
     ]),
     toolbar: ['刷新', '删除', '普通搜索', '切换列', '导出数据', '详情']
@@ -272,21 +272,17 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     parent: '权限管理',
     liveRoute: '/manystore/auth/group?addtabs=1',
     apiPath: '/admin-api/skit/auth/groups',
-    description: '角色组树形权限管理，线上页面以树控件和添加/删除为主。',
-    columns: [],
-    searchFields: [],
-    toolbar: ['刷新', '添加', '删除'],
-    sections: [
-      {
-        title: '权限组',
-        fields: fields([
-          ['name', '角色组名称'],
-          ['rules', '菜单权限'],
-          ['status', '状态', 'select'],
-          ['remark', '备注']
-        ])
-      }
-    ]
+    description: '角色组树形权限管理，包含父级、名称、状态和操作入口。',
+    columns: cols([
+      ['state', '选择', 48],
+      ['id', 'ID', 80],
+      ['pid', '父级', 100],
+      ['name', '名称', 180],
+      ['status', '状态', 100],
+      ['operate', '操作', 130]
+    ]),
+    searchFields: fields([['id', 'ID']]),
+    toolbar: ['刷新', '添加', '删除', '切换列', '导出数据']
   },
   drama: {
     key: 'drama',
@@ -320,7 +316,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     title: '广告记录',
     liveRoute: '/manystore/duanju/ad_record?addtabs=1',
     apiPath: '/admin-api/skit/duanju/ad-records',
-    totalRows: 943,
+    totalRows: 947,
     description: '记录用户广告展示收益、Taku平台ID、交易ID和业务积分。',
     columns: cols([
       ['0', '选择', 48],
@@ -395,7 +391,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     title: '积分记录',
     liveRoute: '/manystore/duanju/score_log?addtabs=1',
     apiPath: '/admin-api/skit/duanju/score-logs',
-    totalRows: 1932,
+    totalRows: 1936,
     description: '记录积分变更前后值、变更积分和业务备注。',
     columns: cols([
       ['0', '选择', 48],
@@ -424,6 +420,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     title: '代理管理',
     liveRoute: '/manystore/promotion_agent?addtabs=1',
     apiPath: '/admin-api/skit/promotion-agents',
+    totalRows: 0,
     description: '配置代理和下级会员分佣比例，查看绑定用户数和佣金积分。',
     columns: cols([
       ['0', '选择', 48],
@@ -461,7 +458,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     title: '登录记录',
     liveRoute: '/manystore/duanju/user_login_record?addtabs=1',
     apiPath: '/admin-api/skit/duanju/user-login-records',
-    totalRows: 101,
+    totalRows: 1342,
     description: '记录 App 用户登录方式、设备标识、地理位置、系统版本和 IP。',
     columns: cols([
       ['0', '选择', 48],
@@ -529,7 +526,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     title: '设备日志',
     liveRoute: '/manystore/duanju/user_info_log?addtabs=1',
     apiPath: '/admin-api/skit/duanju/user-info-logs',
-    totalRows: 103,
+    totalRows: 153,
     description: '记录设备环境、VPN/代理/模拟器/Root 风险状态和 SIM 信息。',
     columns: cols([
       ['0', '选择', 48],
@@ -551,8 +548,8 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['is_emulator', '模拟器', 100],
       ['is_root', 'Root', 90],
       ['is_developer_mode', '开发者模式', 120],
-      ['is_usb_debug', 'USB 调试', 110],
-      ['sim_operator', 'SIM 运营商', 130],
+      ['is_usb_debug', 'USB调试', 110],
+      ['sim_operator', 'SIM运营商', 130],
       ['location', '位置', 160],
       ['createtime', '创建时间', 170]
     ]),
@@ -578,9 +575,9 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['is_emulator', '模拟器', 'select'],
       ['is_root', 'Root', 'select'],
       ['is_developer_mode', '开发者模式', 'select'],
-      ['is_usb_debug', 'USB 调试', 'select'],
+      ['is_usb_debug', 'USB调试', 'select'],
       ['sim_state', 'SIM 状态'],
-      ['sim_operator', 'SIM 运营商'],
+      ['sim_operator', 'SIM运营商'],
       ['sim_count', 'SIM 数量'],
       ['install_time', '安装时间', 'dateRange'],
       ['location', '位置'],
@@ -597,7 +594,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     title: '用户管理',
     liveRoute: '/manystore/user/user?addtabs=1',
     apiPath: '/admin-api/skit/users',
-    totalRows: 63,
+    totalRows: 1258,
     description: '管理用户积分、余额、邀请码、直属用户、分佣比例和封禁状态。',
     columns: cols([
       ['0', '选择', 48],
@@ -613,7 +610,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['ban_status_text', '封禁状态', 110],
       ['ban_reason', '封禁原因', 180],
       ['logintime', '登录时间', 170],
-      ['loginip', '登录 IP', 140],
+      ['loginip', '登录IP', 140],
       ['jointime', '加入时间', 170],
       ['status', '状态', 100],
       ['operate', '操作', 200]
@@ -628,7 +625,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['money', '余额'],
       ['ban_reason', '封禁原因'],
       ['logintime', '登录时间', 'dateRange'],
-      ['loginip', '登录 IP'],
+      ['loginip', '登录IP'],
       ['jointime', '加入时间', 'dateRange'],
       ['status', '状态', 'select']
     ]),
@@ -678,7 +675,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['withdraw_min_amount', '最低提现金额', 140],
       ['withdraw_fee_rate', '提现手续费比例(%)', 170],
       ['withdraw_fixed_fee', '提现固定手续费', 160],
-      ['access_token_expiretime', 'AccessToken 过期时间', 190],
+      ['access_token_expiretime', 'AccessToken过期时间', 190],
       ['status', '状态', 100],
       ['createtime', '创建时间', 170],
       ['updatetime', '更新时间', 170],
@@ -694,7 +691,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['withdraw_min_amount', '最低提现金额'],
       ['withdraw_fee_rate', '提现手续费比例(%)'],
       ['withdraw_fixed_fee', '提现固定手续费'],
-      ['access_token_expiretime', 'AccessToken 过期时间', 'dateRange'],
+      ['access_token_expiretime', 'AccessToken过期时间', 'dateRange'],
       ['access_token_updatetime', 'AccessToken 刷新时间', 'dateRange'],
       ['status', '状态', 'select'],
       ['createtime', '创建时间', 'dateRange'],
@@ -708,7 +705,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     parent: '抖音管理',
     liveRoute: '/manystore/duanju/douyin_mini_program_login_record?addtabs=1',
     apiPath: '/admin-api/skit/douyin/login-records',
-    totalRows: 16,
+    totalRows: 1303,
     description: '记录抖音小程序用户登录、OpenID、设备、宿主 App 和 IP 信息。',
     columns: cols([
       ['0', '选择', 48],
@@ -727,14 +724,14 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['device_model', '手机型号', 140],
       ['os_name', '操作系统', 120],
       ['os_version', '系统版本', 120],
-      ['host_app_name', '宿主 APP 名称', 150],
+      ['host_app_name', '宿主APP名称', 150],
       ['host_app_version', '宿主 App 版本号', 160],
       ['ip', 'IP', 140],
       ['createtime', '创建时间', 170]
     ]),
     searchFields: fields([
       ['id', 'ID'],
-      ['mini_program_id', '小程序 ID'],
+      ['mini_program_id', '小程序ID'],
       ['appid', 'AppID'],
       ['user_id', '用户ID'],
       ['third_id', 'Third ID'],
@@ -752,7 +749,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['os_name', '操作系统'],
       ['os_version', '系统版本'],
       ['android_version', '安卓版本'],
-      ['host_app_name', '宿主 APP 名称'],
+      ['host_app_name', '宿主APP名称'],
       ['host_app_version', '宿主 App 版本号'],
       ['app_version', '小游戏版本'],
       ['app_build', 'Build 号'],
@@ -773,37 +770,38 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     parent: '抖音管理',
     liveRoute: '/manystore/duanju/douyin_mini_program_ad_record?addtabs=1',
     apiPath: '/admin-api/skit/douyin/ad-records',
-    totalRows: 22,
-    description: '记录抖音小程序广告展示、交易、收益、积分和设备来源。',
+    totalRows: 717,
+    description: '记录抖音小程序广告展示收益、来源、设备和宿主版本信息。',
     columns: cols([
-      ['0', '选择', 48],
       ['id', 'ID', 80],
       ['mini_program_text', '小程序', 170],
-      ['appid', 'AppID', 190],
-      ['user_id', '用户ID', 100],
-      ['user_text', '用户', 170],
-      ['ad_slot', '广告位', 120],
-      ['trans_id', '交易ID', 220],
-      ['publisher_revenue', '展示收益', 120],
-      ['reward_points', '业务积分', 120],
-      ['device_platform', '设备平台', 120],
+      ['openid', 'OpenID', 240],
+      ['nickname', '昵称', 140],
+      ['ad_type', '广告类型', 120],
+      ['ad_time', '广告时间', 170],
+      ['ad_revenue', '广告收益', 120],
+      ['source', '来源', 140],
       ['ip', 'IP', 140],
-      ['createtime', '创建时间', 170],
-      ['operate', '操作', 130]
+      ['city', '城市', 120],
+      ['device_brand', '手机品牌', 120],
+      ['device_model', '手机型号', 140],
+      ['host_app_version', '宿主App版本号', 160]
     ]),
     searchFields: fields([
       ['id', 'ID'],
-      ['mini_program_id', '小程序 ID'],
       ['appid', 'AppID'],
-      ['user_id', '用户ID'],
-      ['user_text', '用户'],
-      ['ad_slot', '广告位'],
-      ['trans_id', '交易ID'],
-      ['publisher_revenue', '展示收益'],
-      ['reward_points', '业务积分'],
-      ['device_platform', '设备平台', 'select'],
+      ['third_id', 'Third ID'],
+      ['openid', 'OpenID'],
+      ['nickname', '昵称'],
+      ['ad_type', '广告类型'],
+      ['ad_time', '广告时间', 'dateRange'],
+      ['ad_revenue', '广告收益'],
+      ['source', '来源'],
       ['ip', 'IP'],
-      ['createtime', '创建时间', 'dateRange']
+      ['city', '城市'],
+      ['device_brand', '手机品牌'],
+      ['device_model', '手机型号'],
+      ['host_app_version', '宿主App版本号']
     ]),
     toolbar: ['刷新', '普通搜索', '切换列', '导出数据']
   },
@@ -813,25 +811,27 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     parent: '抖音管理',
     liveRoute: '/manystore/duanju/douyin_mini_program_traffic_record?addtabs=1',
     apiPath: '/admin-api/skit/douyin/traffic-records',
+    totalRows: 34513,
     description: '记录巨量/抖音投流回传参数、设备标识、广告计划、创意和去重 Hash。',
     columns: cols([
       ['id', 'ID', 80],
       ['type', '事件类型', 120],
       ['request_time', '请求时间', 170],
-      ['request_ip', '请求 IP', 140],
-      ['param_ip', '投流 IP', 140],
+      ['request_ip', '请求IP', 140],
+      ['param_ip', '投流IP', 140],
       ['os', '系统', 100],
       ['model', '设备型号', 150],
       ['csite', 'csite', 110],
       ['sl', 'sl', 110],
-      ['callback_url', 'Callback URL', 260]
+      ['callback_url', 'Callback URL', 260],
+      ['callback_status', '是否回调', 110]
     ]),
     searchFields: fields([
       ['id', 'ID'],
       ['type', '事件类型', 'select'],
       ['request_time', '请求时间', 'dateRange'],
-      ['request_ip', '请求 IP'],
-      ['param_ip', '投流 IP'],
+      ['request_ip', '请求IP'],
+      ['param_ip', '投流IP'],
       ['oaid', 'OAID'],
       ['idfa', 'IDFA'],
       ['androidid', 'Android ID'],
@@ -895,33 +895,38 @@ export const skitMenuGroups: SkitMenuGroup[] = [
     title: '短剧运营',
     items: [
       { key: 'drama', title: '短剧管理', routeName: 'SkitDrama' },
-      { key: 'adRecord', title: '广告记录', routeName: 'SkitAdRecord', totalRows: 943 },
+      { key: 'adRecord', title: '广告记录', routeName: 'SkitAdRecord', totalRows: 947 },
       { key: 'withdraw', title: '积分提现', routeName: 'SkitWithdraw', totalRows: 26 },
-      { key: 'scoreLog', title: '积分记录', routeName: 'SkitScoreLog', totalRows: 1932 },
-      { key: 'promotionAgent', title: '代理管理', routeName: 'SkitPromotionAgent' },
-      { key: 'loginRecord', title: '登录记录', routeName: 'SkitLoginRecord', totalRows: 101 },
-      { key: 'deviceLog', title: '设备日志', routeName: 'SkitDeviceLog', totalRows: 103 },
-      { key: 'user', title: '用户管理', routeName: 'SkitUser', totalRows: 63 },
+      { key: 'scoreLog', title: '积分记录', routeName: 'SkitScoreLog', totalRows: 1936 },
+      { key: 'promotionAgent', title: '代理管理', routeName: 'SkitPromotionAgent', totalRows: 0 },
+      { key: 'loginRecord', title: '登录记录', routeName: 'SkitLoginRecord', totalRows: 1342 },
+      { key: 'deviceLog', title: '设备日志', routeName: 'SkitDeviceLog', totalRows: 153 },
+      { key: 'user', title: '用户管理', routeName: 'SkitUser', totalRows: 1258 },
       { key: 'announcement', title: '公告管理', routeName: 'SkitAnnouncement', totalRows: 2 }
     ]
   },
   {
     title: '抖音管理',
     items: [
-      { key: 'douyinMiniProgram', title: '抖音小程序', routeName: 'SkitDouyinMiniProgram' },
+      { key: 'douyinMiniProgram', title: '抖音小程序', routeName: 'SkitDouyinMiniProgram', totalRows: 3 },
       {
         key: 'douyinLoginRecord',
         title: '抖音登录记录',
         routeName: 'SkitDouyinLoginRecord',
-        totalRows: 16
+        totalRows: 1303
       },
       {
         key: 'douyinAdRecord',
         title: '抖音广告记录',
         routeName: 'SkitDouyinAdRecord',
-        totalRows: 22
+        totalRows: 717
       },
-      { key: 'douyinTrafficRecord', title: '抖音投流记录', routeName: 'SkitDouyinTrafficRecord' }
+      {
+        key: 'douyinTrafficRecord',
+        title: '抖音投流记录',
+        routeName: 'SkitDouyinTrafficRecord',
+        totalRows: 34513
+      }
     ]
   }
 ]
