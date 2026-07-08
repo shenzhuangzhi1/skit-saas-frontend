@@ -41,6 +41,8 @@ export interface SkitDashboardSummaryRespVO {
   scorePerYuan: number
 }
 
+export type SkitSystemConfigRespVO = Record<string, unknown>
+
 export interface PageResult<T> {
   list: T[]
   total: number
@@ -99,6 +101,28 @@ export const seedSkitAdminRecordPage = (pageKey: string) => {
 export const getSkitDashboardSummary = () => {
   return request.get<SkitDashboardSummaryRespVO>({
     url: '/skit/admin-record/dashboard-summary',
+    ...silent
+  })
+}
+
+export const getSkitSystemConfig = () => {
+  return request.get<SkitSystemConfigRespVO>({
+    url: '/skit/general/config',
+    ...silent
+  })
+}
+
+export const updateSkitSystemConfig = (data: Record<string, unknown>) => {
+  return request.put<boolean>({
+    url: '/skit/general/config',
+    data,
+    ...silent
+  })
+}
+
+export const resetSkitSystemConfig = () => {
+  return request.post<SkitSystemConfigRespVO>({
+    url: '/skit/general/config/reset',
     ...silent
   })
 }
