@@ -727,7 +727,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['os_name', '操作系统', 120],
       ['os_version', '系统版本', 120],
       ['host_app_name', '宿主APP名称', 150],
-      ['host_app_version', '宿主 App 版本号', 160],
+      ['host_app_version', '宿主App版本号', 160],
       ['ip', 'IP', 140],
       ['createtime', '创建时间', 170]
     ]),
@@ -752,7 +752,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['os_version', '系统版本'],
       ['android_version', '安卓版本'],
       ['host_app_name', '宿主APP名称'],
-      ['host_app_version', '宿主 App 版本号'],
+      ['host_app_version', '宿主App版本号'],
       ['app_version', '小游戏版本'],
       ['app_build', 'Build 号'],
       ['network_type', '网络类型'],
