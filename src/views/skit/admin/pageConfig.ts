@@ -51,6 +51,69 @@ const fields = (items: Array<[string, string, SkitSearchField['type']?]>): SkitS
   items.map(([prop, label, type = 'input']) => ({ prop, label, type }))
 
 export const skitPageConfigs: Record<string, SkitPageConfig> = {
+  systemConfig: {
+    key: 'systemConfig',
+    title: '系统配置',
+    parent: '常规管理',
+    liveRoute: '/manystore/general/config?addtabs=1',
+    apiPath: '/admin-api/skit/general/config',
+    description: '维护平台基础参数、上传策略、积分提现、广告收益和通知配置。',
+    columns: [],
+    searchFields: [],
+    toolbar: ['提交', '重置'],
+    sections: [
+      {
+        title: '基础配置',
+        fields: fields([
+          ['site_name', '站点名称'],
+          ['site_title', '站点标题'],
+          ['site_logo', '站点 Logo'],
+          ['site_icp', 'ICP备案号'],
+          ['site_copyright', '版权信息']
+        ])
+      },
+      {
+        title: '上传配置',
+        fields: fields([
+          ['upload_storage', '上传方式'],
+          ['upload_max_size', '最大上传大小'],
+          ['upload_exts', '允许上传后缀'],
+          ['upload_cdn_url', 'CDN 地址'],
+          ['upload_callback_url', '上传回调地址']
+        ])
+      },
+      {
+        title: '积分提现配置',
+        fields: fields([
+          ['score_per_yuan', '每元兑换积分'],
+          ['withdraw_min_amount', '最低提现金额'],
+          ['withdraw_fee_rate', '提现手续费比例'],
+          ['withdraw_fixed_fee', '提现固定手续费'],
+          ['withdraw_review_mode', '提现审核模式']
+        ])
+      },
+      {
+        title: '广告收益配置',
+        fields: fields([
+          ['ad_base_score', '广告基础积分'],
+          ['max_ad_score', '单日最高积分'],
+          ['self_commission_rate', '本人佣金比例'],
+          ['agent_commission_rate', '代理佣金比例'],
+          ['reward_enabled', '广告奖励开关']
+        ])
+      },
+      {
+        title: '通知配置',
+        fields: fields([
+          ['sms_sign', '短信签名'],
+          ['mail_host', '邮件服务器'],
+          ['mail_username', '邮件账号'],
+          ['mail_from', '发件人'],
+          ['notify_webhook', '通知 Webhook']
+        ])
+      }
+    ]
+  },
   attachment: {
     key: 'attachment',
     title: '附件管理',
@@ -783,6 +846,7 @@ export const skitMenuGroups: SkitMenuGroup[] = [
   {
     title: '常规管理',
     items: [
+      { key: 'systemConfig', title: '系统配置', routeName: 'SkitSystemConfig' },
       { key: 'attachment', title: '附件管理', routeName: 'SkitAttachment', totalRows: 2 },
       { key: 'profile', title: '个人资料', routeName: 'SkitProfile' },
       { key: 'operationLog', title: '操作日志', routeName: 'SkitOperationLog', totalRows: 147 }

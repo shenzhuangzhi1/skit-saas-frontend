@@ -75,7 +75,7 @@
         </section>
       </div>
 
-      <div class="fixed-table-toolbar">
+      <div v-if="hasTable" class="fixed-table-toolbar">
         <div class="toolbar">
           <button class="btn btn-primary" type="button" title="刷新" @click="refreshTable">
             <Icon icon="ep:refresh" />
@@ -191,7 +191,7 @@
         </div>
       </div>
 
-      <div class="fixed-table-container">
+      <div v-if="hasTable" class="fixed-table-container">
         <div v-if="loading" class="fixed-table-loading">正在努力地加载数据中，请稍候……</div>
         <div class="fixed-table-body">
           <table class="table table-striped table-bordered table-hover table-nowrap">
@@ -251,7 +251,7 @@
         </div>
       </div>
 
-      <div class="fixed-table-pagination">
+      <div v-if="hasTable" class="fixed-table-pagination">
         <div class="pull-left pagination-detail">
           <span>
             显示第 {{ rangeStart }} 到第 {{ rangeEnd }} 条记录，总共
@@ -385,6 +385,7 @@ const hasSelection = computed(() =>
 const availableColumns = computed(() =>
   page.value.columns.filter((column) => column.prop !== 'state' && column.prop !== '0')
 )
+const hasTable = computed(() => availableColumns.value.length > 0 || hasSelection.value)
 const visibleColumns = computed(() =>
   availableColumns.value.filter((column) => visibleColumnKeys.value.has(column.prop))
 )
@@ -501,6 +502,12 @@ const buildRow = (index: number) => {
 const loadPageRows = async (fallback = true) => {
   const seq = backendLoadSeq.value + 1
   backendLoadSeq.value = seq
+  if (!hasTable.value) {
+    tableRows.value = []
+    backendAvailable.value = false
+    loading.value = false
+    return
+  }
   loading.value = true
   try {
     const records = await fetchAllBackendRows(page.value.key)
@@ -941,6 +948,31 @@ const defaultProfileValue = (prop: string) => {
     username: '123456',
     email: '123456@qq.com',
     nickname: '123456',
+    site_name: '短剧 SaaS 管理平台',
+    site_title: '精准短剧',
+    site_logo: '/favicon.ico',
+    site_icp: '粤ICP备00000000号',
+    site_copyright: 'Copyright © 2026',
+    upload_storage: 'local',
+    upload_max_size: '20MB',
+    upload_exts: 'jpg,png,gif,mp4,zip,pdf',
+    upload_cdn_url: '',
+    upload_callback_url: '/admin-api/skit/upload/callback',
+    score_per_yuan: '1000',
+    withdraw_min_amount: '1.00',
+    withdraw_fee_rate: '0',
+    withdraw_fixed_fee: '0',
+    withdraw_review_mode: '人工审核',
+    ad_base_score: '10',
+    max_ad_score: '1000',
+    self_commission_rate: '100',
+    agent_commission_rate: '10',
+    reward_enabled: '开启',
+    sms_sign: '精准短剧',
+    mail_host: 'smtp.example.com',
+    mail_username: 'notice@example.com',
+    mail_from: 'notice@example.com',
+    notify_webhook: '',
     name: '我的网站',
     reviewStatus: '待审核'
   }

@@ -99,6 +99,13 @@ const remainingRouter: AppRouteRecordRaw[] = [
         meta: { title: '常规管理', icon: 'ep:setting', alwaysShow: true },
         children: [
           {
+            path: 'config',
+            component: () => import('@/views/skit/admin/AdminTable.vue'),
+            name: 'SkitSystemConfig',
+            props: { pageKey: 'systemConfig' },
+            meta: { title: '系统配置', icon: 'ep:tools', noCache: false }
+          },
+          {
             path: 'attachment',
             component: () => import('@/views/skit/admin/AdminTable.vue'),
             name: 'SkitAttachment',
