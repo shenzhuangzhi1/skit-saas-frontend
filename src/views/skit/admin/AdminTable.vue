@@ -490,7 +490,7 @@ const buildRows = () => {
 const buildRow = (index: number) => {
   const row: TableRow = {}
   page.value.columns.forEach((column) => {
-    row[column.prop] = valueFor(column.prop, index)
+    row[column.prop] = valueFor(page.value.key, column.prop, index)
   })
   return row
 }
@@ -593,7 +593,7 @@ const backendId = (row: TableRow) => {
   return Number.isFinite(id) && id > 0 ? id : undefined
 }
 
-const valueFor = (prop: string, index: number): string | number => {
+const valueFor = (targetPageKey: string, prop: string, index: number): string | number => {
   const id = 1000 + index
   if (prop === 'id') return sampleId(index)
   if (prop === 'trans_id')
@@ -620,13 +620,17 @@ const valueFor = (prop: string, index: number): string | number => {
   if (prop === 'appsecret') return '******'
   if (prop.includes('ip')) return `192.0.2.${index}`
   if (prop === 'browser') return 'Mozilla/5.0'
+  if (prop === 'payment_status_text') return index % 4 === 0 ? '已打款' : '未打款'
+  if (prop === 'ban_status_text') return '未封禁'
   if (prop === 'status' || prop.includes('status')) return index % 3 === 0 ? '待处理' : '正常'
   if (prop.startsWith('is_')) return index % 2 === 0 ? '否' : '是'
+  if (prop === 'fee') return (index * 0.03).toFixed(2)
+  if (prop === 'real_money') return (index * 3.24).toFixed(2)
   if (prop.includes('money') || prop === 'fee') return (index * 3.27).toFixed(2)
   if (prop.includes('score') || prop === 'before' || prop === 'after') return index * 100
   if (prop.includes('ratio') || prop.includes('rate')) return `${10 + index}%`
   if (prop === 'operate' || prop === 'state' || prop === '0') return ''
-  return dictionaryValue(prop, index)
+  return dictionaryValue(targetPageKey, prop, index)
 }
 
 const sampleId = (index: number) => {
@@ -634,12 +638,28 @@ const sampleId = (index: number) => {
   return ids[index - 1] || 16000 - index
 }
 
-const dictionaryValue = (prop: string, index: number) => {
+const titleFor = (targetPageKey: string, index: number) => {
+  if (targetPageKey === 'drama') {
+    const names = ['重生后我逆袭成王', '闪婚后傅总追妻忙', '保洁妈妈是首富', '离婚后前夫后悔了']
+    return `${names[(index - 1) % names.length]} ${index}`
+  }
+  if (targetPageKey === 'operationLog') return `后台访问 ${index}`
+  if (targetPageKey === 'adminLog') return `管理员操作日志 ${index}`
+  if (targetPageKey === 'announcement') return `公告标题 ${index}`
+  return `记录标题 ${index}`
+}
+
+const dictionaryValue = (targetPageKey: string, prop: string, index: number) => {
   const dictionary: Record<string, string | number> = {
-    title: `公告标题 ${index}`,
+    title: titleFor(targetPageKey, index),
     category: ['都市', '逆袭', '甜宠', '悬疑'][index % 4],
     episodes: 80 + (index % 20),
     content: `公告正文摘要 ${index}`,
+    url: `/manystore/${targetPageKey}?page=${index}`,
+    groups_text: '超级管理员',
+    rules: '全部权限',
+    cover: `/uploads/20260708/drama-cover-${index}.jpg`,
+    avatar: `/uploads/20260708/avatar-${index}.png`,
     filename: `upload-${index}.png`,
     preview: '预览',
     filesize: `${300 + index * 12} KB`,
@@ -655,30 +675,85 @@ const dictionaryValue = (prop: string, index: number) => {
     payment_status_text: '未打款',
     reject_reason: '-',
     memo: '广告奖励',
+    agent_ratio: 20 + index,
+    member_self_ratio: 100,
+    member_parent_ratio: 10,
+    member_grandparent_ratio: 5,
+    descendant_count: index % 7,
+    today_agent_points: index * 12,
+    total_agent_points: index * 320,
+    remark: '默认分佣规则',
     login_type: '手机号',
+    device_id: `device-${String(index).padStart(4, '0')}`,
+    idf: `idf-${String(index).padStart(4, '0')}`,
+    idfa: `idfa-${String(index).padStart(4, '0')}`,
+    idfv: `idfv-${String(index).padStart(4, '0')}`,
+    oaid: `oaid-${String(index).padStart(4, '0')}`,
+    imei: `860000000000${String(index).padStart(3, '0')}`,
+    android_id: `android-${String(index).padStart(4, '0')}`,
     device_platform: index % 2 === 0 ? 'android' : 'ios',
     device_brand: index % 2 === 0 ? 'Redmi' : 'iPhone',
     device_model: index % 2 === 0 ? 'K70' : 'iPhone 15',
     os_name: index % 2 === 0 ? 'Android' : 'iOS',
     os_version: index % 2 === 0 ? 'Android 13' : 'iOS 17',
+    android_version: index % 2 === 0 ? '13' : '-',
+    app_version: `1.0.${index % 9}`,
+    app_build: `100${index}`,
+    package_name: 'com.skit.duanju',
     network_type: 'wifi',
+    sim_state: 'ready',
+    sim_operator: index % 2 === 0 ? '中国移动' : '中国联通',
+    sim_count: index % 2 === 0 ? 2 : 1,
     province: '示例省',
     city: '示例市',
     district: '示例区',
+    country: '中国',
+    address: `示例市短剧产业园 ${index} 号`,
     location: '示例位置',
+    latitude: '23.1291',
+    longitude: '113.2644',
+    screen_size: index % 2 === 0 ? '1080x2400' : '1179x2556',
+    language: 'zh-CN',
+    timezone: 'Asia/Shanghai',
+    user_agent: `Mozilla/5.0 SkitApp/${index}`,
+    info_hash: `infohash-${index}`,
+    install_time: `2026-07-${String((index % 6) + 1).padStart(2, '0')} 08:00:00`,
     invite_code: `SKIT${1000 + index}`,
     ban_status_text: '未封禁',
+    ban_reason: '-',
+    direct_user_count: index % 8,
+    ad_reward_ratio: 100,
+    logintime: `2026-07-${String((index % 6) + 1).padStart(2, '0')} ${String((8 + index) % 24).padStart(2, '0')}:18:00`,
+    loginip: `192.0.2.${index}`,
+    jointime: `2026-06-${String((index % 20) + 1).padStart(2, '0')} ${String((8 + index) % 24).padStart(2, '0')}:18:00`,
     name: `精准短剧 ${index}`,
+    ad_base_score: 10,
+    self_commission_rate: 100,
+    max_ad_score: 1000,
+    withdraw_min_amount: '1.00',
+    withdraw_fee_rate: '0',
+    withdraw_fixed_fee: '0',
+    access_token_expiretime: `2026-07-${String((index % 6) + 1).padStart(2, '0')} 23:59:59`,
+    mini_program_id: (index % 3) + 1,
+    third_id: `third-${index}`,
+    openid: `openid-${index}`,
+    unionid: `unionid-${index}`,
+    anonymous_openid: `anonymous-${index}`,
     scene: '登录',
     ad_slot: 'rewarded',
     rewarded_count: index % 4,
     host_app_name: 'Douyin',
     host_app_version: '30.8.0',
-    type: 'active',
+    type: targetPageKey === 'douyinTrafficRecord' ? 'active' : '广告奖励',
     callback_url: 'https://callback.example.com/skit',
     model: 'V2047A',
+    request_time: `2026-07-${String((index % 6) + 1).padStart(2, '0')} ${String((9 + index) % 24).padStart(2, '0')}:10:00`,
+    request_ip: `198.51.100.${index}`,
+    param_ip: `203.0.113.${index}`,
+    os: index % 2 === 0 ? 'android' : 'ios',
     csite: 'site',
-    sl: 'sl'
+    sl: 'sl',
+    dedupe_hash: `dedupe-${index}`
   }
   return dictionary[prop] || `${prop}-${index}`
 }
@@ -857,7 +932,9 @@ const saveEditor = async () => {
     page.value.columns.forEach((column) => {
       row[column.prop] =
         editorModel[column.prop] ||
-        (column.prop === 'id' ? tableRows.value.length + 1 : valueFor(column.prop, 1))
+        (column.prop === 'id'
+          ? tableRows.value.length + 1
+          : valueFor(page.value.key, column.prop, 1))
     })
     tableRows.value.unshift(row)
   } else {
