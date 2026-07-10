@@ -42,30 +42,74 @@
         </div>
       </div>
 
-      <div v-if="page.sections?.length" class="profile-forms">
-        <section v-for="section in page.sections" :key="section.title" class="profile-section">
-          <h3>{{ section.title }}</h3>
-          <div class="commonsearch-grid">
-            <label v-for="field in section.fields" :key="field.prop" class="commonsearch-item">
-              <span>{{ field.label }}</span>
-              <textarea
-                v-if="field.prop === 'content'"
-                v-model="formModel[field.prop]"
-                class="form-control"
-                rows="3"
-              ></textarea>
-              <input v-else v-model="formModel[field.prop]" class="form-control" />
-            </label>
-          </div>
-          <div class="commonsearch-actions">
-            <button class="btn btn-success" type="button" @click="saveProfile(section.title)">
-              提交
-            </button>
-            <button class="btn btn-default" type="button" @click="resetProfile(section.fields)">
-              重置
+      <div
+        v-if="page.sections?.length"
+        class="profile-forms"
+        :class="{ 'profile-forms--tabs': sectionTabsEnabled }"
+      >
+        <template v-if="sectionTabsEnabled">
+          <div class="config-tabs" role="tablist">
+            <button
+              v-for="(section, index) in page.sections"
+              :key="section.title"
+              class="config-tab"
+              :class="{ active: activeSectionIndex === index }"
+              type="button"
+              role="tab"
+              :aria-selected="activeSectionIndex === index"
+              @click="activeSectionIndex = index"
+            >
+              {{ section.title }}
             </button>
           </div>
-        </section>
+          <section v-if="activeSection" class="profile-section profile-section--tab">
+            <div class="commonsearch-grid">
+              <label v-for="field in activeSection.fields" :key="field.prop" class="commonsearch-item">
+                <span>{{ field.label }}</span>
+                <textarea
+                  v-if="field.prop === 'content'"
+                  v-model="formModel[field.prop]"
+                  class="form-control"
+                  rows="3"
+                ></textarea>
+                <input v-else v-model="formModel[field.prop]" class="form-control" />
+              </label>
+            </div>
+            <div class="commonsearch-actions">
+              <button class="btn btn-success" type="button" @click="saveProfile(activeSection.title)">
+                提交
+              </button>
+              <button class="btn btn-default" type="button" @click="resetProfile(activeSection.fields)">
+                重置
+              </button>
+            </div>
+          </section>
+        </template>
+        <template v-else>
+          <section v-for="section in page.sections" :key="section.title" class="profile-section">
+            <h3>{{ section.title }}</h3>
+            <div class="commonsearch-grid">
+              <label v-for="field in section.fields" :key="field.prop" class="commonsearch-item">
+                <span>{{ field.label }}</span>
+                <textarea
+                  v-if="field.prop === 'content'"
+                  v-model="formModel[field.prop]"
+                  class="form-control"
+                  rows="3"
+                ></textarea>
+                <input v-else v-model="formModel[field.prop]" class="form-control" />
+              </label>
+            </div>
+            <div class="commonsearch-actions">
+              <button class="btn btn-success" type="button" @click="saveProfile(section.title)">
+                提交
+              </button>
+              <button class="btn btn-default" type="button" @click="resetProfile(section.fields)">
+                重置
+              </button>
+            </div>
+          </section>
+        </template>
       </div>
 
       <div v-if="hasTable" class="fixed-table-toolbar">
@@ -387,6 +431,7 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const pageSizes = [10, 25, 50, 100]
 const pageSizeMenuOpen = ref(false)
+const activeSectionIndex = ref(0)
 const jumpValue = ref('')
 const editorVisible = ref(false)
 const editorMode = ref<'add' | 'edit' | 'view'>('add')
@@ -407,6 +452,11 @@ const availableColumns = computed(() =>
 )
 const hasTable = computed(() => availableColumns.value.length > 0 || hasSelection.value)
 const isSystemConfigPage = computed(() => page.value.key === 'systemConfig')
+const sectionTabsEnabled = computed(() => isSystemConfigPage.value && (page.value.sections?.length || 0) > 1)
+const activeSection = computed(() => {
+  const sections = page.value.sections || []
+  return sections[activeSectionIndex.value] || sections[0]
+})
 const visibleColumns = computed(() =>
   availableColumns.value.filter((column) => visibleColumnKeys.value.has(column.prop))
 )
@@ -1167,6 +1217,7 @@ watch(
     currentPage.value = 1
     pageSize.value = 10
     pageSizeMenuOpen.value = false
+    activeSectionIndex.value = 0
     advancedVisible.value = false
     columnMenuOpen.value = false
     exportMenuOpen.value = false
@@ -1267,6 +1318,45 @@ textarea.form-control {
   margin-bottom: 12px;
 }
 
+.profile-forms--tabs {
+  display: block;
+}
+
+.config-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-bottom: -1px;
+  border-bottom: 1px solid #ddd;
+}
+
+.config-tab {
+  min-width: 110px;
+  height: 38px;
+  padding: 8px 15px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 3px 3px 0 0;
+  background: transparent;
+  color: #337ab7;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+
+  &.active {
+    border-color: #ddd;
+    background: #fff;
+    color: #333;
+    cursor: default;
+  }
+
+  &:not(.active):hover {
+    background: #f5f5f5;
+    color: #23527c;
+  }
+}
+
 .profile-section {
   padding: 12px;
   border: 1px solid #eee;
@@ -1276,6 +1366,12 @@ textarea.form-control {
     color: #333;
     font-size: 15px;
   }
+}
+
+.profile-section--tab {
+  min-height: 210px;
+  border-color: #ddd;
+  border-top: 0;
 }
 
 .fixed-table-toolbar {
