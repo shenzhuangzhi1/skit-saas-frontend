@@ -123,10 +123,10 @@
           </div>
         </div>
         <el-table :data="rankRows" height="392" class="skit-rank-table">
-          <el-table-column prop="module" label="模块" min-width="130" />
-          <el-table-column prop="records" label="记录数" width="110" align="right" />
-          <el-table-column prop="focus" label="运营重点" min-width="220" />
-          <el-table-column prop="route" label="入口" width="120">
+          <el-table-column prop="module" label="模块" min-width="108" />
+          <el-table-column prop="records" label="记录数" width="88" align="right" />
+          <el-table-column prop="focus" label="运营重点" min-width="200" show-overflow-tooltip />
+          <el-table-column prop="route" label="入口" width="82">
             <template #default="{ row }">
               <el-button link type="primary" @click="go(row.routeName)">打开</el-button>
             </template>
