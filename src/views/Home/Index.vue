@@ -702,7 +702,7 @@ onMounted(refreshDashboard)
 
 .skit-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(420px, 0.92fr);
+  grid-template-columns: minmax(360px, 0.9fr) minmax(560px, 1.1fr);
   gap: 14px;
 }
 
