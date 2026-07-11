@@ -53,6 +53,7 @@ declare module 'vue-router' {
     link?: string
     params?: Recordable
     query?: Recordable
+    roles?: string[]
   }
 }
 

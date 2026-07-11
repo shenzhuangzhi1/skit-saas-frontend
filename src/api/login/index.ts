@@ -1,7 +1,5 @@
 import request from '@/config/axios'
-import type { RegisterVO, UserLoginVO } from './types'
-
-const isSkitDemoLogin = () => import.meta.env.VITE_SKIT_DEMO_LOGIN === 'true'
+import type { RegisterVO, TokenType, UserLoginVO } from './types'
 
 export interface SmsCodeVO {
   mobile: string
@@ -15,21 +13,7 @@ export interface SmsLoginVO {
 
 // 登录
 export const login = (data: UserLoginVO) => {
-  if (isSkitDemoLogin()) {
-    if (data.username !== '123456' || data.password !== '123456') {
-      return Promise.reject(new Error('账号或密码错误'))
-    }
-    return Promise.resolve({
-      id: 1,
-      accessToken: 'skit-demo-access-token',
-      refreshToken: 'skit-demo-refresh-token',
-      userId: 1,
-      userType: 2,
-      clientId: 'skit-saas-demo',
-      expiresTime: Date.now() + 7 * 24 * 60 * 60 * 1000
-    })
-  }
-  return request.post({
+  return request.post<TokenType>({
     url: '/system/auth/login',
     data,
     headers: {
@@ -60,25 +44,6 @@ export const loginOut = () => {
 
 // 获取用户权限信息
 export const getInfo = () => {
-  if (isSkitDemoLogin()) {
-    return Promise.resolve({
-      permissions: ['*:*:*'],
-      roles: ['admin'],
-      user: {
-        id: 1,
-        username: '123456',
-        nickname: '123456',
-        deptId: 0,
-        email: '123456@example.com',
-        mobile: '',
-        sex: 0,
-        avatar: '',
-        loginIp: '127.0.0.1',
-        loginDate: new Date().toISOString()
-      },
-      menus: []
-    })
-  }
   return request.get({ url: '/system/auth/get-permission-info' })
 }
 

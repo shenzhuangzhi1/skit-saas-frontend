@@ -4,8 +4,16 @@ import { cloneDeep } from 'lodash-es'
 import remainingRouter from '@/router/modules/remaining'
 import { flatMultiLevelRoutes, generateRoute } from '@/utils/routerHelper'
 import { CACHE_KEY, useCache } from '@/hooks/web/useCache'
+import { hasAnyRole } from '@/utils/role'
 
 const { wsCache } = useCache()
+
+const filterRoutesByRole = (routes: AppRouteRecordRaw[], roles: string[]): AppRouteRecordRaw[] =>
+  routes.flatMap((route) => {
+    if (!hasAnyRole(route.meta?.roles, roles)) return []
+    const children = route.children ? filterRoutesByRole(route.children, roles) : undefined
+    return [{ ...route, ...(children ? { children } : {}) }]
+  })
 
 export interface PermissionState {
   routers: AppRouteRecordRaw[]
@@ -60,7 +68,9 @@ export const usePermissionStore = defineStore('permission', {
           }
         ])
         // 渲染菜单的所有路由
-        this.routers = cloneDeep(remainingRouter).concat(routerMap)
+        const userInfo = wsCache.get(CACHE_KEY.USER)
+        const roles = (userInfo?.roles || []) as string[]
+        this.routers = filterRoutesByRole(cloneDeep(remainingRouter), roles).concat(routerMap)
         resolve()
       })
     },

@@ -48,7 +48,8 @@ export interface PageResult<T> {
   total: number
 }
 
-const silent = { skipErrorMessage: true, headers: { isToken: false } }
+// 业务数据必须随登录 token 与 tenant-id 访问；这里只静默处理页面级错误提示。
+const silent = { skipErrorMessage: true }
 
 export const getSkitAdminRecordPage = (params: SkitAdminRecordPageReqVO) => {
   return request.get<PageResult<SkitAdminRecordRespVO>>({

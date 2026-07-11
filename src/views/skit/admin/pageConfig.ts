@@ -419,11 +419,11 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
   },
   promotionAgent: {
     key: 'promotionAgent',
-    title: '代理管理',
+    title: '代理商租户管理',
     liveRoute: '/manystore/promotion_agent?addtabs=1',
     apiPath: '/admin-api/skit/promotion-agents',
     totalRows: 0,
-    description: '配置代理和下级会员分佣比例，查看绑定用户数和佣金积分。',
+    description: '管理代理商租户、广告平台账号、成员体系和任意层级广告分成。',
     columns: cols([
       ['0', '选择', 48],
       ['id', 'ID', 80],
@@ -900,7 +900,7 @@ export const skitMenuGroups: SkitMenuGroup[] = [
       { key: 'adRecord', title: '广告记录', routeName: 'SkitAdRecord', totalRows: 947 },
       { key: 'withdraw', title: '积分提现', routeName: 'SkitWithdraw', totalRows: 26 },
       { key: 'scoreLog', title: '积分记录', routeName: 'SkitScoreLog', totalRows: 1936 },
-      { key: 'promotionAgent', title: '代理管理', routeName: 'SkitPromotionAgent', totalRows: 0 },
+      { key: 'promotionAgent', title: '代理商租户管理', routeName: 'SkitPromotionAgent' },
       { key: 'loginRecord', title: '登录记录', routeName: 'SkitLoginRecord', totalRows: 1342 },
       { key: 'deviceLog', title: '设备日志', routeName: 'SkitDeviceLog', totalRows: 153 },
       { key: 'user', title: '用户管理', routeName: 'SkitUser', totalRows: 1258 },
@@ -910,7 +910,12 @@ export const skitMenuGroups: SkitMenuGroup[] = [
   {
     title: '抖音管理',
     items: [
-      { key: 'douyinMiniProgram', title: '抖音小程序', routeName: 'SkitDouyinMiniProgram', totalRows: 3 },
+      {
+        key: 'douyinMiniProgram',
+        title: '抖音小程序',
+        routeName: 'SkitDouyinMiniProgram',
+        totalRows: 3
+      },
       {
         key: 'douyinLoginRecord',
         title: '抖音登录记录',

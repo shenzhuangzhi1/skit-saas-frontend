@@ -191,10 +191,15 @@ const remainingRouter: AppRouteRecordRaw[] = [
       },
       {
         path: 'promotion-agent',
-        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        alias: ['/skit/tenant-management'],
+        component: () => import('@/views/skit/tenant/index.vue'),
         name: 'SkitPromotionAgent',
-        props: { pageKey: 'promotionAgent' },
-        meta: { title: '代理管理', icon: 'ep:share', noCache: false }
+        meta: {
+          title: '代理商租户管理',
+          icon: 'ep:office-building',
+          noCache: true,
+          roles: ['super_admin', 'tenant_admin']
+        }
       },
       {
         path: 'login-record',

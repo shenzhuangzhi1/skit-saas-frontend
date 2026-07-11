@@ -9,6 +9,7 @@ import { useDictStoreWithOut } from '@/store/modules/dict'
 import { useUserStoreWithOut } from '@/store/modules/user'
 import { usePermissionStoreWithOut } from '@/store/modules/permission'
 import { parseRouteLocation } from '@/utils/routeParams'
+import { hasAnyRole } from '@/utils/role'
 
 const { start, done } = useNProgress()
 
@@ -49,6 +50,10 @@ router.beforeEach(async (to, from, next) => {
         permissionStore.getAddRouters.forEach((route) => {
           router.addRoute(route as unknown as RouteRecordRaw) // 动态添加可访问路由表
         })
+        if (!hasAnyRole(to.meta.roles, userStore.getRoles)) {
+          next({ path: '/403', replace: true })
+          return
+        }
         const redirectPath = from.query.redirect
         // 修复跳转时不带参数的问题
         const redirect = typeof redirectPath === 'string' ? redirectPath : to.fullPath
@@ -59,7 +64,11 @@ router.beforeEach(async (to, from, next) => {
             : { ...redirectLocation, replace: true }
         next(nextData)
       } else {
-        next()
+        if (!hasAnyRole(to.meta.roles, userStore.getRoles)) {
+          next({ path: '/403', replace: true })
+        } else {
+          next()
+        }
       }
     }
   } else {
