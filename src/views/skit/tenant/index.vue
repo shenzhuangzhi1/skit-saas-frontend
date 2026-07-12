@@ -157,6 +157,9 @@
         <el-tab-pane label="分成账本" name="ledger" lazy>
           <CommissionLedger :tenant-id="selectedAgent.tenantId" />
         </el-tab-pane>
+        <el-tab-pane label="App 发布" name="app-release" lazy>
+          <AppReleaseEditor :tenant-id="selectedAgent.tenantId" />
+        </el-tab-pane>
       </el-tabs>
     </ContentWrap>
 
@@ -175,6 +178,7 @@ import AgentForm from './AgentForm.vue'
 import CommissionRuleEditor from './CommissionRuleEditor.vue'
 import MemberList from './MemberList.vue'
 import CommissionLedger from './CommissionLedger.vue'
+import AppReleaseEditor from './AppReleaseEditor.vue'
 
 defineOptions({ name: 'SkitTenantManagement' })
 

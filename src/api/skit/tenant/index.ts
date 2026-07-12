@@ -123,6 +123,19 @@ export interface TenantCommissionLedgerPageReqVO extends PageParam {
   beneficiaryUserId?: number
 }
 
+export interface TenantAppReleaseProfileVO {
+  tenantId: number
+  profileCode: string
+  channel: 'production' | 'staging'
+  minNativeVersion: string
+  hotVersion: string
+  hotBundleUrl: string
+  hotBundleSha256: string
+  nativeVersion: string
+  nativePackage: string
+  status: number
+}
+
 export const getTenantAgentPage = (params: TenantAgentPageReqVO) => {
   return request.get<PageResult<TenantAgentVO>>({ url: '/skit/tenant/agent/page', params })
 }
@@ -155,6 +168,17 @@ export const getTenantCommissionRules = (tenantId: number) => {
 
 export const updateTenantCommissionRules = (data: TenantCommissionRuleSaveReqVO) => {
   return request.put<boolean>({ url: '/skit/tenant/commission-rules', data })
+}
+
+export const getTenantAppReleaseProfile = (tenantId: number) => {
+  return request.get<TenantAppReleaseProfileVO>({
+    url: '/skit/tenant/app-release',
+    params: { tenantId }
+  })
+}
+
+export const updateTenantAppReleaseProfile = (data: TenantAppReleaseProfileVO) => {
+  return request.put<TenantAppReleaseProfileVO>({ url: '/skit/tenant/app-release', data })
 }
 
 export const getTenantMemberPage = (params: TenantMemberPageReqVO) => {
