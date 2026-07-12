@@ -114,7 +114,14 @@ upsert_env FRONTEND_IMAGE_TAG "${IMAGE_TAG}"
 upsert_env FRONTEND_PORT "${FRONTEND_PORT:-80}"
 
 compose -f docker-compose.prod.yml --env-file .env pull frontend
-compose -f docker-compose.prod.yml --env-file .env up -d frontend
+compose -f docker-compose.prod.yml --env-file .env up -d --no-deps --force-recreate frontend
+
+expected_image="${IMAGE_NAME}:${IMAGE_TAG}"
+actual_image="$(docker_cmd inspect --format '{{.Config.Image}}' skit-saas-frontend)"
+if [ "${actual_image}" != "${expected_image}" ]; then
+  echo "Frontend container image mismatch: expected ${expected_image}, got ${actual_image}"
+  exit 1
+fi
 
 for _ in $(seq 1 60); do
   if curl -fsS "http://127.0.0.1:${FRONTEND_PORT:-80}/" >/dev/null; then

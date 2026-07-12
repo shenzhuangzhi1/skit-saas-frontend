@@ -61,10 +61,16 @@ service.interceptors.request.use(
     if (getAccessToken() && isToken) {
       config.headers.Authorization = 'Bearer ' + getAccessToken() // 让每个请求携带自定义 token
     }
-    // 设置租户
-    // 账号密码登录由后端按用户名解析租户，不能附带上一次会话遗留的 tenant-id。
-    const isUsernameLoginRequest = config.url?.includes('/system/auth/login')
-    if (tenantEnable && tenantEnable === 'true' && !isUsernameLoginRequest) {
+    // 身份认证入口由后端按唯一绑定关系解析租户，不能附带上一次会话遗留的 tenant-id。
+    const tenantResolutionPaths = [
+      '/system/auth/login',
+      '/system/auth/sms-login',
+      '/system/auth/social-login',
+      '/system/auth/send-sms-code',
+      '/system/auth/reset-password'
+    ]
+    const isTenantResolutionRequest = tenantResolutionPaths.some((path) => config.url?.includes(path))
+    if (tenantEnable && tenantEnable === 'true' && !isTenantResolutionRequest) {
       const tenantId = getTenantId()
       if (tenantId) config.headers['tenant-id'] = tenantId
       // 只有登录时，才设置 visit-tenant-id 访问租户
