@@ -23,12 +23,16 @@ export const getRefreshToken = () => {
 export const setToken = (token: TokenType) => {
   wsCache.set(RefreshTokenKey, token.refreshToken)
   wsCache.set(AccessTokenKey, token.accessToken)
+  if (token.tenantId != null) {
+    wsCache.set(CACHE_KEY.TenantId, token.tenantId)
+  }
 }
 
 // 删除token
 export const removeToken = () => {
   wsCache.delete(AccessTokenKey)
   wsCache.delete(RefreshTokenKey)
+  wsCache.delete(CACHE_KEY.TenantId)
 }
 
 /** 格式化token（jwt格式） */
@@ -44,7 +48,8 @@ export const getCurrentUserId = (): number => {
 }
 
 export type LoginFormType = {
-  tenantName: string
+  // 仅兼容第三方/短信等尚未能通过用户名识别租户的登录流程。
+  tenantName?: string
   username: string
   password: string
   rememberMe: boolean
@@ -75,6 +80,10 @@ export const getTenantId = () => {
 
 export const setTenantId = (tenantId: number) => {
   wsCache.set(CACHE_KEY.TenantId, tenantId)
+}
+
+export const removeTenantId = () => {
+  wsCache.delete(CACHE_KEY.TenantId)
 }
 
 export const getVisitTenantId = () => {

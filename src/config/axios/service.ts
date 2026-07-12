@@ -62,7 +62,9 @@ service.interceptors.request.use(
       config.headers.Authorization = 'Bearer ' + getAccessToken() // 让每个请求携带自定义 token
     }
     // 设置租户
-    if (tenantEnable && tenantEnable === 'true') {
+    // 账号密码登录由后端按用户名解析租户，不能附带上一次会话遗留的 tenant-id。
+    const isUsernameLoginRequest = config.url?.includes('/system/auth/login')
+    if (tenantEnable && tenantEnable === 'true' && !isUsernameLoginRequest) {
       const tenantId = getTenantId()
       if (tenantId) config.headers['tenant-id'] = tenantId
       // 只有登录时，才设置 visit-tenant-id 访问租户
