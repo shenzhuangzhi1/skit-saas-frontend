@@ -30,9 +30,6 @@
             每个代理商对应一个独立租户，并拥有独立的穿山甲、Taku 广告账号和分成规则。
           </el-text>
         </div>
-        <el-button type="primary" @click="openForm('create')">
-          <Icon icon="ep:plus" />新增代理商
-        </el-button>
       </div>
 
       <el-form ref="queryFormRef" :inline="true" :model="queryParams" class="-mb-15px">
@@ -162,8 +159,6 @@
         </el-tab-pane>
       </el-tabs>
     </ContentWrap>
-
-    <AgentForm ref="formRef" @success="getList" />
   </template>
 </template>
 
@@ -174,7 +169,6 @@ import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
 import { useUserStore } from '@/store/modules/user'
 import * as TenantApi from '@/api/skit/tenant'
-import AgentForm from './AgentForm.vue'
 import CommissionRuleEditor from './CommissionRuleEditor.vue'
 import MemberList from './MemberList.vue'
 import CommissionLedger from './CommissionLedger.vue'
@@ -250,11 +244,6 @@ const manageAgent = (row: TenantApi.TenantAgentVO) => {
 const copyInviteCode = async (inviteCode: string) => {
   await copyToClipboard(inviteCode)
   message.success('代理邀请码已复制')
-}
-
-const formRef = ref<InstanceType<typeof AgentForm>>()
-const openForm = (type: 'create' | 'update', tenantId?: number) => {
-  formRef.value?.open(type, tenantId)
 }
 
 const loadSelfInvitation = async () => {

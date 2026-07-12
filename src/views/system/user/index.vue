@@ -74,6 +74,9 @@
             >
               <Icon icon="ep:plus" /> 新增
             </el-button>
+            <el-button v-if="isPlatformAdmin" type="primary" @click="openAgentForm">
+              <Icon icon="ep:office-building" /> 新增代理商
+            </el-button>
             <el-button
               type="warning"
               plain
@@ -208,6 +211,8 @@
   <UserImportForm ref="importFormRef" @success="getList" />
   <!-- 分配角色 -->
   <UserAssignRoleForm ref="assignRoleFormRef" @success="getList" />
+  <!-- 平台管理员在用户管理中创建代理商及其绑定租户管理员 -->
+  <AgentForm ref="agentFormRef" @success="getList" />
 </template>
 <script lang="ts" setup>
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
@@ -220,11 +225,15 @@ import UserForm from './UserForm.vue'
 import UserImportForm from './UserImportForm.vue'
 import UserAssignRoleForm from './UserAssignRoleForm.vue'
 import DeptTreeSelect from '@/views/system/dept/components/DeptTreeSelect.vue'
+import AgentForm from '@/views/skit/tenant/AgentForm.vue'
+import { useUserStore } from '@/store/modules/user'
 
 defineOptions({ name: 'SystemUser' })
 
 const message = useMessage() // 消息弹窗
 const { t } = useI18n() // 国际化
+const userStore = useUserStore()
+const isPlatformAdmin = computed(() => userStore.getRoles.includes('super_admin'))
 
 const loading = ref(true) // 列表的加载中
 const total = ref(0) // 列表的总页数
@@ -274,6 +283,11 @@ const handleDeptNodeClick = async (deptId: number | undefined) => {
 const formRef = ref()
 const openForm = (type: string, id?: number) => {
   formRef.value.open(type, id)
+}
+
+const agentFormRef = ref<InstanceType<typeof AgentForm>>()
+const openAgentForm = () => {
+  agentFormRef.value?.open('create')
 }
 
 /** 用户导入 */
