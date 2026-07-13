@@ -9,25 +9,26 @@ export interface TenantAgentVO {
   tenantId: number
   tenantCode: string
   rootInviteCode: string
+  archivedTime?: number | null
+  archivedBy?: number | null
   name: string
-  contactName: string
-  contactMobile: string
+  mobile: string
   status: number
-  packageId: number
-  packageName?: string
-  expireTime: number | string
-  accountCount: number
-  username?: string
+  websites: string[]
+  expireTime: number
+  remark?: string
   pangleUsername?: string
   pangleAppId?: string
   panglePlacementId?: string
+  pangleEnabled?: boolean
   pangleSecretConfigured?: boolean
   takuUsername?: string
   takuAppId?: string
   takuPlacementId?: string
+  takuEnabled?: boolean
   takuAppKeyConfigured?: boolean
   takuSecretConfigured?: boolean
-  createTime?: string
+  createTime?: number
 }
 
 export interface TenantInvitationVO {
@@ -37,26 +38,69 @@ export interface TenantInvitationVO {
   tenantName: string
 }
 
-export interface TenantAgentSaveReqVO {
-  tenantId?: number
-  name: string
-  contactName: string
-  contactMobile: string
-  status: number
-  packageId: number
-  expireTime: number | string
-  accountCount: number
-  username?: string
-  password?: string
+interface TenantAgentProviderWriteFields {
   pangleUsername?: string
   pangleAppId?: string
   pangleAppSecret?: string
   panglePlacementId?: string
+  pangleEnabled: boolean
   takuUsername?: string
   takuAppId?: string
   takuAppKey?: string
   takuAppSecret?: string
   takuPlacementId?: string
+  takuEnabled: boolean
+}
+
+export interface TenantAgentCreateReqVO extends TenantAgentProviderWriteFields {
+  name: string
+  mobile: string
+  password: string
+  status: number
+  expireTime: number
+}
+
+export interface TenantAgentUpdateReqVO extends TenantAgentProviderWriteFields {
+  tenantId: number
+  name: string
+  status: number
+  expireTime: number
+  remark?: string
+}
+
+export interface TenantAgentMobileUpdateReqVO {
+  tenantId: number
+  mobile: string
+}
+
+export interface TenantAgentPasswordResetReqVO {
+  tenantId: number
+  password: string
+}
+
+export type TenantAdProvider = 'PANGLE' | 'TAKU'
+
+export interface TenantAdAccountVO {
+  pangleUsername?: string
+  pangleAppId?: string
+  panglePlacementId?: string
+  pangleEnabled?: boolean
+  pangleSecretConfigured?: boolean
+  takuUsername?: string
+  takuAppId?: string
+  takuPlacementId?: string
+  takuEnabled?: boolean
+  takuAppKeyConfigured?: boolean
+  takuSecretConfigured?: boolean
+}
+
+export interface TenantAdAccountSaveReqVO extends TenantAgentProviderWriteFields {
+  tenantId?: number
+}
+
+export interface TenantAdCredentialClearReqVO {
+  tenantId?: number
+  provider: TenantAdProvider
 }
 
 export interface TenantAgentPageReqVO extends PageParam {
@@ -76,11 +120,11 @@ export interface TenantCommissionRuleSaveReqVO {
 
 export interface TenantMemberVO {
   id: number
-  userId?: number
-  username?: string
+  userId: number
+  username: string
   nickname?: string
-  mobile?: string
-  inviteCode?: string
+  mobile: string
+  inviteCode: string
   parentId?: number
   parentUserId?: number
   parentName?: string
@@ -88,13 +132,28 @@ export interface TenantMemberVO {
   inviterId?: number
   level?: number
   depth?: number
-  status?: number
-  createTime?: string
+  status: number
+  childCount?: number
+  createTime?: number
+  loginTime?: number
 }
 
 export interface TenantMemberPageReqVO extends PageParam {
-  tenantId: number
+  tenantId?: number
   keyword?: string
+  status?: number
+}
+
+export interface TenantMemberStatusUpdateReqVO {
+  tenantId?: number
+  id: number
+  status: number
+}
+
+export interface TenantMemberPasswordResetReqVO {
+  tenantId?: number
+  id: number
+  password: string
 }
 
 export interface TenantCommissionLedgerVO {
@@ -115,7 +174,7 @@ export interface TenantCommissionLedgerVO {
   revenueAmount?: number
   commissionAmount?: number
   status?: string
-  createTime?: string
+  createTime?: number
 }
 
 export interface TenantCommissionLedgerPageReqVO extends PageParam {
@@ -147,16 +206,57 @@ export const getTenantAgent = (tenantId: number) => {
   })
 }
 
-export const getTenantInvitation = () => {
-  return request.get<TenantInvitationVO>({ url: '/skit/tenant/invitation' })
+export const getTenantInvitation = (tenantId?: number) => {
+  return request.get<TenantInvitationVO>({
+    url: '/skit/tenant/invitation',
+    params: { tenantId }
+  })
 }
 
-export const createTenantAgent = (data: TenantAgentSaveReqVO) => {
+export const createTenantAgent = (data: TenantAgentCreateReqVO) => {
   return request.post<number>({ url: '/skit/tenant/agent/create', data })
 }
 
-export const updateTenantAgent = (data: TenantAgentSaveReqVO) => {
+export const updateTenantAgent = (data: TenantAgentUpdateReqVO) => {
   return request.put<boolean>({ url: '/skit/tenant/agent/update', data })
+}
+
+export const updateTenantAgentMobile = (data: TenantAgentMobileUpdateReqVO) => {
+  return request.put<boolean>({ url: '/skit/tenant/agent/update-mobile', data })
+}
+
+export const resetTenantAgentPassword = (data: TenantAgentPasswordResetReqVO) => {
+  return request.put<boolean>({ url: '/skit/tenant/agent/reset-password', data })
+}
+
+export const archiveTenantAgent = (tenantId: number) => {
+  return request.put<boolean>({ url: '/skit/tenant/agent/archive', params: { tenantId } })
+}
+
+export const restoreTenantAgent = (tenantId: number) => {
+  return request.put<boolean>({ url: '/skit/tenant/agent/restore', params: { tenantId } })
+}
+
+export const rotateTenantAgentRootInvite = (tenantId: number) => {
+  return request.put<string>({
+    url: '/skit/tenant/agent/rotate-root-invite',
+    params: { tenantId }
+  })
+}
+
+export const getTenantAdAccount = (tenantId?: number) => {
+  return request.get<TenantAdAccountVO>({
+    url: '/skit/tenant/ad-account',
+    params: { tenantId }
+  })
+}
+
+export const updateTenantAdAccount = (data: TenantAdAccountSaveReqVO) => {
+  return request.put<TenantAdAccountVO>({ url: '/skit/tenant/ad-account', data })
+}
+
+export const clearTenantAdAccountCredentials = (data: TenantAdCredentialClearReqVO) => {
+  return request.put<boolean>({ url: '/skit/tenant/ad-account/clear-credentials', data })
 }
 
 export const getTenantCommissionRules = (tenantId: number) => {
@@ -183,6 +283,21 @@ export const updateTenantAppReleaseProfile = (data: TenantAppReleaseProfileVO) =
 
 export const getTenantMemberPage = (params: TenantMemberPageReqVO) => {
   return request.get<PageResult<TenantMemberVO>>({ url: '/skit/tenant/member/page', params })
+}
+
+export const getTenantMember = (id: number, tenantId?: number) => {
+  return request.get<TenantMemberVO>({
+    url: '/skit/tenant/member/get',
+    params: { id, tenantId }
+  })
+}
+
+export const updateTenantMemberStatus = (data: TenantMemberStatusUpdateReqVO) => {
+  return request.put<boolean>({ url: '/skit/tenant/member/update-status', data })
+}
+
+export const resetTenantMemberPassword = (data: TenantMemberPasswordResetReqVO) => {
+  return request.put<boolean>({ url: '/skit/tenant/member/reset-password', data })
 }
 
 export const getTenantCommissionLedgerPage = (params: TenantCommissionLedgerPageReqVO) => {
