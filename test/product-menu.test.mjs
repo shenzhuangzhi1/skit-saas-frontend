@@ -47,3 +47,14 @@ test('permission store never registers backend framework menus', () => {
   assert.doesNotMatch(source, /\bgenerateRoute\b/)
   assert.doesNotMatch(source, /ROLE_ROUTERS/)
 })
+
+test('dashboard has no duplicate agent tenant entry', () => {
+  const source = readFileSync(
+    new URL('../src/views/skit/admin/pageConfig.ts', import.meta.url),
+    'utf8'
+  )
+
+  assert.doesNotMatch(source, /代理商租户管理/)
+  assert.doesNotMatch(source, /promotionAgent/)
+  assert.doesNotMatch(source, /SkitPromotionAgent/)
+})
