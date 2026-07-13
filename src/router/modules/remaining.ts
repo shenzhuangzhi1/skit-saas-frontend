@@ -205,10 +205,14 @@ const remainingRouter: AppRouteRecordRaw[] = [
       },
       {
         path: 'user',
-        component: () => import('@/views/skit/admin/AdminTable.vue'),
+        component: () => import('@/views/skit/tenant/index.vue'),
         name: 'SkitUser',
-        props: { pageKey: 'user' },
-        meta: { title: '用户管理', icon: 'ep:user', noCache: false }
+        meta: {
+          title: '用户管理',
+          icon: 'ep:user',
+          noCache: true,
+          roles: ['super_admin', 'tenant_admin']
+        }
       },
       {
         path: 'announcement',
