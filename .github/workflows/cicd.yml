@@ -30,7 +30,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: '22'
 
       - name: Enable pnpm
         run: |
@@ -42,11 +42,8 @@ jobs:
 
       - name: Build production assets
         env:
-          VITE_BASE_URL: ""
+          VITE_BASE_URL: ''
           VITE_API_URL: /admin-api
-          VITE_SKIT_DEMO_LOGIN: ${{ vars.VITE_SKIT_DEMO_LOGIN || 'true' }}
-          VITE_APP_DEFAULT_LOGIN_USERNAME: ${{ vars.VITE_APP_DEFAULT_LOGIN_USERNAME || '123456' }}
-          VITE_APP_DEFAULT_LOGIN_PASSWORD: ${{ vars.VITE_APP_DEFAULT_LOGIN_PASSWORD || '123456' }}
         run: pnpm build:prod
 
       - name: Login to GHCR
