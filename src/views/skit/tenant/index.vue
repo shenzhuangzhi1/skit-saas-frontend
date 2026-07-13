@@ -25,11 +25,14 @@
     <ContentWrap>
       <div class="mb-16px flex items-start justify-between gap-16px">
         <div>
-          <div class="text-18px font-600">代理商与多租户管理</div>
+          <div class="text-18px font-600">代理商管理</div>
           <el-text type="info">
             每个代理商对应一个独立租户，并拥有独立的穿山甲、Taku 广告账号和分成规则。
           </el-text>
         </div>
+        <el-button type="primary" @click="openCreateForm">
+          <Icon icon="ep:office-building" /> 新增代理商
+        </el-button>
       </div>
 
       <el-form ref="queryFormRef" :inline="true" :model="queryParams" class="-mb-15px">
@@ -160,6 +163,8 @@
       </el-tabs>
     </ContentWrap>
   </template>
+
+  <AgentForm ref="agentFormRef" @success="getList" />
 </template>
 
 <script lang="ts" setup>
@@ -173,6 +178,7 @@ import CommissionRuleEditor from './CommissionRuleEditor.vue'
 import MemberList from './MemberList.vue'
 import CommissionLedger from './CommissionLedger.vue'
 import AppReleaseEditor from './AppReleaseEditor.vue'
+import AgentForm from './AgentForm.vue'
 
 defineOptions({ name: 'SkitTenantManagement' })
 
@@ -189,6 +195,7 @@ const selectedAgent = ref<TenantApi.TenantAgentVO>()
 const activeTab = ref('commission')
 const queryFormRef = ref<FormInstance>()
 const agentTableRef = ref<InstanceType<typeof ElTable>>()
+const agentFormRef = ref<InstanceType<typeof AgentForm>>()
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
@@ -239,6 +246,14 @@ const manageAgent = (row: TenantApi.TenantAgentVO) => {
   nextTick(() =>
     document.querySelector('.tenant-detail-wrap')?.scrollIntoView({ behavior: 'smooth' })
   )
+}
+
+const openCreateForm = () => {
+  agentFormRef.value?.open('create')
+}
+
+const openForm = (type: 'update', tenantId: number) => {
+  agentFormRef.value?.open(type, tenantId)
 }
 
 const copyInviteCode = async (inviteCode: string) => {

@@ -190,18 +190,6 @@ const remainingRouter: AppRouteRecordRaw[] = [
         meta: { title: '积分记录', icon: 'ep:coin', noCache: false }
       },
       {
-        path: 'promotion-agent',
-        alias: ['/skit/tenant-management'],
-        component: () => import('@/views/skit/tenant/index.vue'),
-        name: 'SkitPromotionAgent',
-        meta: {
-          title: '代理商租户管理',
-          icon: 'ep:office-building',
-          noCache: true,
-          roles: ['super_admin', 'tenant_admin']
-        }
-      },
-      {
         path: 'login-record',
         component: () => import('@/views/skit/admin/AdminTable.vue'),
         name: 'SkitLoginRecord',
