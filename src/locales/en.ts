@@ -134,7 +134,6 @@ export default {
     remember: 'Remember me',
     hasUser: 'Existing account? Go to login',
     forgetPassword: 'Forget password?',
-    tenantNamePlaceholder: 'Please Enter Tenant Name',
     usernamePlaceholder: 'Please Enter Username',
     passwordPlaceholder: 'Please Enter Password',
     codePlaceholder: 'Please Enter Verification Code',

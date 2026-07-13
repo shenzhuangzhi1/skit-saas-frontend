@@ -135,7 +135,6 @@ export default {
     remember: '记住我',
     hasUser: '已有账号？去登录',
     forgetPassword: '忘记密码?',
-    tenantNamePlaceholder: '请输入租户名称',
     usernamePlaceholder: '请输入用户名',
     passwordPlaceholder: '请输入密码',
     codePlaceholder: '请输入验证码',

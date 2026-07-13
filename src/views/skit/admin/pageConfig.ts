@@ -210,82 +210,6 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     searchFields: [],
     toolbar: ['刷新', '切换列', '导出数据']
   },
-  adminUser: {
-    key: 'adminUser',
-    title: '管理员管理',
-    parent: '权限管理',
-    liveRoute: '/manystore/auth/manystore?addtabs=1',
-    apiPath: '/admin-api/skit/auth/admin-users',
-    totalRows: 1,
-    description: '后台管理员账号、角色组、状态和登录记录管理。',
-    columns: cols([
-      ['state', '选择', 48],
-      ['id', 'ID', 80],
-      ['username', '用户名', 130],
-      ['nickname', '昵称', 130],
-      ['groups_text', '所属组别', 160],
-      ['email', 'Email', 180],
-      ['status', '状态', 100],
-      ['logintime', '最后登录', 170],
-      ['operate', '操作', 130]
-    ]),
-    searchFields: fields([
-      ['id', 'ID'],
-      ['username', '用户名'],
-      ['nickname', '昵称'],
-      ['email', 'Email'],
-      ['status', '状态', 'select'],
-      ['logintime', '最后登录', 'dateRange']
-    ]),
-    toolbar: ['刷新', '添加', '删除', '普通搜索', '切换列', '导出数据']
-  },
-  adminLog: {
-    key: 'adminLog',
-    title: '管理员日志',
-    parent: '权限管理',
-    liveRoute: '/manystore/auth/manystorelog?addtabs=1',
-    apiPath: '/admin-api/skit/auth/admin-logs',
-    totalRows: 147,
-    description: '记录管理员访问页面、浏览器、IP 和日志标题。',
-    columns: cols([
-      ['state', '选择', 48],
-      ['id', 'ID', 80],
-      ['username', '管理员名字', 140],
-      ['title', '日志标题', 160],
-      ['url', '操作页面', 220],
-      ['ip', 'IP地址', 140],
-      ['browser', '浏览器', 220],
-      ['createtime', '创建时间', 170],
-      ['operate', '操作', 130]
-    ]),
-    searchFields: fields([
-      ['username', '管理员名字'],
-      ['title', '日志标题'],
-      ['url', '操作页面'],
-      ['ip', 'IP地址'],
-      ['createtime', '创建时间', 'dateRange']
-    ]),
-    toolbar: ['刷新', '删除', '普通搜索', '切换列', '导出数据', '详情'],
-    operateMode: 'detail'
-  },
-  group: {
-    key: 'group',
-    title: '角色组',
-    parent: '权限管理',
-    liveRoute: '/manystore/auth/group?addtabs=1',
-    apiPath: '/admin-api/skit/auth/groups',
-    description: '角色组树形权限管理，包含父级、名称、状态和操作入口。',
-    columns: cols([
-      ['state', '选择', 48],
-      ['id', 'ID', 80],
-      ['pid', '父级', 100],
-      ['name', '名称', 180],
-      ['status', '状态', 100],
-      ['operate', '操作', 130]
-    ]),
-    searchFields: fields([['id', 'ID']]),
-    toolbar: ['刷新', '添加', '删除', '切换列', '导出数据']
-  },
   drama: {
     key: 'drama',
     title: '短剧管理',
@@ -845,14 +769,6 @@ export const skitMenuGroups: SkitMenuGroup[] = [
       { key: 'attachment', title: '附件管理', routeName: 'SkitAttachment', totalRows: 2 },
       { key: 'profile', title: '个人资料', routeName: 'SkitProfile' },
       { key: 'operationLog', title: '操作日志', routeName: 'SkitOperationLog', totalRows: 147 }
-    ]
-  },
-  {
-    title: '权限管理',
-    items: [
-      { key: 'adminUser', title: '管理员管理', routeName: 'SkitAdminUser', totalRows: 1 },
-      { key: 'adminLog', title: '管理员日志', routeName: 'SkitAdminLog', totalRows: 147 },
-      { key: 'group', title: '角色组', routeName: 'SkitGroup' }
     ]
   },
   {

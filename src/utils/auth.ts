@@ -6,6 +6,7 @@ const { wsCache } = useCache()
 
 const AccessTokenKey = 'ACCESS_TOKEN'
 const RefreshTokenKey = 'REFRESH_TOKEN'
+const LegacyVisitTenantIdKey = 'visitTenantId'
 
 // 获取token
 export const getAccessToken = () => {
@@ -21,6 +22,8 @@ export const getRefreshToken = () => {
 
 // 设置token
 export const setToken = (token: TokenType) => {
+  // One-time compatibility cleanup for browsers that used the removed tenant switcher.
+  wsCache.delete(LegacyVisitTenantIdKey)
   wsCache.set(RefreshTokenKey, token.refreshToken)
   wsCache.set(AccessTokenKey, token.accessToken)
   if (token.tenantId != null) {
@@ -33,6 +36,7 @@ export const removeToken = () => {
   wsCache.delete(AccessTokenKey)
   wsCache.delete(RefreshTokenKey)
   wsCache.delete(CACHE_KEY.TenantId)
+  wsCache.delete(LegacyVisitTenantIdKey)
 }
 
 /** 格式化token（jwt格式） */
@@ -48,8 +52,6 @@ export const getCurrentUserId = (): number => {
 }
 
 export type LoginFormType = {
-  // 仅兼容第三方/短信等尚未能通过用户名识别租户的登录流程。
-  tenantName?: string
   username: string
   password: string
   rememberMe: boolean
@@ -84,12 +86,4 @@ export const setTenantId = (tenantId: number) => {
 
 export const removeTenantId = () => {
   wsCache.delete(CACHE_KEY.TenantId)
-}
-
-export const getVisitTenantId = () => {
-  return wsCache.get(CACHE_KEY.VisitTenantId)
-}
-
-export const setVisitTenantId = (visitTenantId: number) => {
-  wsCache.set(CACHE_KEY.VisitTenantId, visitTenantId)
 }

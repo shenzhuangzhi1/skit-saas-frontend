@@ -64,7 +64,11 @@
           </div>
           <section v-if="activeSection" class="profile-section profile-section--tab">
             <div class="commonsearch-grid">
-              <label v-for="field in activeSection.fields" :key="field.prop" class="commonsearch-item">
+              <label
+                v-for="field in activeSection.fields"
+                :key="field.prop"
+                class="commonsearch-item"
+              >
                 <span>{{ field.label }}</span>
                 <textarea
                   v-if="field.prop === 'content'"
@@ -76,10 +80,18 @@
               </label>
             </div>
             <div class="commonsearch-actions">
-              <button class="btn btn-success" type="button" @click="saveProfile(activeSection.title)">
+              <button
+                class="btn btn-success"
+                type="button"
+                @click="saveProfile(activeSection.title)"
+              >
                 提交
               </button>
-              <button class="btn btn-default" type="button" @click="resetProfile(activeSection.fields)">
+              <button
+                class="btn btn-default"
+                type="button"
+                @click="resetProfile(activeSection.fields)"
+              >
                 重置
               </button>
             </div>
@@ -297,8 +309,7 @@
       <div v-if="hasTable" class="fixed-table-pagination">
         <div class="pull-left pagination-detail">
           <span>
-            显示第 {{ rangeStart }} 到第 {{ rangeEnd }} 条记录，总共
-            {{ displayTotalRows }} 条记录
+            显示第 {{ rangeStart }} 到第 {{ rangeEnd }} 条记录，总共 {{ displayTotalRows }} 条记录
           </span>
           <span class="page-list">
             每页显示
@@ -452,7 +463,9 @@ const availableColumns = computed(() =>
 )
 const hasTable = computed(() => availableColumns.value.length > 0 || hasSelection.value)
 const isSystemConfigPage = computed(() => page.value.key === 'systemConfig')
-const sectionTabsEnabled = computed(() => isSystemConfigPage.value && (page.value.sections?.length || 0) > 1)
+const sectionTabsEnabled = computed(
+  () => isSystemConfigPage.value && (page.value.sections?.length || 0) > 1
+)
 const activeSection = computed(() => {
   const sections = page.value.sections || []
   return sections[activeSectionIndex.value] || sections[0]
@@ -518,9 +531,7 @@ const displayTotalRows = computed(() =>
       ? page.value.totalRows
       : filteredRows.value.length
 )
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(displayTotalRows.value / pageSize.value))
-)
+const totalPages = computed(() => Math.max(1, Math.ceil(displayTotalRows.value / pageSize.value)))
 const pagedRows = computed(() => {
   if (backendAvailable.value) return filteredRows.value
   const start = (currentPage.value - 1) * pageSize.value
@@ -739,7 +750,6 @@ const titleFor = (targetPageKey: string, index: number) => {
     return `${names[(index - 1) % names.length]} ${index}`
   }
   if (targetPageKey === 'operationLog') return `后台访问 ${index}`
-  if (targetPageKey === 'adminLog') return `管理员操作日志 ${index}`
   if (targetPageKey === 'announcement') return `公告标题 ${index}`
   return `记录标题 ${index}`
 }
@@ -751,8 +761,6 @@ const dictionaryValue = (targetPageKey: string, prop: string, index: number) => 
     episodes: 80 + (index % 20),
     content: `公告正文摘要 ${index}`,
     url: `/manystore/${targetPageKey}?page=${index}`,
-    groups_text: '超级管理员',
-    rules: '全部权限',
     cover: `/uploads/20260708/drama-cover-${index}.jpg`,
     avatar: `/uploads/20260708/avatar-${index}.png`,
     filename: `upload-${index}.png`,

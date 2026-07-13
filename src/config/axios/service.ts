@@ -3,14 +3,7 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestCo
 import { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
 import qs from 'qs'
 import { config } from '@/config/axios/config'
-import {
-  getAccessToken,
-  getRefreshToken,
-  getTenantId,
-  getVisitTenantId,
-  removeToken,
-  setToken
-} from '@/utils/auth'
+import { getAccessToken, getRefreshToken, getTenantId, removeToken, setToken } from '@/utils/auth'
 import errorCode from './errorCode'
 
 import { resetRouter } from '@/router'
@@ -62,22 +55,13 @@ service.interceptors.request.use(
       config.headers.Authorization = 'Bearer ' + getAccessToken() // 让每个请求携带自定义 token
     }
     // 身份认证入口由后端按唯一绑定关系解析租户，不能附带上一次会话遗留的 tenant-id。
-    const tenantResolutionPaths = [
-      '/system/auth/login',
-      '/system/auth/sms-login',
-      '/system/auth/social-login',
-      '/system/auth/send-sms-code',
-      '/system/auth/reset-password'
-    ]
-    const isTenantResolutionRequest = tenantResolutionPaths.some((path) => config.url?.includes(path))
+    const tenantResolutionPaths = ['/system/auth/login']
+    const isTenantResolutionRequest = tenantResolutionPaths.some((path) =>
+      config.url?.includes(path)
+    )
     if (tenantEnable && tenantEnable === 'true' && !isTenantResolutionRequest) {
       const tenantId = getTenantId()
       if (tenantId) config.headers['tenant-id'] = tenantId
-      // 只有登录时，才设置 visit-tenant-id 访问租户
-      const visitTenantId = getVisitTenantId()
-      if (config.headers.Authorization && visitTenantId) {
-        config.headers['visit-tenant-id'] = visitTenantId
-      }
     }
     const method = config.method?.toUpperCase()
     // 防止 GET 请求缓存

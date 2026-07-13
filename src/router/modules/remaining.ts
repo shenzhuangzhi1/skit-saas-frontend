@@ -129,39 +129,6 @@ const remainingRouter: AppRouteRecordRaw[] = [
         ]
       },
       {
-        path: 'auth',
-        component: getParentLayout(),
-        redirect: '/skit/auth/admin-user',
-        name: 'SkitAuth',
-        meta: { title: '权限管理', icon: 'ep:lock', alwaysShow: true },
-        children: [
-          {
-            path: 'admin-user',
-            alias: ['/skit/admin/user'],
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitAdminUser',
-            props: { pageKey: 'adminUser' },
-            meta: { title: '管理员管理', icon: 'ep:user-filled', noCache: false }
-          },
-          {
-            path: 'admin-log',
-            alias: ['/skit/admin/log'],
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitAdminLog',
-            props: { pageKey: 'adminLog' },
-            meta: { title: '管理员日志', icon: 'ep:document-copy', noCache: false }
-          },
-          {
-            path: 'group',
-            alias: ['/skit/admin/group'],
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitGroup',
-            props: { pageKey: 'group' },
-            meta: { title: '角色组', icon: 'ep:collection-tag', noCache: false }
-          }
-        ]
-      },
-      {
         path: 'drama',
         component: () => import('@/views/skit/admin/AdminTable.vue'),
         name: 'SkitDrama',
@@ -374,26 +341,6 @@ const remainingRouter: AppRouteRecordRaw[] = [
     meta: {
       hidden: true,
       title: t('router.login'),
-      noTagsView: true
-    }
-  },
-  {
-    path: '/sso',
-    component: () => import('@/views/Login/Login.vue'),
-    name: 'SSOLogin',
-    meta: {
-      hidden: true,
-      title: t('router.login'),
-      noTagsView: true
-    }
-  },
-  {
-    path: '/social-login',
-    component: () => import('@/views/Login/SocialLogin.vue'),
-    name: 'SocialLogin',
-    meta: {
-      hidden: true,
-      title: t('router.socialLogin'),
       noTagsView: true
     }
   },
