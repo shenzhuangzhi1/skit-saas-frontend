@@ -1,189 +1,240 @@
 <template>
   <ContentWrap>
+    <el-alert
+      :closable="false"
+      class="mb-16px"
+      show-icon
+      title="分成账本由服务端验奖和广告平台对账生成，只读且不可删除。查询固定同一时间快照，并严格按币种展示。"
+      type="info"
+    />
     <el-form ref="queryFormRef" :inline="true" :model="queryParams" class="-mb-15px">
-      <el-form-item label="收益用户" prop="memberId">
+      <el-form-item label="币种" prop="currency" required>
         <el-input
-          v-model="queryParams.memberId"
-          class="!w-220px"
-          clearable
-          placeholder="请输入用户编号"
+          v-model="queryParams.currency"
+          class="!w-120px"
+          maxlength="3"
+          placeholder="USD"
           @keyup.enter="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="收益会员" prop="beneficiaryMemberId">
+        <el-input
+          v-model="queryParams.beneficiaryMemberId"
+          class="!w-160px"
+          clearable
+          placeholder="会员编号"
+          @keyup.enter="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="广告平台" prop="provider">
+        <el-select v-model="queryParams.provider" class="!w-130px" clearable>
+          <el-option label="穿山甲" value="PANGLE" />
+          <el-option label="Taku" value="TAKU" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="余额桶" prop="balanceBucket">
+        <el-select v-model="queryParams.balanceBucket" class="!w-150px" clearable>
+          <el-option label="冻结预估" value="FROZEN" />
+          <el-option label="可用结算" value="AVAILABLE" />
+          <el-option label="不可结算" value="NON_SETTLEABLE" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="分录类型" prop="entryType">
+        <el-select v-model="queryParams.entryType" class="!w-170px" clearable>
+          <el-option label="冻结预估" value="ESTIMATE" />
+          <el-option label="释放预估" value="ESTIMATE_RELEASE" />
+          <el-option label="正式结算" value="SETTLEMENT" />
+          <el-option label="对账调整" value="ADJUSTMENT" />
+          <el-option label="历史未验奖" value="LEGACY_ESTIMATE" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
-        <el-button :disabled="!tenantId" @click="handleQuery">
-          <Icon icon="ep:search" />搜索
-        </el-button>
-        <el-button :disabled="!tenantId" @click="resetQuery">
-          <Icon icon="ep:refresh" />重置
-        </el-button>
+        <el-button @click="handleQuery"><Icon icon="ep:search" />搜索</el-button>
+        <el-button @click="resetQuery"><Icon icon="ep:refresh" />重置</el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
 
   <ContentWrap>
-    <el-alert
-      v-if="!tenantId"
-      :closable="false"
-      title="请先在代理商列表中选择一个租户"
-      type="info"
-      show-icon
+    <div v-if="asOf" class="mb-12px text-12px text-[var(--el-text-color-secondary)]">
+      固定查询快照：{{ asOf }}（{{ timezone }}）
+    </div>
+    <LedgerSummary v-if="list.length" class="mb-16px" :rows="summaryRows" />
+    <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" row-key="id">
+      <el-table-column align="center" label="分录编号" min-width="100" prop="id" />
+      <el-table-column align="center" label="广告事件" min-width="110" prop="eventId" />
+      <el-table-column align="center" label="广告用户" min-width="150">
+        <template #default="scope">
+          <div>{{ scope.row.sourceMemberName || '-' }}</div>
+          <el-text size="small" type="info">#{{ scope.row.sourceMemberId }}</el-text>
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="收益方" min-width="170">
+        <template #default="scope">
+          <div>{{ beneficiaryLabel(scope.row) }}</div>
+          <el-text v-if="scope.row.beneficiaryMemberId" size="small" type="info">
+            #{{ scope.row.beneficiaryMemberId }} · {{ levelLabel(scope.row.levelNo) }}
+          </el-text>
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="平台/广告位" min-width="150">
+        <template #default="scope">
+          <el-tag size="small">{{ scope.row.provider }}</el-tag>
+          <div class="mt-4px text-12px">{{ scope.row.placementId || '-' }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="分成比例" min-width="105">
+        <template #default="scope">{{ formatRate(scope.row.rateBps) }}</template>
+      </el-table-column>
+      <el-table-column align="center" label="广告收入" min-width="125">
+        <template #default="scope">
+          <MoneyText
+            :amount-scale="scope.row.amountScale"
+            :amount-units="scope.row.grossAmountUnits"
+            :currency="scope.row.currency"
+          />
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="本次分成" min-width="125">
+        <template #default="scope">
+          <MoneyText
+            :amount-scale="scope.row.amountScale"
+            :amount-units="scope.row.amountUnits"
+            :currency="scope.row.currency"
+          />
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="不可变状态" min-width="160">
+        <template #default="scope">
+          <el-tag :type="bucketType(scope.row.balanceBucket)" size="small">
+            {{ bucketLabel(scope.row.balanceBucket) }}
+          </el-tag>
+          <div class="mt-4px text-12px">{{ entryTypeLabel(scope.row.entryType) }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="规则/修订" min-width="110">
+        <template #default="scope">
+          v{{ scope.row.ruleVersion }} / r{{ scope.row.revisionNo }}
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="发生时间" min-width="180" prop="occurredAt" />
+    </el-table>
+    <Pagination
+      v-model:limit="queryParams.pageSize"
+      v-model:page="queryParams.pageNo"
+      :total="total"
+      @pagination="getList"
     />
-    <template v-else>
-      <el-alert
-        :closable="false"
-        class="mb-16px"
-        show-icon
-        title="当前为客户端上报的预估分成，尚未经过广告平台服务端对账，不可作为可提现金额。"
-        type="warning"
-      />
-      <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true">
-        <el-table-column align="center" label="账本编号" min-width="100" prop="id" />
-        <el-table-column align="center" label="广告记录" min-width="120" prop="adRecordId" />
-        <el-table-column align="center" label="收益用户编号" min-width="120">
-          <template #default="scope">
-            {{
-              isAgentRetention(scope.row)
-                ? '代理商'
-                : (scope.row.beneficiaryUserId ?? scope.row.memberId ?? '-')
-            }}
-          </template>
-        </el-table-column>
-        <el-table-column align="center" label="收益用户" min-width="130">
-          <template #default="scope">
-            {{
-              isAgentRetention(scope.row)
-                ? '代理商留存'
-                : (scope.row.beneficiaryNickname ?? scope.row.memberName ?? '-')
-            }}
-          </template>
-        </el-table-column>
-        <el-table-column align="center" label="广告用户编号" min-width="120">
-          <template #default="scope">
-            {{ scope.row.sourceUserId ?? scope.row.sourceMemberId ?? '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column align="center" label="广告用户" min-width="130">
-          <template #default="scope">
-            {{ scope.row.sourceNickname ?? scope.row.sourceMemberName ?? '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column align="center" label="收益层级" min-width="100">
-          <template #default="scope">
-            {{ levelLabel(scope.row) }}
-          </template>
-        </el-table-column>
-        <el-table-column align="center" label="广告收入" min-width="110">
-          <template #default="scope">
-            {{ formatAmount(scope.row.revenueAmount ?? scope.row.adRevenue) }}
-          </template>
-        </el-table-column>
-        <el-table-column align="center" label="分成比例" min-width="100">
-          <template #default="scope">{{ formatRate(scope.row.rate) }}</template>
-        </el-table-column>
-        <el-table-column align="center" label="分成金额" min-width="110">
-          <template #default="scope">
-            <el-tag type="warning">{{ formatAmount(scope.row.commissionAmount) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column align="center" label="账本状态" min-width="130">
-          <template #default="scope">
-            <el-tag type="warning">{{ statusLabel(scope.row.status) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column
-          align="center"
-          label="入账时间"
-          min-width="180"
-          prop="createTime"
-          :formatter="dateFormatter"
-        />
-      </el-table>
-      <Pagination
-        v-model:limit="queryParams.pageSize"
-        v-model:page="queryParams.pageNo"
-        :total="total"
-        @pagination="getList"
-      />
-    </template>
   </ContentWrap>
 </template>
 
 <script lang="ts" setup>
 import type { FormInstance } from 'element-plus'
-import { dateFormatter } from '@/utils/formatTime'
 import * as TenantApi from '@/api/skit/tenant'
+import MoneyText from '@/views/skit/shared/MoneyText.vue'
+import LedgerSummary from './LedgerSummary.vue'
 
 defineOptions({ name: 'SkitTenantCommissionLedger' })
 
-const props = defineProps<{ tenantId?: number }>()
+const props = defineProps<{ target: TenantApi.ManagementTenantTarget }>()
+const message = useMessage()
 const loading = ref(false)
 const total = ref(0)
-const list = ref<TenantApi.TenantCommissionLedgerVO[]>([])
+const list = ref<TenantApi.CommissionLedgerVO[]>([])
+const asOf = ref('')
+const timezone = ref<TenantApi.TakuReportTimezone>('UTC+8')
 const queryFormRef = ref<FormInstance>()
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
-  memberId: ''
+  beneficiaryMemberId: '',
+  provider: undefined as TenantApi.TenantAdProvider | undefined,
+  entryType: undefined as TenantApi.CommissionLedgerEntryType | undefined,
+  balanceBucket: undefined as TenantApi.CommissionLedgerBalanceBucket | undefined,
+  currency: 'USD'
 })
+let requestId = 0
 
-const formatAmount = (value?: number) => {
-  const amount = Number(value)
-  return Number.isFinite(amount) ? `¥${amount.toFixed(2)}` : '-'
-}
+const targetKey = computed(() => `${props.target.kind}:${props.target.tenantId}`)
+const summaryRows = computed(() =>
+  list.value.map((row) => ({
+    balanceBucket: row.balanceBucket,
+    currency: row.currency,
+    amountUnits: row.amountUnits,
+    amountScale: row.amountScale
+  }))
+)
 
-const formatRate = (value?: number) => {
-  const rate = Number(value)
-  return Number.isFinite(rate) ? `${rate.toFixed(2)}%` : '-'
-}
-
-const statusLabel = (status?: string) =>
-  String(status || '').toUpperCase() === 'ESTIMATED' ? '预估（未结算）' : status || '-'
-
-const isAgentRetention = (row: TenantApi.TenantCommissionLedgerVO) =>
-  Number(row.beneficiaryType) === 2 || Number(row.level) === -1
-
-const levelLabel = (row: TenantApi.TenantCommissionLedgerVO) => {
-  if (isAgentRetention(row)) return '代理商留存'
-  return Number(row.level || 0) === 0 ? '本人' : `${row.level} 级上级`
-}
+const formatRate = (rateBps: number) => `${(Number(rateBps || 0) / 100).toFixed(2)}%`
+const levelLabel = (levelNo: number) => (levelNo === 0 ? '本人' : `${levelNo} 级上级`)
+const beneficiaryLabel = (row: TenantApi.CommissionLedgerVO) =>
+  row.beneficiaryType === 'AGENT'
+    ? '代理商留存'
+    : row.beneficiaryMemberName || `会员 ${row.beneficiaryMemberId || '-'}`
+const bucketLabel = (bucket: TenantApi.CommissionLedgerBalanceBucket) =>
+  ({ FROZEN: '冻结预估', AVAILABLE: '可用结算', NON_SETTLEABLE: '不可结算' })[bucket]
+const bucketType = (bucket: TenantApi.CommissionLedgerBalanceBucket) =>
+  bucket === 'AVAILABLE' ? 'success' : bucket === 'FROZEN' ? 'warning' : 'danger'
+const entryTypeLabel = (entryType: TenantApi.CommissionLedgerEntryType) =>
+  ({
+    ESTIMATE: '冻结预估',
+    ESTIMATE_RELEASE: '释放预估',
+    SETTLEMENT: '正式结算',
+    ADJUSTMENT: '对账调整',
+    LEGACY_ESTIMATE: '历史未验奖'
+  })[entryType]
 
 const getList = async () => {
-  if (!props.tenantId) {
-    list.value = []
-    total.value = 0
+  const normalizedCurrency = queryParams.currency.trim().toUpperCase()
+  if (!/^[A-Z]{3}$/.test(normalizedCurrency)) {
+    message.warning('币种必须是三个大写字母')
     return
   }
+  const currentRequestId = ++requestId
   loading.value = true
   try {
-    const memberId = Number(queryParams.memberId)
-    const data = await TenantApi.getTenantCommissionLedgerPage({
-      tenantId: props.tenantId,
+    const memberId = Number(queryParams.beneficiaryMemberId)
+    const data = await TenantApi.getCommissionLedgerPage(props.target, {
       pageNo: queryParams.pageNo,
       pageSize: queryParams.pageSize,
-      beneficiaryUserId: Number.isFinite(memberId) && memberId > 0 ? memberId : undefined
+      beneficiaryMemberId: Number.isSafeInteger(memberId) && memberId > 0 ? memberId : undefined,
+      provider: queryParams.provider,
+      entryType: queryParams.entryType,
+      balanceBucket: queryParams.balanceBucket,
+      currency: normalizedCurrency,
+      asOf: asOf.value || undefined,
+      timezone: timezone.value
     })
+    if (currentRequestId !== requestId) return
     list.value = data.list || []
     total.value = Number(data.total || 0)
+    asOf.value = data.asOf
+    timezone.value = data.timezone
   } finally {
-    loading.value = false
+    if (currentRequestId === requestId) loading.value = false
   }
 }
 
 const handleQuery = () => {
   queryParams.pageNo = 1
+  asOf.value = ''
   getList()
 }
 
 const resetQuery = () => {
   queryFormRef.value?.resetFields()
+  queryParams.currency = 'USD'
   handleQuery()
 }
 
 watch(
-  () => props.tenantId,
+  targetKey,
   () => {
+    requestId++
     queryParams.pageNo = 1
+    asOf.value = ''
+    list.value = []
+    total.value = 0
     getList()
   },
   { immediate: true }

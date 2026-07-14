@@ -12,6 +12,14 @@ export interface PageResult<T> {
   total: number
 }
 
+export interface StablePageResult<T> extends PageResult<T> {
+  tenantId: number
+  asOf: string
+  timezone: TakuReportTimezone
+  pageNo: number
+  pageSize: number
+}
+
 export interface TenantAgentVO {
   tenantId: number
   tenantCode: string
@@ -179,6 +187,43 @@ export interface TenantAdRolloutReqVO {
   reason: string
 }
 
+export interface TenantCallbackKeyRotateReqVO {
+  adAccountId: number
+  expectedReadinessVersion: number
+  priorAcceptanceMinutes: number
+  reason: string
+}
+
+export interface TenantCallbackKeyRotateVO {
+  tenantId: number
+  adAccountId: number
+  version: number
+  configured: boolean
+  activatedAt: string
+  priorVersionAcceptUntil?: string | null
+  /** Returned exactly once by the rotation endpoint. */
+  callbackKey: string
+  rewardCallbackUrl: string
+  impressionCallbackUrl: string
+}
+
+export interface TenantRewardSecretRotateReqVO {
+  adAccountId: number
+  expectedReadinessVersion: number
+  priorAcceptanceMinutes: number
+  rewardSecret: string
+  reason: string
+}
+
+export interface TenantRewardSecretRotateVO {
+  tenantId: number
+  adAccountId: number
+  version: number
+  configured: boolean
+  activatedAt: string
+  priorVersionAcceptUntil?: string | null
+}
+
 export type TakuReportTimezone = 'UTC-8' | 'UTC+8' | 'UTC+0'
 
 export interface TenantReportingConfigurationVO {
@@ -207,11 +252,13 @@ export interface TenantReportingConfigurationSaveReqVO {
 
 export interface TenantAdAccountSaveReqVO extends TenantAgentProviderWriteFields {
   tenantId?: number
+  reason: string
 }
 
 export interface TenantAdCredentialClearReqVO {
   tenantId?: number
   provider: TenantAdProvider
+  reason: string
 }
 
 export interface TenantAgentPageReqVO extends PageParam {
@@ -222,6 +269,62 @@ export interface TenantAgentPageReqVO extends PageParam {
 export interface CommissionRuleVO {
   level: number
   rate: number
+}
+
+export interface CommissionRuleBpsVO {
+  levelNo: number
+  rateBps: number
+}
+
+export type CommissionPlanStatus = 'UNCONFIGURED' | 'ACTIVE' | 'ARCHIVED'
+
+export interface CommissionPlanVO {
+  tenantId: number
+  asOf: string
+  timezone: TakuReportTimezone
+  id?: number | null
+  version: number
+  status: CommissionPlanStatus
+  publishedAt?: string | null
+  totalMemberRateBps: number
+  agentRateBps: number
+  rules: CommissionRuleBpsVO[]
+}
+
+export interface CommissionPlanHistoryReqVO extends PageParam {
+  asOf?: string
+  timezone: TakuReportTimezone
+}
+
+export interface CommissionPlanPreviewReqVO {
+  amountUnits: number
+  amountScale: number
+  currency: string
+  timezone: TakuReportTimezone
+  rules: CommissionRuleBpsVO[]
+}
+
+export interface CommissionPlanPreviewVO {
+  tenantId: number
+  asOf: string
+  timezone: TakuReportTimezone
+  currency: string
+  amountScale: number
+  grossAmount: string
+  grossAmountUnits: string
+  totalMemberRateBps: number
+  memberTotal: string
+  memberTotalUnits: string
+  agentRateBps: number
+  agentAmount: string
+  agentAmountUnits: string
+  allocations: Array<CommissionRuleBpsVO & { amount: string; amountUnits: string }>
+}
+
+export interface CommissionPlanPublishReqVO {
+  expectedVersion: number
+  rules: CommissionRuleBpsVO[]
+  reason: string
 }
 
 export interface TenantCommissionRuleSaveReqVO {
@@ -259,12 +362,14 @@ export interface TenantMemberStatusUpdateReqVO {
   tenantId?: number
   id: number
   status: number
+  reason: string
 }
 
 export interface TenantMemberPasswordResetReqVO {
   tenantId?: number
   id: number
   password: string
+  reason: string
 }
 
 export interface TenantCommissionLedgerVO {
@@ -293,6 +398,134 @@ export interface TenantCommissionLedgerPageReqVO extends PageParam {
   beneficiaryUserId?: number
 }
 
+export type CommissionLedgerBeneficiaryType = 'MEMBER' | 'AGENT'
+export type CommissionLedgerEntryType =
+  | 'ESTIMATE'
+  | 'ESTIMATE_RELEASE'
+  | 'SETTLEMENT'
+  | 'ADJUSTMENT'
+  | 'LEGACY_ESTIMATE'
+export type CommissionLedgerBalanceBucket = 'FROZEN' | 'AVAILABLE' | 'NON_SETTLEABLE'
+
+export interface CommissionLedgerPageReqVO extends PageParam {
+  id?: number
+  eventId?: number
+  sourceMemberId?: number
+  beneficiaryMemberId?: number
+  beneficiaryType?: CommissionLedgerBeneficiaryType
+  provider?: TenantAdProvider
+  entryType?: CommissionLedgerEntryType
+  balanceBucket?: CommissionLedgerBalanceBucket
+  currency: string
+  startTime?: string
+  endTime?: string
+  asOf?: string
+  timezone: TakuReportTimezone
+}
+
+export interface CommissionLedgerVO {
+  tenantId: number
+  id: number
+  eventId: number
+  sourceMemberId: number
+  sourceMemberName?: string | null
+  provider: TenantAdProvider
+  placementId: string
+  beneficiaryType: CommissionLedgerBeneficiaryType
+  beneficiaryMemberId?: number | null
+  beneficiaryMemberName?: string | null
+  levelNo: number
+  rateBps: number
+  ruleVersion: number
+  entryType: CommissionLedgerEntryType
+  balanceBucket: CommissionLedgerBalanceBucket
+  currency: string
+  amountScale: number
+  grossAmount: string
+  grossAmountUnits: string
+  amount: string
+  amountUnits: string
+  revisionNo: number
+  reversalOfId?: number | null
+  occurredAt: string
+  createdAt: string
+}
+
+export interface MemberTreeNodeVO {
+  id: number
+  parentId?: number | null
+  nickname?: string | null
+  inviteCode: string
+  depth: number
+  status: string
+  directChildCount: number
+  distance?: number | null
+  createdAt: string
+}
+
+export interface MemberChildrenReqVO {
+  cursor?: string
+  pageSize: number
+  timezone: TakuReportTimezone
+}
+
+export interface MemberChildrenVO {
+  tenantId: number
+  parentId: number
+  asOf: string
+  timezone: TakuReportTimezone
+  pageSize: number
+  nextCursor?: string | null
+  list: MemberTreeNodeVO[]
+}
+
+export interface MemberAncestorsReqVO {
+  timezone: TakuReportTimezone
+}
+
+export interface MemberAncestorsVO {
+  tenantId: number
+  memberId: number
+  asOf: string
+  timezone: TakuReportTimezone
+  list: MemberTreeNodeVO[]
+}
+
+export interface MemberSubtreeSummaryReqVO {
+  startTime: string
+  endTime: string
+  currency: string
+  provider?: TenantAdProvider
+  statisticBasis: 'RECONCILED_LEDGER'
+  timezone: TakuReportTimezone
+}
+
+export interface MemberSubtreeSummaryVO {
+  tenantId: number
+  memberId: number
+  asOf: string
+  timezone: TakuReportTimezone
+  startTime: string
+  endTime: string
+  currency: string
+  provider?: TenantAdProvider | null
+  statisticBasis: 'RECONCILED_LEDGER'
+  memberCount: number
+  descendantCount: number
+  contributingMemberCount: number
+  rewardedEventCount: number
+  amounts: Array<{
+    amountScale: number
+    grossRevenue: string
+    grossRevenueUnits: string
+    memberAllocation: string
+    memberAllocationUnits: string
+    agentRetention: string
+    agentRetentionUnits: string
+    conserved: boolean
+  }>
+}
+
 export interface TenantAppReleaseProfileVO {
   tenantId: number
   profileCode: string
@@ -304,6 +537,10 @@ export interface TenantAppReleaseProfileVO {
   nativeVersion: string
   nativePackage: string
   status: number
+}
+
+export interface TenantAppReleaseProfileUpdateReqVO extends TenantAppReleaseProfileVO {
+  reason: string
 }
 
 export const getTenantAgentPage = (params: TenantAgentPageReqVO) => {
@@ -416,6 +653,26 @@ export const transitionTenantAdRollout = (
     skipErrorMessage: true
   })
 
+export const rotateTenantCallbackKey = (
+  target: ManagementTenantTarget,
+  data: TenantCallbackKeyRotateReqVO
+) =>
+  request.post<TenantCallbackKeyRotateVO>({
+    url: '/skit/tenant/ad-readiness/callback-key/rotate',
+    data: managementTenantBody(target, data),
+    skipErrorMessage: true
+  })
+
+export const rotateTenantRewardSecret = (
+  target: ManagementTenantTarget,
+  data: TenantRewardSecretRotateReqVO
+) =>
+  request.post<TenantRewardSecretRotateVO>({
+    url: '/skit/tenant/ad-readiness/reward-secret/rotate',
+    data: managementTenantBody(target, data),
+    skipErrorMessage: true
+  })
+
 export const getTenantReportingConfiguration = (target: ManagementTenantTarget) =>
   request.get<TenantReportingConfigurationVO>({
     url: '/skit/tenant/ad-account/reporting-configuration',
@@ -430,6 +687,96 @@ export const saveTenantReportingConfiguration = (
   request.put<TenantReportingConfigurationVO>({
     url: '/skit/tenant/ad-account/reporting-configuration',
     data: managementTenantBody(target, data),
+    skipErrorMessage: true
+  })
+
+export const getCommissionPlanCurrent = (
+  target: ManagementTenantTarget,
+  timezone: TakuReportTimezone
+) =>
+  request.get<CommissionPlanVO>({
+    url: '/skit/tenant/commission-plans/current',
+    params: { ...managementTenantQuery(target), timezone },
+    skipErrorMessage: true
+  })
+
+export const getCommissionPlanHistory = (
+  target: ManagementTenantTarget,
+  params: CommissionPlanHistoryReqVO
+) =>
+  request.get<StablePageResult<CommissionPlanVO>>({
+    url: '/skit/tenant/commission-plans/history/page',
+    params: { ...managementTenantQuery(target), ...params },
+    skipErrorMessage: true
+  })
+
+export const previewCommissionPlan = (
+  target: ManagementTenantTarget,
+  data: CommissionPlanPreviewReqVO
+) =>
+  request.post<CommissionPlanPreviewVO>({
+    url: '/skit/tenant/commission-plans/preview',
+    data: managementTenantBody(target, data),
+    skipErrorMessage: true
+  })
+
+export const publishCommissionPlan = (
+  target: ManagementTenantTarget,
+  data: CommissionPlanPublishReqVO
+) =>
+  request.post<CommissionPlanVO>({
+    url: '/skit/tenant/commission-plans/publish',
+    data: managementTenantBody(target, data),
+    skipErrorMessage: true
+  })
+
+export const getCommissionLedgerPage = (
+  target: ManagementTenantTarget,
+  params: CommissionLedgerPageReqVO
+) =>
+  request.get<StablePageResult<CommissionLedgerVO>>({
+    url: '/skit/tenant/commission-ledger/page',
+    params: { ...managementTenantQuery(target), ...params },
+    skipErrorMessage: true
+  })
+
+const requireMemberId = (memberId: number) => {
+  if (!Number.isSafeInteger(memberId) || memberId <= 0) {
+    throw new Error('Member ID must be a positive safe integer')
+  }
+  return memberId
+}
+
+export const getMemberChildren = (
+  target: ManagementTenantTarget,
+  memberId: number,
+  params: MemberChildrenReqVO
+) =>
+  request.get<MemberChildrenVO>({
+    url: `/skit/tenant/member/${requireMemberId(memberId)}/children`,
+    params: { ...managementTenantQuery(target), ...params },
+    skipErrorMessage: true
+  })
+
+export const getMemberAncestors = (
+  target: ManagementTenantTarget,
+  memberId: number,
+  params: MemberAncestorsReqVO
+) =>
+  request.get<MemberAncestorsVO>({
+    url: `/skit/tenant/member/${requireMemberId(memberId)}/ancestors`,
+    params: { ...managementTenantQuery(target), ...params },
+    skipErrorMessage: true
+  })
+
+export const getMemberSubtreeSummary = (
+  target: ManagementTenantTarget,
+  memberId: number,
+  params: MemberSubtreeSummaryReqVO
+) =>
+  request.get<MemberSubtreeSummaryVO>({
+    url: `/skit/tenant/member/${requireMemberId(memberId)}/subtree-summary`,
+    params: { ...managementTenantQuery(target), ...params },
     skipErrorMessage: true
   })
 
@@ -451,13 +798,23 @@ export const getTenantAppReleaseProfile = (tenantId: number) => {
   })
 }
 
-export const updateTenantAppReleaseProfile = (data: TenantAppReleaseProfileVO) => {
+export const updateTenantAppReleaseProfile = (data: TenantAppReleaseProfileUpdateReqVO) => {
   return request.put<TenantAppReleaseProfileVO>({ url: '/skit/tenant/app-release', data })
 }
 
 export const getTenantMemberPage = (params: TenantMemberPageReqVO) => {
   return request.get<PageResult<TenantMemberVO>>({ url: '/skit/tenant/member/page', params })
 }
+
+export const getManagedTenantMemberPage = (
+  target: ManagementTenantTarget,
+  params: Omit<TenantMemberPageReqVO, 'tenantId'>
+) =>
+  request.get<PageResult<TenantMemberVO>>({
+    url: '/skit/tenant/member/page',
+    params: { ...managementTenantQuery(target), ...params },
+    skipErrorMessage: true
+  })
 
 export const getTenantMember = (id: number, tenantId?: number) => {
   return request.get<TenantMemberVO>({
@@ -466,13 +823,40 @@ export const getTenantMember = (id: number, tenantId?: number) => {
   })
 }
 
+export const getManagedTenantMember = (target: ManagementTenantTarget, id: number) =>
+  request.get<TenantMemberVO>({
+    url: '/skit/tenant/member/get',
+    params: { ...managementTenantQuery(target), id: requireMemberId(id) },
+    skipErrorMessage: true
+  })
+
 export const updateTenantMemberStatus = (data: TenantMemberStatusUpdateReqVO) => {
   return request.put<boolean>({ url: '/skit/tenant/member/update-status', data })
 }
 
+export const updateManagedTenantMemberStatus = (
+  target: ManagementTenantTarget,
+  data: Omit<TenantMemberStatusUpdateReqVO, 'tenantId'>
+) =>
+  request.put<boolean>({
+    url: '/skit/tenant/member/update-status',
+    data: managementTenantBody(target, data),
+    skipErrorMessage: true
+  })
+
 export const resetTenantMemberPassword = (data: TenantMemberPasswordResetReqVO) => {
   return request.put<boolean>({ url: '/skit/tenant/member/reset-password', data })
 }
+
+export const resetManagedTenantMemberPassword = (
+  target: ManagementTenantTarget,
+  data: Omit<TenantMemberPasswordResetReqVO, 'tenantId'>
+) =>
+  request.put<boolean>({
+    url: '/skit/tenant/member/reset-password',
+    data: managementTenantBody(target, data),
+    skipErrorMessage: true
+  })
 
 export const getTenantCommissionLedgerPage = (params: TenantCommissionLedgerPageReqVO) => {
   return request.get<PageResult<TenantCommissionLedgerVO>>({

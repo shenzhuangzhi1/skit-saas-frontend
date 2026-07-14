@@ -51,6 +51,15 @@
         <el-radio :value="1">关闭</el-radio>
       </el-radio-group>
     </el-form-item>
+    <el-form-item label="变更原因" required>
+      <el-input
+        v-model="reason"
+        maxlength="500"
+        placeholder="必填 10–500 字，用于安全审计"
+        show-word-limit
+        type="textarea"
+      />
+    </el-form-item>
     <el-form-item>
       <el-button type="primary" :loading="saving" @click="save">保存发布档案</el-button>
     </el-form-item>
@@ -68,6 +77,7 @@ const message = useMessage()
 const loading = ref(false)
 const saving = ref(false)
 const formRef = ref<FormInstance>()
+const reason = ref('')
 const emptyProfile = (): TenantApi.TenantAppReleaseProfileVO => ({
   tenantId: props.tenantId,
   profileCode: '',
@@ -106,6 +116,7 @@ const load = async () => {
   try {
     const profile = await TenantApi.getTenantAppReleaseProfile(props.tenantId)
     formData.value = { ...emptyProfile(), ...profile, tenantId: props.tenantId }
+    reason.value = ''
   } finally {
     loading.value = false
   }
@@ -114,12 +125,19 @@ const load = async () => {
 const save = async () => {
   const valid = await formRef.value?.validate()
   if (!valid) return
+  const normalizedReason = reason.value.trim()
+  if (normalizedReason.length < 10 || normalizedReason.length > 500) {
+    message.warning('变更原因长度必须为 10–500 个字符')
+    return
+  }
   saving.value = true
   try {
     formData.value = await TenantApi.updateTenantAppReleaseProfile({
       ...formData.value,
-      hotBundleSha256: formData.value.hotBundleSha256.toLowerCase()
+      hotBundleSha256: formData.value.hotBundleSha256.toLowerCase(),
+      reason: normalizedReason
     })
+    reason.value = ''
     message.success('发布档案已保存')
   } finally {
     saving.value = false

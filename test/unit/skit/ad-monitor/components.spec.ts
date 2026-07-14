@@ -137,16 +137,18 @@ describe('advertising monitoring components', () => {
           callbackAttempts: [
             {
               id: 91,
-              source: 'TAKU_REWARD',
+              source: 'REWARD',
               status: 'CANONICAL',
+              authenticationLevel: 'REWARD_SECRET',
               signatureStatus: 'VALID',
               receivedAt: 1710000001000,
               errorCode: undefined
             },
             {
               id: 92,
-              source: 'TAKU_IMPRESSION',
+              source: 'IMPRESSION',
               status: 'DUPLICATE',
+              authenticationLevel: 'CALLBACK_KEY',
               signatureStatus: 'NOT_APPLICABLE',
               receivedAt: 1710000002000,
               errorCode: undefined

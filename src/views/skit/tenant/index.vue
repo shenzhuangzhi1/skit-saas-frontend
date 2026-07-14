@@ -32,13 +32,13 @@
           <AdAccessEditor :target="tenantWorkspaceTarget(false, selfInvitation.tenantId)" />
         </el-tab-pane>
         <el-tab-pane label="分成规则" name="commission" lazy>
-          <CommissionRuleEditor :tenant-id="selfInvitation.tenantId" />
+          <CommissionRuleEditor :target="tenantWorkspaceTarget(false, selfInvitation.tenantId)" />
         </el-tab-pane>
         <el-tab-pane label="成员体系" name="members" lazy>
-          <MemberList :tenant-id="selfInvitation.tenantId" />
+          <MemberList :target="tenantWorkspaceTarget(false, selfInvitation.tenantId)" />
         </el-tab-pane>
         <el-tab-pane label="分成账本" name="ledger" lazy>
-          <CommissionLedger :tenant-id="selfInvitation.tenantId" />
+          <CommissionLedger :target="tenantWorkspaceTarget(false, selfInvitation.tenantId)" />
         </el-tab-pane>
       </el-tabs>
     </ContentWrap>
@@ -227,14 +227,20 @@
         <el-tab-pane :disabled="selectedAgentArchived" label="广告接入" name="ad-access" lazy>
           <AdAccessEditor :target="tenantWorkspaceTarget(true, selectedAgent.tenantId)" />
         </el-tab-pane>
-        <el-tab-pane :disabled="selectedAgentArchived" label="分成规则" name="commission" lazy>
-          <CommissionRuleEditor :tenant-id="selectedAgent.tenantId" />
+        <el-tab-pane label="分成规则" name="commission" lazy>
+          <CommissionRuleEditor
+            :read-only="selectedAgentArchived"
+            :target="tenantWorkspaceTarget(true, selectedAgent.tenantId)"
+          />
         </el-tab-pane>
         <el-tab-pane label="成员体系" name="members" lazy>
-          <MemberList :read-only="selectedAgentArchived" :tenant-id="selectedAgent.tenantId" />
+          <MemberList
+            :read-only="selectedAgentArchived"
+            :target="tenantWorkspaceTarget(true, selectedAgent.tenantId)"
+          />
         </el-tab-pane>
         <el-tab-pane label="分成账本" name="ledger" lazy>
-          <CommissionLedger :tenant-id="selectedAgent.tenantId" />
+          <CommissionLedger :target="tenantWorkspaceTarget(true, selectedAgent.tenantId)" />
         </el-tab-pane>
         <el-tab-pane :disabled="selectedAgentArchived" label="App 发布" name="app-release" lazy>
           <AppReleaseEditor :tenant-id="selectedAgent.tenantId" />
@@ -296,10 +302,7 @@ const isArchived = (agent?: TenantApi.TenantAgentVO) => Boolean(agent?.archivedT
 const selectedAgentArchived = computed(() => isArchived(selectedAgent.value))
 
 const ensureReadableTab = () => {
-  if (
-    selectedAgentArchived.value &&
-    ['ad-access', 'commission', 'app-release'].includes(activeTab.value)
-  ) {
+  if (selectedAgentArchived.value && ['ad-access', 'app-release'].includes(activeTab.value)) {
     activeTab.value = 'members'
   }
 }

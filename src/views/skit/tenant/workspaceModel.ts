@@ -86,7 +86,14 @@ export interface CommissionDraftRule {
   rateBps: number
 }
 
-export type LedgerBalanceBucket = 'FROZEN' | 'SETTLED' | 'ADJUSTMENT' | 'REVERSAL' | 'SUSPENSE'
+export type LedgerBalanceBucket =
+  | 'FROZEN'
+  | 'AVAILABLE'
+  | 'NON_SETTLEABLE'
+  | 'SETTLED'
+  | 'ADJUSTMENT'
+  | 'REVERSAL'
+  | 'SUSPENSE'
 
 export interface LedgerMoneyRow {
   balanceBucket: LedgerBalanceBucket

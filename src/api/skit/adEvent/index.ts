@@ -65,8 +65,9 @@ export interface AdEventRowVO {
 
 export interface AdCallbackAttemptVO {
   id: number
-  source: string
+  source: 'IMPRESSION' | 'REWARD'
   status: AdCallbackAttemptStatus
+  authenticationLevel: string
   signatureStatus: AdCallbackSignatureStatus
   receivedAt: number
   errorCode?: string | null

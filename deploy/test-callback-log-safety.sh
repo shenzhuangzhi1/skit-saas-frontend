@@ -19,6 +19,7 @@ generic_line="$(grep -nF 'location ~ ^/(admin-api|app-api|' "${nginx_config}" | 
   || fail "callback location must precede the generic regex location"
 
 callback_block="$(tail -n "+${callback_line}" "${nginx_config}" | sed -n '1,/^  }$/p')"
+generic_block="$(tail -n "+${generic_line}" "${nginx_config}" | sed -n '1,/^  }$/p')"
 grep -Eq '^    access_log off;$' <<<"${callback_block}" \
   || fail "callback access logging must be disabled"
 grep -Eq '^    error_log /dev/null crit;$' <<<"${callback_block}" \
@@ -29,5 +30,11 @@ grep -Eq '^    proxy_set_header X-Real-IP \$remote_addr;$' <<<"${callback_block}
   || fail "callback proxy must overwrite X-Real-IP with the direct peer"
 grep -Eq '^    proxy_set_header X-Forwarded-For \$remote_addr;$' <<<"${callback_block}" \
   || fail "callback proxy must discard caller-supplied forwarding chains"
+grep -Eq '^    proxy_set_header X-Real-IP \$remote_addr;$' <<<"${generic_block}" \
+  || fail "generic API proxy must overwrite X-Real-IP with the direct peer"
+grep -Eq '^    proxy_set_header X-Forwarded-For \$remote_addr;$' <<<"${generic_block}" \
+  || fail "generic API proxy must discard caller-supplied forwarding chains"
+! grep -Fq '$proxy_add_x_forwarded_for' <<<"${generic_block}" \
+  || fail "generic API proxy must never append an attacker-supplied X-Forwarded-For value"
 
-echo "PASS: callback key/query are excluded from Nginx access logs and forwarded unchanged"
+echo "PASS: callback logs are secret-safe and all client IP headers are overwritten"

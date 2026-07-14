@@ -1,5 +1,12 @@
 <template>
   <div>
+    <div class="mb-12px flex flex-wrap gap-8px">
+      <el-tag>状态 {{ readiness.rolloutState }}</el-tag>
+      <el-tag type="info">就绪版本 v{{ readiness.readinessVersion }}</el-tag>
+      <el-tag :type="readiness.callbackPublicUrlHttps ? 'success' : 'warning'">
+        {{ readiness.callbackPublicUrlHttps ? '生产回调为 HTTPS' : '生产回调尚未启用 HTTPS' }}
+      </el-tag>
+    </div>
     <div class="grid gap-8px md:grid-cols-2">
       <div v-for="gate in gates" :key="gate.key" class="flex items-center justify-between gap-12px">
         <span>{{ gate.label }}</span>
@@ -49,6 +56,11 @@ const gates = computed(() => [
   { key: 'account', label: 'App、账号与密钥', ready: props.readiness.accountReady },
   { key: 'callback-key', label: 'Callback Key', ready: props.readiness.callbackKeyConfigured },
   { key: 'reward-secret', label: '奖励回调密钥', ready: props.readiness.rewardSecretConfigured },
+  {
+    key: 'callback-https',
+    label: '生产回调 HTTPS',
+    ready: Boolean(props.readiness.callbackPublicUrlHttps)
+  },
   {
     key: 'placement',
     label: '解锁专用广告位',

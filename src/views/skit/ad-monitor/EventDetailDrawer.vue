@@ -51,6 +51,7 @@
             </div>
             <div>
               <el-tag size="small">{{ callbackSignatureLabel(attempt.signatureStatus) }}</el-tag>
+              <el-tag size="small" type="info">{{ attempt.authenticationLevel }}</el-tag>
               <span>{{ attempt.status }}</span>
               <span v-if="attempt.errorCode" class="detail-error">{{ attempt.errorCode }}</span>
             </div>

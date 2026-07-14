@@ -28,6 +28,8 @@ const totals = computed(() => groupLedgerAmounts(props.rows))
 const bucketLabel = (bucket: LedgerBalanceBucket) =>
   ({
     FROZEN: '冻结',
+    AVAILABLE: '可用结算',
+    NON_SETTLEABLE: '不可结算',
     SETTLED: '可结算',
     ADJUSTMENT: '调整',
     REVERSAL: '冲正',

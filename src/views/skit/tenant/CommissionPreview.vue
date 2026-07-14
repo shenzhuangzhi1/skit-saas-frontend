@@ -1,6 +1,10 @@
 <template>
   <section>
-    <div class="mb-8px font-600">100 单位收益预览</div>
+    <div class="mb-8px font-600">收益精确预览</div>
+    <div class="mb-8px flex justify-between gap-12px">
+      <span>广告总收益</span>
+      <MoneyText :amount-scale="amountScale" :amount-units="amountUnits" :currency="currency" />
+    </div>
     <div v-for="share in shares" :key="share.levelNo" class="flex justify-between gap-12px">
       <span>{{ levelLabel(share.levelNo) }}（{{ formatRate(share.rateBps) }}）</span>
       <MoneyText

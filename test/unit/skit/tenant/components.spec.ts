@@ -70,7 +70,8 @@ describe('tenant revenue workspace components', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('100 单位收益预览')
+    expect(wrapper.text()).toContain('收益精确预览')
+    expect(wrapper.text()).toContain('广告总收益')
     expect(wrapper.text()).toContain('本人')
     expect(wrapper.text()).toContain('1 级上级')
     expect(wrapper.text()).toContain('代理商留存')

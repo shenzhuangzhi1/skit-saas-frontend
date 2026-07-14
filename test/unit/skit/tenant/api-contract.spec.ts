@@ -63,7 +63,8 @@ describe('tenant advertising access API client', () => {
       takuAppId: 'app',
       takuPlacementId: 'placement',
       takuEnabled: true,
-      takuAppKey: 'write-only-key'
+      takuAppKey: 'write-only-key',
+      reason: '更新 Taku 广告账号和客户端密钥'
     })
     await configureTenantAdCapability(target, {
       adAccountId: 9,
@@ -88,7 +89,11 @@ describe('tenant advertising access API client', () => {
 
     expect(put).toHaveBeenNthCalledWith(1, {
       url: '/skit/tenant/ad-account',
-      data: expect.objectContaining({ tenantId: 23, takuAppKey: 'write-only-key' }),
+      data: expect.objectContaining({
+        tenantId: 23,
+        takuAppKey: 'write-only-key',
+        reason: '更新 Taku 广告账号和客户端密钥'
+      }),
       skipErrorMessage: true
     })
     expect(put).toHaveBeenNthCalledWith(2, {
