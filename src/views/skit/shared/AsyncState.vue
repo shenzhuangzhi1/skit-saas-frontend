@@ -6,7 +6,7 @@
   <div v-else-if="empty" class="py-32px text-center text-[var(--el-text-color-secondary)]">
     {{ emptyText }}
   </div>
-  <slot v-else />
+  <slot v-else></slot>
 </template>
 
 <script lang="ts" setup>

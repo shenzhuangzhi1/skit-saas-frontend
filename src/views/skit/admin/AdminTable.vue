@@ -1209,24 +1209,24 @@ watch(
 .skit-fastadmin-page {
   min-height: calc(100vh - 100px);
   padding: 15px;
-  background: #f1f4f6;
-  color: #333;
   font-size: 14px;
-  line-height: 1.42857143;
+  line-height: 1.4286;
+  color: #333;
+  background: #f1f4f6;
 }
 
 .skit-panel {
   min-height: 172px;
   padding: 15px;
-  border-radius: 3px;
-  background: #fff;
   color: #333;
+  background: #fff;
+  border-radius: 3px;
   box-shadow: none;
 }
 
 .commonsearch-table {
-  margin-bottom: 12px;
   padding-bottom: 12px;
+  margin-bottom: 12px;
   border-bottom: 1px solid #eee;
 }
 
@@ -1244,8 +1244,8 @@ watch(
   span {
     display: block;
     margin-bottom: 5px;
-    color: #333;
     font-weight: 600;
+    color: #333;
   }
 }
 
@@ -1253,11 +1253,11 @@ watch(
   width: 100%;
   height: 34px;
   padding: 6px 12px;
+  font-size: 14px;
+  color: #555;
+  background: #fff;
   border: 1px solid #d2d6de;
   border-radius: 0;
-  background: #fff;
-  color: #555;
-  font-size: 14px;
   outline: none;
   box-shadow: none;
 
@@ -1309,29 +1309,29 @@ textarea.form-control {
 }
 
 .config-tab {
-  min-width: 110px;
   height: 38px;
+  min-width: 110px;
   padding: 8px 15px;
+  font-size: 14px;
+  line-height: 20px;
+  color: #337ab7;
+  white-space: nowrap;
+  cursor: pointer;
+  background: transparent;
   border: 1px solid transparent;
   border-bottom: 0;
   border-radius: 3px 3px 0 0;
-  background: transparent;
-  color: #337ab7;
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 20px;
-  white-space: nowrap;
 
   &.active {
-    border-color: #ddd;
-    background: #fff;
     color: #333;
     cursor: default;
+    background: #fff;
+    border-color: #ddd;
   }
 
   &:not(.active):hover {
-    background: #f5f5f5;
     color: #23527c;
+    background: #f5f5f5;
   }
 }
 
@@ -1341,15 +1341,15 @@ textarea.form-control {
 
   h3 {
     margin: 0 0 12px;
-    color: #333;
     font-size: 15px;
+    color: #333;
   }
 }
 
 .profile-section--tab {
   min-height: 210px;
-  border-color: #ddd;
   border-top: 0;
+  border-color: #ddd;
 }
 
 .fixed-table-toolbar {
@@ -1380,55 +1380,55 @@ textarea.form-control {
 
 .btn {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 34px;
   height: 34px;
+  min-width: 34px;
   padding: 6px 12px;
+  font-size: 14px;
+  line-height: 1.4286;
+  color: #333;
+  white-space: nowrap;
+  cursor: pointer;
+  background: #fff;
   border: 1px solid transparent;
   border-radius: 3px;
-  background: #fff;
-  color: #333;
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1.42857143;
-  white-space: nowrap;
+  align-items: center;
+  justify-content: center;
 
   &.disabled,
   &:disabled {
+    pointer-events: none;
     cursor: not-allowed;
     opacity: 0.55;
-    pointer-events: none;
   }
 }
 
 .btn-default {
-  border-color: #ddd;
   background: #fff;
+  border-color: #ddd;
 }
 
 .btn-primary {
-  border-color: #367fa9;
-  background: #3c8dbc;
   color: #fff;
+  background: #3c8dbc;
+  border-color: #367fa9;
 }
 
 .btn-success {
-  border-color: #008d4c;
-  background: #00a65a;
   color: #fff;
+  background: #00a65a;
+  border-color: #008d4c;
 }
 
 .btn-danger {
-  border-color: #d73925;
-  background: #dd4b39;
   color: #fff;
+  background: #dd4b39;
+  border-color: #d73925;
 }
 
 .btn-warning-light {
-  border-color: #f0ad4e;
-  background: #fff8e6;
   color: #8a6d3b;
+  background: #fff8e6;
+  border-color: #f0ad4e;
 }
 
 .keep-open,
@@ -1449,9 +1449,9 @@ textarea.form-control {
   z-index: 10;
   min-width: 150px;
   padding: 6px 0;
+  background: #fff;
   border: 1px solid #ccc;
   border-radius: 4px;
-  background: #fff;
   box-shadow: 0 6px 12px rgb(0 0 0 / 18%);
 }
 
@@ -1460,8 +1460,8 @@ textarea.form-control {
     display: block;
     padding: 4px 12px;
     color: #333;
-    cursor: pointer;
     white-space: nowrap;
+    cursor: pointer;
   }
 }
 
@@ -1470,28 +1470,28 @@ textarea.form-control {
     display: block;
     width: 100%;
     padding: 5px 16px;
-    border: 0;
-    background: transparent;
     color: #333;
-    cursor: pointer;
     text-align: left;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
   }
 }
 
 .page-size-dropdown {
-  left: 0;
   right: auto;
+  left: 0;
   min-width: 58px;
 
   button {
     display: block;
     width: 100%;
     padding: 5px 14px;
-    border: 0;
-    background: transparent;
     color: #333;
-    cursor: pointer;
     text-align: left;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
 
     &:hover {
       background: #f5f5f5;
@@ -1516,36 +1516,36 @@ textarea.form-control {
 
 .fixed-table-loading {
   position: absolute;
-  inset: 0 0 auto 0;
   z-index: 2;
   padding: 8px;
-  background: rgb(255 255 255 / 85%);
   color: #333;
   text-align: center;
+  background: rgb(255 255 255 / 85%);
+  inset: 0 0 auto;
 }
 
 .table {
   width: 100%;
   min-width: 760px;
   margin-bottom: 0;
-  border-collapse: collapse;
-  background: #fff;
   color: #333;
+  background: #fff;
+  border-collapse: collapse;
 
   th,
   td {
     padding: 8px;
-    border: 1px solid #f4f4f4;
-    color: #333;
     font-size: 14px;
-    vertical-align: middle;
+    color: #333;
     white-space: nowrap;
+    vertical-align: middle;
+    border: 1px solid #f4f4f4;
   }
 
   th {
-    border-bottom-width: 2px;
-    background: #fff;
     font-weight: 700;
+    background: #fff;
+    border-bottom-width: 2px;
   }
 
   tbody tr:nth-of-type(odd) {
@@ -1567,10 +1567,10 @@ textarea.form-control {
 }
 
 .sortable::after {
-  content: '↕';
   margin-left: 6px;
-  color: #ddd;
   font-size: 12px;
+  color: #ddd;
+  content: '↕';
 }
 
 .no-record {
@@ -1581,18 +1581,18 @@ textarea.form-control {
 
 .btn-operate {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 22px;
   height: 22px;
-  margin-right: 4px;
+  min-width: 22px;
   padding: 0 4px;
-  border: 0;
-  border-radius: 2px;
-  background: transparent;
+  margin-right: 4px;
+  line-height: 1;
   color: #3c8dbc;
   cursor: pointer;
-  line-height: 1;
+  background: transparent;
+  border: 0;
+  border-radius: 2px;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
     background: #eaf4fb;
@@ -1606,12 +1606,12 @@ textarea.form-control {
 .label {
   display: inline;
   padding: 0.2em 0.6em 0.3em;
-  border-radius: 0.25em;
-  color: #fff;
   font-size: 75%;
   font-weight: 700;
   line-height: 1;
+  color: #fff;
   white-space: nowrap;
+  border-radius: 0.25em;
 }
 
 .label-success {
@@ -1650,18 +1650,18 @@ textarea.form-control {
 }
 
 .page-btn {
-  min-width: 34px;
   height: 34px;
+  min-width: 34px;
   padding: 6px 12px;
-  border: 1px solid #ddd;
-  background: #fff;
   color: #777;
   cursor: pointer;
+  background: #fff;
+  border: 1px solid #ddd;
 
   &.active {
-    border-color: #3c8dbc;
-    background: #3c8dbc;
     color: #fff;
+    background: #3c8dbc;
+    border-color: #3c8dbc;
   }
 
   &:disabled {
@@ -1677,7 +1677,7 @@ textarea.form-control {
   border: 1px solid #ddd;
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .skit-fastadmin-page {
     padding: 10px;
   }

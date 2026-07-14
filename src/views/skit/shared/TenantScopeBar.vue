@@ -25,11 +25,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue'
-import {
-  selectTenantScope,
-  type TenantScope,
-  type TenantScopeSelection
-} from './tenantScope'
+import { selectTenantScope, type TenantScope, type TenantScopeSelection } from './tenantScope'
 
 export interface TenantScopeOption {
   tenantId: number

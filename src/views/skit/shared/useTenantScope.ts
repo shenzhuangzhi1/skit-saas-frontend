@@ -11,9 +11,7 @@ import {
 export const useTenantScope = () => {
   const userStore = useUserStore()
   const originalTenantId = Number(getTenantId())
-  const current = ref(
-    createTenantScope({ roles: userStore.getRoles, originalTenantId })
-  )
+  const current = ref(createTenantScope({ roles: userStore.getRoles, originalTenantId }))
 
   const select = (selection: TenantScopeSelection) => {
     current.value = selectTenantScope(current.value, selection)
