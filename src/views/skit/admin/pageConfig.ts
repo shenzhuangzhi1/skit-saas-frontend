@@ -239,33 +239,32 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
   },
   adRecord: {
     key: 'adRecord',
-    title: '广告记录',
-    liveRoute: '/manystore/duanju/ad_record?addtabs=1',
-    apiPath: '/admin-api/skit/duanju/ad-records',
-    totalRows: 947,
-    description: '记录用户广告展示收益、Taku平台ID、交易ID和业务积分。',
+    title: '广告监控',
+    liveRoute: '/skit/ad-record',
+    apiPath: '/admin-api/skit/tenant/ad-events/page',
+    description: '只读查看服务端验证广告事件、平台回调轨迹、对账差异和分成分录。',
     columns: cols([
-      ['0', '选择', 48],
       ['id', 'ID', 80],
-      ['user_id', '用户ID', 100],
-      ['ad_network', '底层平台', 130],
-      ['network_firm_id', 'Taku平台ID', 140],
-      ['trans_id', '交易ID', 220],
-      ['publisher_revenue', '展示收益', 120],
-      ['reward_points', '业务积分', 120],
-      ['createtime', '创建时间', 170]
+      ['sessionId', '广告会话', 220],
+      ['memberId', '会员ID', 100],
+      ['provider', '平台', 100],
+      ['sourceVerificationStatus', '证据状态', 150],
+      ['rewardQualificationStatus', '奖励资格', 150],
+      ['reconciliationStatus', '收益状态', 150],
+      ['estimatedAmount', '预估收益', 120],
+      ['reconciledAmount', '已对账收益', 130],
+      ['occurredTime', '发生时间', 170]
     ]),
     searchFields: fields([
-      ['id', 'ID'],
-      ['user_id', '用户ID'],
-      ['ad_network', '底层平台'],
-      ['network_firm_id', 'Taku平台ID'],
-      ['trans_id', '交易ID'],
-      ['publisher_revenue', '展示收益'],
-      ['reward_points', '业务积分'],
-      ['createtime', '创建时间', 'dateRange']
+      ['memberId', '会员ID'],
+      ['adAccountId', '广告账号ID'],
+      ['provider', '平台', 'select'],
+      ['reconciliationStatus', '收益状态', 'select'],
+      ['currency', '币种'],
+      ['occurredTime', '发生时间', 'dateRange']
     ]),
-    toolbar: ['刷新', '普通搜索', '切换列', '导出数据']
+    toolbar: ['刷新', '查看轨迹'],
+    operateMode: 'detail'
   },
   withdraw: {
     key: 'withdraw',
@@ -775,7 +774,7 @@ export const skitMenuGroups: SkitMenuGroup[] = [
     title: '短剧运营',
     items: [
       { key: 'drama', title: '短剧管理', routeName: 'SkitDrama' },
-      { key: 'adRecord', title: '广告记录', routeName: 'SkitAdRecord', totalRows: 947 },
+      { key: 'adRecord', title: '广告监控', routeName: 'SkitAdRecord' },
       { key: 'withdraw', title: '积分提现', routeName: 'SkitWithdraw', totalRows: 26 },
       { key: 'scoreLog', title: '积分记录', routeName: 'SkitScoreLog', totalRows: 1936 },
       { key: 'loginRecord', title: '登录记录', routeName: 'SkitLoginRecord', totalRows: 1342 },

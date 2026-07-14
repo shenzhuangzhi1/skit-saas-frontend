@@ -1,4 +1,5 @@
 import { Layout, getParentLayout } from '@/utils/routerHelper'
+import { PRODUCT_AD_MONITOR_ROUTE_NAME } from '@/router/productMenu'
 
 const { t } = useI18n()
 /**
@@ -137,10 +138,9 @@ const remainingRouter: AppRouteRecordRaw[] = [
       },
       {
         path: 'ad-record',
-        component: () => import('@/views/skit/admin/AdminTable.vue'),
-        name: 'SkitAdRecord',
-        props: { pageKey: 'adRecord' },
-        meta: { title: '广告记录', icon: 'ep:histogram', noCache: false }
+        component: () => import('@/views/skit/ad-monitor/index.vue'),
+        name: PRODUCT_AD_MONITOR_ROUTE_NAME,
+        meta: { title: '广告监控', icon: 'ep:histogram', noCache: false }
       },
       {
         path: 'withdraw',

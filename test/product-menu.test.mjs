@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
-import { selectProductTopLevelRoutes } from '../src/router/productMenu.ts'
+import {
+  PRODUCT_AD_MONITOR_ROUTE_NAME,
+  selectProductTopLevelRoutes
+} from '../src/router/productMenu.ts'
 
 test('product navigation keeps only Home, Skit SaaS, and hidden utility routes', () => {
   const routes = [
@@ -57,4 +60,8 @@ test('dashboard has no duplicate agent tenant entry', () => {
   assert.doesNotMatch(source, /代理商租户管理/)
   assert.doesNotMatch(source, /promotionAgent/)
   assert.doesNotMatch(source, /SkitPromotionAgent/)
+})
+
+test('advertising monitor keeps the stable route name used by dashboard links', () => {
+  assert.equal(PRODUCT_AD_MONITOR_ROUTE_NAME, 'SkitAdRecord')
 })
