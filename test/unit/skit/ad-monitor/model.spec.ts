@@ -27,7 +27,7 @@ describe('advertising monitor query boundary', () => {
         reconciliationStatus: 'FROZEN',
         startTime: '2026-07-08 00:00:00',
         endTime: '2026-07-15 00:00:00',
-        timezone: 'Asia/Shanghai',
+        timezone: 'UTC+8',
         currency: 'CNY',
         ignoredClientField: 'must-not-cross-the-api-boundary'
       } as never)
@@ -40,7 +40,7 @@ describe('advertising monitor query boundary', () => {
       reconciliationStatus: 'FROZEN',
       startTime: '2026-07-08 00:00:00',
       endTime: '2026-07-15 00:00:00',
-      timezone: 'Asia/Shanghai',
+      timezone: 'UTC+8',
       currency: 'CNY'
     })
   })
@@ -110,9 +110,13 @@ describe('advertising monitor presentation model', () => {
     expect(callbackSignatureLabel('VERIFIED')).toBe('未知状态（VERIFIED）')
     expect(callbackSignatureLabel('INVALID')).toBe('未知状态（INVALID）')
     expect(sourceVerificationLabel('UNSIGNED_OBSERVATION')).toBe('平台展示观察')
+    expect(sourceVerificationLabel('REPORT_CONFIRMED')).toBe('官方报表已确认')
+    expect(sourceVerificationLabel('LEGACY_UNVERIFIED')).toBe('历史客户端数据（未验证）')
     expect(reconciliationStatusLabel('FROZEN')).toBe('预估冻结')
     expect(reconciliationStatusLabel('RECONCILED')).toBe('已对账')
     expect(reconciliationStatusLabel('SUSPENSE')).toBe('暂挂')
+    expect(reconciliationStatusLabel('NON_SETTLEABLE')).toBe('不可结算')
+    expect(reconciliationStatusLabel('APPLIED')).toBe('修订已应用')
     expect(reportStatusLabel('STALE')).toBe('报表已过期')
   })
 

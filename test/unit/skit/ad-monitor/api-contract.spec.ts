@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 const { get } = vi.hoisted(() => ({ get: vi.fn() }))
 
@@ -8,7 +10,15 @@ vi.mock('@/config/axios', () => ({
 
 import { getAdAnalyticsOverview, getAdAnalyticsTimeseries } from '@/api/skit/analytics'
 import { getAdEvent, getAdEventPage } from '@/api/skit/adEvent'
+import type {
+  AdMatchStatus,
+  AdProvider,
+  AdReconciliationStatus,
+  AdRewardQualificationStatus,
+  AdSourceVerificationStatus
+} from '@/api/skit/adEvent'
 import { getReconciliation, getReconciliationPage } from '@/api/skit/reconciliation'
+import type { ReconciliationRevisionStatus } from '@/api/skit/reconciliation'
 
 describe('read-only advertising management API clients', () => {
   beforeEach(() => get.mockReset())
@@ -51,7 +61,7 @@ describe('read-only advertising management API clients', () => {
       provider: 'TAKU',
       sourceVerificationStatus: 'UNSIGNED_OBSERVATION'
     })
-    await getAdEvent(99, { tenantId: 23, timezone: 'Asia/Shanghai' })
+    await getAdEvent(99, { tenantId: 23, timezone: 'UTC+8' })
 
     expect(get).toHaveBeenNthCalledWith(1, {
       url: '/skit/tenant/ad-events/page',
@@ -66,7 +76,7 @@ describe('read-only advertising management API clients', () => {
     })
     expect(get).toHaveBeenNthCalledWith(2, {
       url: '/skit/tenant/ad-events/get',
-      params: { tenantId: 23, timezone: 'Asia/Shanghai', id: 99 },
+      params: { tenantId: 23, timezone: 'UTC+8', id: 99 },
       skipErrorMessage: true
     })
   })
@@ -101,5 +111,56 @@ describe('read-only advertising management API clients', () => {
       params: { id: 81 },
       skipErrorMessage: true
     })
+  })
+
+  it('models every immutable legacy and reconciliation status returned by the backend', () => {
+    const eventApiSource = readFileSync(
+      resolve(process.cwd(), 'src/api/skit/adEvent/index.ts'),
+      'utf8'
+    )
+    const reconciliationApiSource = readFileSync(
+      resolve(process.cwd(), 'src/api/skit/reconciliation/index.ts'),
+      'utf8'
+    )
+    const provider: AdProvider = 'PANGLE'
+    const matchStatus: AdMatchStatus = 'LEGACY_UNMATCHED'
+    const verificationStatus: AdSourceVerificationStatus = 'REPORT_CONFIRMED'
+    const legacyVerificationStatus: AdSourceVerificationStatus = 'LEGACY_UNVERIFIED'
+    const rewardStatus: AdRewardQualificationStatus = 'NOT_APPLICABLE'
+    const eventStatus: AdReconciliationStatus = 'NON_SETTLEABLE'
+    const appliedRevision: ReconciliationRevisionStatus = 'APPLIED'
+    const failedRevision: ReconciliationRevisionStatus = 'FAILED'
+
+    expect([
+      provider,
+      matchStatus,
+      verificationStatus,
+      legacyVerificationStatus,
+      rewardStatus,
+      eventStatus,
+      appliedRevision,
+      failedRevision
+    ]).toEqual([
+      'PANGLE',
+      'LEGACY_UNMATCHED',
+      'REPORT_CONFIRMED',
+      'LEGACY_UNVERIFIED',
+      'NOT_APPLICABLE',
+      'NON_SETTLEABLE',
+      'APPLIED',
+      'FAILED'
+    ])
+    for (const status of [
+      'PANGLE',
+      'LEGACY_UNMATCHED',
+      'REPORT_CONFIRMED',
+      'LEGACY_UNVERIFIED',
+      'NOT_APPLICABLE',
+      'NON_SETTLEABLE'
+    ]) {
+      expect(eventApiSource).toContain(`'${status}'`)
+    }
+    expect(reconciliationApiSource).toContain("'APPLIED'")
+    expect(reconciliationApiSource).toContain("'FAILED'")
   })
 })

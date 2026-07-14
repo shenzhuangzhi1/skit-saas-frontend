@@ -66,10 +66,10 @@
             placeholder="全部"
             class="!w-190px"
           >
-            <el-option label="展示待奖励" value="IMPRESSION_PENDING_REWARD" />
             <el-option label="预估冻结" value="FROZEN" />
             <el-option label="暂挂" value="SUSPENSE" />
             <el-option label="已对账" value="RECONCILED" />
+            <el-option label="不可结算（历史）" value="NON_SETTLEABLE" />
           </el-select>
         </el-form-item>
         <el-form-item label="报表状态">
@@ -508,7 +508,7 @@ const loadDashboard = async () => {
     adAccountId: filters.adAccountId,
     startTime: window.startTime,
     endTime: window.endTime,
-    timezone: 'Asia/Shanghai',
+    timezone: 'UTC+8',
     currency: filters.currency || undefined
   }
   const overviewQuery = buildScopedMonitorParams(scopeModel.value, baseInput)
@@ -520,8 +520,6 @@ const loadDashboard = async () => {
     ...baseInput,
     endTime: eventPageEndAnchor.value ? formatDate(eventPageEndAnchor.value) : window.endTime,
     ...eventPagination,
-    provider: 'TAKU',
-    sourceVerificationStatus: 'UNSIGNED_OBSERVATION',
     reconciliationStatus: filters.reconciliationStatus || undefined
   })
   const reconciliationQuery = buildScopedMonitorParams(scopeModel.value, {
@@ -531,7 +529,7 @@ const loadDashboard = async () => {
     currency: filters.currency || undefined,
     reportDateStart: window.reportDateStart,
     reportDateEnd: window.reportDateEnd,
-    timezone: 'Asia/Shanghai'
+    timezone: 'UTC+8'
   })
   try {
     const snapshot = await loadAdMonitorSnapshot(
@@ -614,7 +612,7 @@ const normalizeCurrency = (value: string) => {
 
 const detailScope = () =>
   buildScopedMonitorParams(scopeModel.value, {
-    timezone: overview.value?.timezone || 'Asia/Shanghai'
+    timezone: overview.value?.timezone || 'UTC+8'
   })
 
 const openEventDetail = async (id: number) => {

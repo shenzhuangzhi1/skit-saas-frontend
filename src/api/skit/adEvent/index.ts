@@ -1,15 +1,18 @@
 import request from '@/config/axios'
 import type { AdAnalyticsBaseQuery } from '@/api/skit/analytics'
 
-export type AdProvider = 'TAKU'
-export type AdMatchStatus = 'MATCHED' | 'UNMATCHED' | 'CONFLICT'
-export type AdSourceVerificationStatus = 'UNSIGNED_OBSERVATION'
-export type AdRewardQualificationStatus = 'PENDING_REWARD' | 'REWARDED' | 'NON_REWARDED'
-export type AdReconciliationStatus =
-  | 'IMPRESSION_PENDING_REWARD'
-  | 'FROZEN'
-  | 'SUSPENSE'
-  | 'RECONCILED'
+export type AdProvider = 'PANGLE' | 'TAKU'
+export type AdMatchStatus = 'MATCHED' | 'LEGACY_UNMATCHED'
+export type AdSourceVerificationStatus =
+  | 'UNSIGNED_OBSERVATION'
+  | 'REPORT_CONFIRMED'
+  | 'LEGACY_UNVERIFIED'
+export type AdRewardQualificationStatus =
+  | 'PENDING_REWARD'
+  | 'REWARDED'
+  | 'NON_REWARDED'
+  | 'NOT_APPLICABLE'
+export type AdReconciliationStatus = 'FROZEN' | 'SUSPENSE' | 'RECONCILED' | 'NON_SETTLEABLE'
 export type AdCallbackAttemptStatus =
   | 'CANONICAL'
   | 'DUPLICATE'

@@ -80,6 +80,35 @@ describe('advertising monitoring components', () => {
     expect(wrapper.emitted('select')?.[0]).toEqual([71])
   })
 
+  it('labels migrated client-trusted records as legacy and non-settleable', () => {
+    const wrapper = mount(EventTable, {
+      props: {
+        rows: [
+          {
+            id: 7,
+            tenantId: 23,
+            memberId: 8,
+            adAccountId: 3,
+            provider: 'PANGLE',
+            placementId: 'legacy-placement',
+            matchStatus: 'LEGACY_UNMATCHED',
+            sourceVerificationStatus: 'LEGACY_UNVERIFIED',
+            rewardQualificationStatus: 'NOT_APPLICABLE',
+            reconciliationStatus: 'NON_SETTLEABLE',
+            currency: 'CNY',
+            estimatedAmount: '0',
+            reconciledAmount: null,
+            occurredTime: 1710000000000
+          }
+        ]
+      }
+    })
+
+    expect(wrapper.text()).toContain('历史未匹配')
+    expect(wrapper.text()).toContain('历史客户端数据（未验证）')
+    expect(wrapper.text()).toContain('不可结算')
+  })
+
   it('shows callback authentication and ledger traces in the event detail', () => {
     const wrapper = mount(EventDetailDrawer, {
       props: {
@@ -88,7 +117,7 @@ describe('advertising monitoring components', () => {
           id: 71,
           tenantId: 23,
           asOf: 1710000004000,
-          timezone: 'Asia/Shanghai',
+          timezone: 'UTC+8',
           sessionId: 'session-redacted-71',
           memberId: 8,
           adAccountId: 3,

@@ -76,7 +76,7 @@ const emit = defineEmits<{ (event: 'select', id: number): void }>()
 
 const money = (currency: string, amount: string) => decimalAmountToMoneyUnits(currency, amount)
 const matchLabel = (status: string) =>
-  ({ MATCHED: '已匹配', UNMATCHED: '未匹配', CONFLICT: '证据冲突' })[status] || status
+  ({ MATCHED: '已匹配', LEGACY_UNMATCHED: '历史未匹配' })[status] || status
 </script>
 
 <style scoped>

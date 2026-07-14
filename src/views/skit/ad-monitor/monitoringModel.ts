@@ -131,7 +131,9 @@ const CALLBACK_SIGNATURE_LABELS: Record<string, string> = {
 }
 
 const SOURCE_VERIFICATION_LABELS: Record<string, string> = {
-  UNSIGNED_OBSERVATION: '平台展示观察'
+  UNSIGNED_OBSERVATION: '平台展示观察',
+  REPORT_CONFIRMED: '官方报表已确认',
+  LEGACY_UNVERIFIED: '历史客户端数据（未验证）'
 }
 
 const RECONCILIATION_STATUS_LABELS: Record<string, string> = {
@@ -139,8 +141,9 @@ const RECONCILIATION_STATUS_LABELS: Record<string, string> = {
   FROZEN: '预估冻结',
   RECONCILED: '已对账',
   PARTIAL: '部分对账',
-  IMPRESSION_PENDING_REWARD: '展示已记录，等待奖励验证',
   SUSPENSE: '暂挂',
+  NON_SETTLEABLE: '不可结算',
+  APPLIED: '修订已应用',
   FAILED: '对账失败',
   REVERSED: '已冲正'
 }

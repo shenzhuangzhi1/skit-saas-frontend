@@ -3,6 +3,7 @@ import type { AdAnalyticsBaseQuery } from '@/api/skit/analytics'
 
 export type ReconciliationStatus = 'RECONCILED' | 'PARTIAL' | 'SUSPENSE'
 export type ReconciliationReportPullStatus = 'PENDING' | 'PROCESSING' | 'SUCCEEDED' | 'FAILED'
+export type ReconciliationRevisionStatus = 'APPLIED' | 'PARTIAL' | 'SUSPENSE' | 'FAILED'
 
 export interface StablePageResult<T> {
   tenantId?: number | null
@@ -63,7 +64,7 @@ export interface ReconciliationRevisionVO {
   targetActualAmount: string
   unmatchedActualAmount: string
   finalRevision: boolean
-  status: ReconciliationStatus
+  status: ReconciliationRevisionStatus
   reconciledAt: number
 }
 
