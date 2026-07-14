@@ -40,6 +40,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify callback log safety
+        run: bash deploy/test-callback-log-safety.sh
+
+      - name: Run product tests
+        run: |
+          pnpm test:unit
+          node --test test/product-menu.test.mjs
+
+      - name: Verify types and production lint
+        run: |
+          pnpm ts:check
+          pnpm lint
+
       - name: Build production assets
         env:
           VITE_BASE_URL: ''
