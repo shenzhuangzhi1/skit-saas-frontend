@@ -94,16 +94,6 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
         ])
       },
       {
-        title: '广告收益配置',
-        fields: fields([
-          ['ad_base_score', '广告基础积分'],
-          ['max_ad_score', '单日最高积分'],
-          ['self_commission_rate', '本人佣金比例'],
-          ['agent_commission_rate', '代理佣金比例'],
-          ['reward_enabled', '广告奖励开关']
-        ])
-      },
-      {
         title: '通知配置',
         fields: fields([
           ['sms_sign', '短信签名'],
@@ -557,7 +547,6 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['appid', 'AppID', 190],
       ['appsecret', 'AppSecret', 220],
       ['ad_base_score', '广告基础积分', 130],
-      ['self_commission_rate', '本人佣金比例(%)', 160],
       ['max_ad_score', '最高积分', 110],
       ['withdraw_min_amount', '最低提现金额', 140],
       ['withdraw_fee_rate', '提现手续费比例(%)', 170],
@@ -573,7 +562,6 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['name', '小程序名称'],
       ['appid', 'AppID'],
       ['ad_base_score', '广告基础积分'],
-      ['self_commission_rate', '本人佣金比例(%)'],
       ['max_ad_score', '最高积分'],
       ['withdraw_min_amount', '最低提现金额'],
       ['withdraw_fee_rate', '提现手续费比例(%)'],
@@ -781,35 +769,6 @@ export const skitMenuGroups: SkitMenuGroup[] = [
       { key: 'deviceLog', title: '设备日志', routeName: 'SkitDeviceLog', totalRows: 153 },
       { key: 'user', title: '用户管理', routeName: 'SkitUser', totalRows: 1258 },
       { key: 'announcement', title: '公告管理', routeName: 'SkitAnnouncement', totalRows: 2 }
-    ]
-  },
-  {
-    title: '抖音管理',
-    items: [
-      {
-        key: 'douyinMiniProgram',
-        title: '抖音小程序',
-        routeName: 'SkitDouyinMiniProgram',
-        totalRows: 3
-      },
-      {
-        key: 'douyinLoginRecord',
-        title: '抖音登录记录',
-        routeName: 'SkitDouyinLoginRecord',
-        totalRows: 1303
-      },
-      {
-        key: 'douyinAdRecord',
-        title: '抖音广告记录',
-        routeName: 'SkitDouyinAdRecord',
-        totalRows: 717
-      },
-      {
-        key: 'douyinTrafficRecord',
-        title: '抖音投流记录',
-        routeName: 'SkitDouyinTrafficRecord',
-        totalRows: 34513
-      }
     ]
   }
 ]

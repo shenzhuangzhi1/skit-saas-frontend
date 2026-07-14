@@ -65,3 +65,33 @@ test('dashboard has no duplicate agent tenant entry', () => {
 test('advertising monitor keeps the stable route name used by dashboard links', () => {
   assert.equal(PRODUCT_AD_MONITOR_ROUTE_NAME, 'SkitAdRecord')
 })
+
+test('product routes do not retain duplicate dashboard or legacy Douyin management', () => {
+  const source = readFileSync(
+    new URL('../src/router/modules/remaining.ts', import.meta.url),
+    'utf8'
+  )
+
+  assert.doesNotMatch(source, /SkitDashboard/)
+  assert.doesNotMatch(source, /SkitDouyin/)
+  assert.doesNotMatch(source, /douyin-(?:mini-program|login-record|ad-record|traffic-record)/)
+})
+
+test('home uses verified analytics and contains no seeded financial fallback', () => {
+  const source = readFileSync(new URL('../src/views/Home/Index.vue', import.meta.url), 'utf8')
+
+  assert.match(source, /getAdAnalyticsOverview/)
+  assert.doesNotMatch(source, /getSkitDashboardSummary/)
+  assert.doesNotMatch(source, /defaultSummary/)
+  assert.doesNotMatch(source, /totalProfit|profitRate|rankRows|v1\.0\.62/)
+})
+
+test('legacy sample configuration no longer exposes a second commission editor', () => {
+  const source = readFileSync(
+    new URL('../src/views/skit/admin/pageConfig.ts', import.meta.url),
+    'utf8'
+  )
+
+  assert.doesNotMatch(source, /self_commission_rate|agent_commission_rate/)
+  assert.doesNotMatch(source, /title:\s*'抖音管理'/)
+})

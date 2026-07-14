@@ -74,7 +74,7 @@ const remainingRouter: AppRouteRecordRaw[] = [
   {
     path: '/skit',
     component: Layout,
-    redirect: '/skit/dashboard',
+    redirect: '/skit/user',
     name: 'SkitSaas',
     meta: {
       title: '短剧 SaaS',
@@ -82,16 +82,6 @@ const remainingRouter: AppRouteRecordRaw[] = [
       alwaysShow: true
     },
     children: [
-      {
-        path: 'dashboard',
-        component: () => import('@/views/Home/Index.vue'),
-        name: 'SkitDashboard',
-        meta: {
-          title: '控制台',
-          icon: 'ep:data-analysis',
-          noCache: false
-        }
-      },
       {
         path: 'general',
         component: getParentLayout(),
@@ -187,47 +177,6 @@ const remainingRouter: AppRouteRecordRaw[] = [
         name: 'SkitAnnouncement',
         props: { pageKey: 'announcement' },
         meta: { title: '公告管理', icon: 'ep:bell', noCache: false }
-      },
-      {
-        path: 'douyin',
-        component: getParentLayout(),
-        redirect: '/skit/douyin/mini-program',
-        name: 'SkitDouyin',
-        meta: { title: '抖音管理', icon: 'ep:cellphone', alwaysShow: true },
-        children: [
-          {
-            path: 'mini-program',
-            alias: ['/skit/douyin-mini-program'],
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitDouyinMiniProgram',
-            props: { pageKey: 'douyinMiniProgram' },
-            meta: { title: '抖音小程序', icon: 'ep:cellphone', noCache: false }
-          },
-          {
-            path: 'login-record',
-            alias: ['/skit/douyin-login-record'],
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitDouyinLoginRecord',
-            props: { pageKey: 'douyinLoginRecord' },
-            meta: { title: '抖音登录记录', icon: 'ep:connection', noCache: false }
-          },
-          {
-            path: 'ad-record',
-            alias: ['/skit/douyin-ad-record'],
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitDouyinAdRecord',
-            props: { pageKey: 'douyinAdRecord' },
-            meta: { title: '抖音广告记录', icon: 'ep:postcard', noCache: false }
-          },
-          {
-            path: 'traffic-record',
-            alias: ['/skit/douyin-traffic-record'],
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitDouyinTrafficRecord',
-            props: { pageKey: 'douyinTrafficRecord' },
-            meta: { title: '抖音投流记录', icon: 'ep:position', noCache: false }
-          }
-        ]
       }
     ]
   },
