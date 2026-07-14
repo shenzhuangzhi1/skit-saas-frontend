@@ -90,25 +90,11 @@ const remainingRouter: AppRouteRecordRaw[] = [
         meta: { title: '常规管理', icon: 'ep:setting', alwaysShow: true },
         children: [
           {
-            path: 'config',
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitSystemConfig',
-            props: { pageKey: 'systemConfig' },
-            meta: { title: '系统配置', icon: 'ep:tools', noCache: false }
-          },
-          {
             path: 'attachment',
             component: () => import('@/views/skit/admin/AdminTable.vue'),
             name: 'SkitAttachment',
             props: { pageKey: 'attachment' },
             meta: { title: '附件管理', icon: 'ep:folder-opened', noCache: false }
-          },
-          {
-            path: 'profile',
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitProfile',
-            props: { pageKey: 'profile' },
-            meta: { title: '个人资料', icon: 'ep:user', noCache: false }
           },
           {
             path: 'operation-log',

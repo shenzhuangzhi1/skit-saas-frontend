@@ -403,9 +403,7 @@ import {
   createSkitAdminRecord,
   deleteSkitAdminRecord,
   deleteSkitAdminRecordList,
-  getSkitSystemConfig,
   getSkitAdminRecordPage,
-  updateSkitSystemConfig,
   updateSkitAdminRecord,
   type SkitAdminRecordRespVO
 } from '@/api/skit/adminRecord'
@@ -462,10 +460,7 @@ const availableColumns = computed(() =>
   page.value.columns.filter((column) => column.prop !== 'state' && column.prop !== '0')
 )
 const hasTable = computed(() => availableColumns.value.length > 0 || hasSelection.value)
-const isSystemConfigPage = computed(() => page.value.key === 'systemConfig')
-const sectionTabsEnabled = computed(
-  () => isSystemConfigPage.value && (page.value.sections?.length || 0) > 1
-)
+const sectionTabsEnabled = computed(() => (page.value.sections?.length || 0) > 1)
 const activeSection = computed(() => {
   const sections = page.value.sections || []
   return sections[activeSectionIndex.value] || sections[0]
@@ -906,12 +901,6 @@ const changePage = async (target: number) => {
 
 const loadProfileModel = async () => {
   resetProfileModel()
-  if (!isSystemConfigPage.value) return
-  try {
-    applyProfileValues(await getSkitSystemConfig())
-  } catch {
-    ElMessage.warning('系统配置读取失败，已使用默认配置')
-  }
 }
 
 const refreshTable = async () => {
@@ -1129,15 +1118,6 @@ const jumpPage = () => {
 }
 
 const saveProfile = async (section: string) => {
-  if (isSystemConfigPage.value) {
-    try {
-      await updateSkitSystemConfig(buildProfilePayload())
-      applyProfileValues(await getSkitSystemConfig())
-    } catch {
-      ElMessage.error(`${section}保存失败`)
-      return
-    }
-  }
   ElMessage.success(`${section}保存成功`)
 }
 
@@ -1152,16 +1132,6 @@ const applyProfileValues = (values: Record<string, unknown>) => {
       formModel[field.prop] = normalizeProfileValue(values[field.prop], field.prop)
     })
   })
-}
-
-const buildProfilePayload = () => {
-  const payload: Record<string, string> = {}
-  page.value.sections?.forEach((section) => {
-    section.fields.forEach((field) => {
-      payload[field.prop] = formModel[field.prop] ?? ''
-    })
-  })
-  return payload
 }
 
 const normalizeProfileValue = (value: unknown, prop: string) => {

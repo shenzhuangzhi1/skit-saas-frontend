@@ -28,21 +28,6 @@ export interface SkitAdminRecordSaveReqVO {
   sort?: number
 }
 
-export interface SkitDashboardSummaryRespVO {
-  totalMembers: number
-  totalAdCount: number
-  totalRevenue: number
-  totalProfit: number
-  todayRegisterCount: number
-  todayAdCount: number
-  todayRevenue: number
-  todayProfit: number
-  rewardExchange: number
-  scorePerYuan: number
-}
-
-export type SkitSystemConfigRespVO = Record<string, unknown>
-
 export interface PageResult<T> {
   list: T[]
   total: number
@@ -95,35 +80,6 @@ export const seedSkitAdminRecordPage = (pageKey: string) => {
   return request.post<number>({
     url: '/skit/admin-record/seed',
     params: { pageKey },
-    ...silent
-  })
-}
-
-export const getSkitDashboardSummary = () => {
-  return request.get<SkitDashboardSummaryRespVO>({
-    url: '/skit/admin-record/dashboard-summary',
-    ...silent
-  })
-}
-
-export const getSkitSystemConfig = () => {
-  return request.get<SkitSystemConfigRespVO>({
-    url: '/skit/general/config',
-    ...silent
-  })
-}
-
-export const updateSkitSystemConfig = (data: Record<string, unknown>) => {
-  return request.put<boolean>({
-    url: '/skit/general/config',
-    data,
-    ...silent
-  })
-}
-
-export const resetSkitSystemConfig = () => {
-  return request.post<SkitSystemConfigRespVO>({
-    url: '/skit/general/config/reset',
     ...silent
   })
 }

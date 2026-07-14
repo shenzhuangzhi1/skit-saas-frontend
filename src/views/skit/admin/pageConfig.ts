@@ -52,59 +52,6 @@ const fields = (items: Array<[string, string, SkitSearchField['type']?]>): SkitS
   items.map(([prop, label, type = 'input']) => ({ prop, label, type }))
 
 export const skitPageConfigs: Record<string, SkitPageConfig> = {
-  systemConfig: {
-    key: 'systemConfig',
-    title: '系统配置',
-    parent: '常规管理',
-    liveRoute: '/manystore/general/config?addtabs=1',
-    apiPath: '/admin-api/skit/general/config',
-    description: '维护平台基础参数、上传策略、积分提现、广告收益和通知配置。',
-    columns: [],
-    searchFields: [],
-    toolbar: ['提交', '重置'],
-    sections: [
-      {
-        title: '基础配置',
-        fields: fields([
-          ['site_name', '站点名称'],
-          ['site_title', '站点标题'],
-          ['site_logo', '站点 Logo'],
-          ['site_icp', 'ICP备案号'],
-          ['site_copyright', '版权信息']
-        ])
-      },
-      {
-        title: '上传配置',
-        fields: fields([
-          ['upload_storage', '上传方式'],
-          ['upload_max_size', '最大上传大小'],
-          ['upload_exts', '允许上传后缀'],
-          ['upload_cdn_url', 'CDN 地址'],
-          ['upload_callback_url', '上传回调地址']
-        ])
-      },
-      {
-        title: '积分提现配置',
-        fields: fields([
-          ['score_per_yuan', '每元兑换积分'],
-          ['withdraw_min_amount', '最低提现金额'],
-          ['withdraw_fee_rate', '提现手续费比例'],
-          ['withdraw_fixed_fee', '提现固定手续费'],
-          ['withdraw_review_mode', '提现审核模式']
-        ])
-      },
-      {
-        title: '通知配置',
-        fields: fields([
-          ['sms_sign', '短信签名'],
-          ['mail_host', '邮件服务器'],
-          ['mail_username', '邮件账号'],
-          ['mail_from', '发件人'],
-          ['notify_webhook', '通知 Webhook']
-        ])
-      }
-    ]
-  },
   attachment: {
     key: 'attachment',
     title: '附件管理',
@@ -140,47 +87,6 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['createtime', '创建日期', 'dateRange']
     ]),
     toolbar: ['刷新', '添加', '编辑', '删除', '普通搜索', '切换列', '导出数据']
-  },
-  profile: {
-    key: 'profile',
-    title: '个人资料',
-    parent: '常规管理',
-    liveRoute: '/manystore/general/profile?addtabs=1',
-    apiPath: '/admin-api/skit/general/profile',
-    description: '维护管理员账号资料和商家基础信息。',
-    columns: [],
-    searchFields: [],
-    toolbar: ['提交', '重置', '上传', '选择'],
-    sections: [
-      {
-        title: '账号资料',
-        fields: fields([
-          ['username', '用户名'],
-          ['email', 'Email'],
-          ['nickname', '昵称'],
-          ['password', '密码']
-        ])
-      },
-      {
-        title: '商家信息',
-        fields: fields([
-          ['name', '店铺名称'],
-          ['logo', '商家 Logo'],
-          ['image', '店铺封面图'],
-          ['images', '店铺环境图片'],
-          ['addressCity', '城市选择'],
-          ['address', '店铺地址'],
-          ['addressDetail', '店铺详细地址'],
-          ['longitude', '经度'],
-          ['latitude', '纬度'],
-          ['yyzzdm', '营业执照'],
-          ['yyzzImages', '营业执照照片'],
-          ['tel', '服务电话'],
-          ['content', '店铺详情'],
-          ['reviewStatus', '审核状态']
-        ])
-      }
-    ]
   },
   operationLog: {
     key: 'operationLog',
@@ -752,9 +658,7 @@ export const skitMenuGroups: SkitMenuGroup[] = [
   {
     title: '常规管理',
     items: [
-      { key: 'systemConfig', title: '系统配置', routeName: 'SkitSystemConfig' },
       { key: 'attachment', title: '附件管理', routeName: 'SkitAttachment', totalRows: 2 },
-      { key: 'profile', title: '个人资料', routeName: 'SkitProfile' },
       { key: 'operationLog', title: '操作日志', routeName: 'SkitOperationLog', totalRows: 147 }
     ]
   },

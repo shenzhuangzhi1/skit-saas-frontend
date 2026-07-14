@@ -95,3 +95,14 @@ test('legacy sample configuration no longer exposes a second commission editor',
   assert.doesNotMatch(source, /self_commission_rate|agent_commission_rate/)
   assert.doesNotMatch(source, /title:\s*'抖音管理'/)
 })
+
+test('legacy generic dashboard and system configuration sources are removed', () => {
+  const routes = readFileSync(
+    new URL('../src/router/modules/remaining.ts', import.meta.url),
+    'utf8'
+  )
+  const api = readFileSync(new URL('../src/api/skit/adminRecord/index.ts', import.meta.url), 'utf8')
+
+  assert.doesNotMatch(routes, /SkitSystemConfig/)
+  assert.doesNotMatch(api, /dashboard-summary|SkitDashboardSummaryRespVO|getSkitDashboardSummary/)
+})
