@@ -1,4 +1,11 @@
 import request from '@/config/axios'
+import {
+  managementTenantBody,
+  managementTenantQuery,
+  type ManagementTenantTarget
+} from './managementTarget'
+
+export type { ManagementTenantTarget } from './managementTarget'
 
 export interface PageResult<T> {
   list: T[]
@@ -92,6 +99,110 @@ export interface TenantAdAccountVO {
   takuEnabled?: boolean
   takuAppKeyConfigured?: boolean
   takuSecretConfigured?: boolean
+}
+
+export type TenantAdRolloutState = 'OFF' | 'SHADOW_TEST_USERS' | 'ENFORCED'
+
+export interface TenantAdReadinessVO {
+  tenantId: number
+  adAccountId?: number | null
+  rolloutState: TenantAdRolloutState
+  readinessVersion: number
+  expectedReadinessVersion?: number
+  dedicatedUnlockPlacementId?: string | null
+  dedicatedPlacementVerified?: boolean
+  unlockNetworkFirmIds?: number[]
+  shadowTestMemberIds?: number[]
+  minNativeVersion?: string | null
+  minProtocolVersion?: number | null
+  callbackKeyVersion?: number | null
+  callbackKeyIssuedAt?: number | null
+  rewardSecretVersion?: number | null
+  rewardSecretIssuedAt?: number | null
+  callbackPublicUrlHttps?: boolean
+  tenantActive: boolean
+  accountReady: boolean
+  callbackKeyConfigured: boolean
+  rewardSecretConfigured: boolean
+  dedicatedUnlockPlacement: boolean
+  rewardCallbackTemplateVerified: boolean
+  impressionCallbackTemplateVerified: boolean
+  unlockNetworksAuthoritative: boolean
+  reportingCredentialConfigured: boolean
+  reportingPermissionVerified: boolean
+  reportFresh: boolean
+  signedRewardCallbackObserved: boolean
+  impressionCallbackObserved: boolean
+  nativeReleaseReady: boolean
+  protocolReady: boolean
+  shadowMembersValid: boolean
+  shadowReady: boolean
+  productionReady: boolean
+  blockers: string[]
+  lastSignedRewardCallbackAt?: number | null
+  lastImpressionCallbackAt?: number | null
+  lastReportSuccessAt?: number | null
+}
+
+export interface TenantAdCapabilityVO {
+  tenantId: number
+  adAccountId: number
+  rolloutState: TenantAdRolloutState
+  dedicatedUnlockPlacementId: string
+  unlockNetworkFirmIds: number[]
+  shadowTestMemberIds: number[]
+  minNativeVersion: string
+  minProtocolVersion: number
+  readinessVersion: number
+  enforcedAt?: number | null
+}
+
+export interface TenantAdCapabilityConfigReqVO {
+  adAccountId: number
+  dedicatedUnlockPlacementId: string
+  dedicatedPlacementVerified: boolean
+  rewardCallbackTemplateVerified: boolean
+  impressionCallbackTemplateVerified: boolean
+  unlockNetworkFirmIds: number[]
+  shadowTestMemberIds: number[]
+  minNativeVersion: string
+  minProtocolVersion: number
+  expectedReadinessVersion: number
+  reason: string
+}
+
+export interface TenantAdRolloutReqVO {
+  targetState: TenantAdRolloutState
+  minNativeVersion: string
+  minProtocolVersion: number
+  expectedReadinessVersion: number
+  reason: string
+}
+
+export type TakuReportTimezone = 'UTC-8' | 'UTC+8' | 'UTC+0'
+
+export interface TenantReportingConfigurationVO {
+  tenantId: number
+  adAccountId: number
+  appId: string
+  placementId: string
+  reportTimezone: TakuReportTimezone
+  currency: string
+  amountScale: number
+  adFormat: 'rewarded_video'
+  credentialConfigured: boolean
+  credentialVersion: number
+  permissionVerifiedAt?: number | null
+}
+
+export interface TenantReportingConfigurationSaveReqVO {
+  credentialVersion: number
+  publisherKey?: string
+  reportTimezone: TakuReportTimezone
+  currency: string
+  amountScale: number
+  adFormat: 'rewarded_video'
+  reason: string
 }
 
 export interface TenantAdAccountSaveReqVO extends TenantAgentProviderWriteFields {
@@ -258,6 +369,69 @@ export const updateTenantAdAccount = (data: TenantAdAccountSaveReqVO) => {
 export const clearTenantAdAccountCredentials = (data: TenantAdCredentialClearReqVO) => {
   return request.put<boolean>({ url: '/skit/tenant/ad-account/clear-credentials', data })
 }
+
+export const getManagedTenantAdAccount = (target: ManagementTenantTarget) =>
+  request.get<TenantAdAccountVO>({
+    url: '/skit/tenant/ad-account',
+    params: managementTenantQuery(target),
+    skipErrorMessage: true
+  })
+
+export const saveManagedTenantAdAccount = (
+  target: ManagementTenantTarget,
+  data: TenantAdAccountSaveReqVO
+) => {
+  const { tenantId: _ignoredTenantId, ...writeFields } = data
+  return request.put<TenantAdAccountVO>({
+    url: '/skit/tenant/ad-account',
+    data: managementTenantBody(target, writeFields),
+    skipErrorMessage: true
+  })
+}
+
+export const getTenantAdReadiness = (target: ManagementTenantTarget) =>
+  request.get<TenantAdReadinessVO>({
+    url: '/skit/tenant/ad-readiness',
+    params: managementTenantQuery(target),
+    skipErrorMessage: true
+  })
+
+export const configureTenantAdCapability = (
+  target: ManagementTenantTarget,
+  data: TenantAdCapabilityConfigReqVO
+) =>
+  request.put<TenantAdCapabilityVO>({
+    url: '/skit/tenant/ad-readiness/configuration',
+    data: managementTenantBody(target, data),
+    skipErrorMessage: true
+  })
+
+export const transitionTenantAdRollout = (
+  target: ManagementTenantTarget,
+  data: TenantAdRolloutReqVO
+) =>
+  request.put<TenantAdCapabilityVO>({
+    url: '/skit/tenant/ad-readiness/rollout',
+    data: managementTenantBody(target, data),
+    skipErrorMessage: true
+  })
+
+export const getTenantReportingConfiguration = (target: ManagementTenantTarget) =>
+  request.get<TenantReportingConfigurationVO>({
+    url: '/skit/tenant/ad-account/reporting-configuration',
+    params: managementTenantQuery(target),
+    skipErrorMessage: true
+  })
+
+export const saveTenantReportingConfiguration = (
+  target: ManagementTenantTarget,
+  data: TenantReportingConfigurationSaveReqVO
+) =>
+  request.put<TenantReportingConfigurationVO>({
+    url: '/skit/tenant/ad-account/reporting-configuration',
+    data: managementTenantBody(target, data),
+    skipErrorMessage: true
+  })
 
 export const getTenantCommissionRules = (tenantId: number) => {
   return request.get<CommissionRuleVO[] | { version: number; rules: CommissionRuleVO[] }>({
