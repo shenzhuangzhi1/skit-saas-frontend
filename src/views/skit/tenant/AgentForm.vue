@@ -100,7 +100,7 @@
           </el-row>
         </el-tab-pane>
 
-        <el-tab-pane label="穿山甲（可选）">
+        <el-tab-pane v-if="formType === 'create'" label="穿山甲（可选）">
           <el-alert
             class="mb-18px"
             :closable="false"
@@ -175,7 +175,7 @@
           <el-empty v-else :image-size="64" description="穿山甲未启用，可直接保存代理商" />
         </el-tab-pane>
 
-        <el-tab-pane label="Taku（可选）">
+        <el-tab-pane v-if="formType === 'create'" label="Taku（可选）">
           <el-alert
             class="mb-18px"
             :closable="false"
@@ -596,7 +596,7 @@ const clearProviderCredentials = async (provider: TenantApi.TenantAdProvider) =>
 }
 
 const applySecretFields = (
-  data: TenantApi.TenantAgentCreateReqVO | TenantApi.TenantAgentUpdateReqVO
+  data: TenantApi.TenantAgentCreateReqVO
 ) => {
   if (!isBlank(formData.value.pangleAppSecret)) {
     data.pangleAppSecret = formData.value.pangleAppSecret
@@ -642,17 +642,8 @@ const submitForm = async () => {
         name: formData.value.name.trim(),
         status: formData.value.status,
         expireTime,
-        remark: formData.value.remark.trim(),
-        pangleUsername: formData.value.pangleUsername.trim(),
-        pangleAppId: formData.value.pangleAppId.trim(),
-        panglePlacementId: formData.value.panglePlacementId.trim(),
-        pangleEnabled: formData.value.pangleEnabled,
-        takuUsername: formData.value.takuUsername.trim(),
-        takuAppId: formData.value.takuAppId.trim(),
-        takuPlacementId: formData.value.takuPlacementId.trim(),
-        takuEnabled: formData.value.takuEnabled
+        remark: formData.value.remark.trim()
       }
-      applySecretFields(data)
       await TenantApi.updateTenantAgent(data)
       message.success(t('common.updateSuccess'))
     }

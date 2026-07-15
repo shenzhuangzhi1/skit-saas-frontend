@@ -75,7 +75,7 @@ export interface TenantAgentCreateReqVO extends TenantAgentProviderWriteFields {
   expireTime: number
 }
 
-export interface TenantAgentUpdateReqVO extends TenantAgentProviderWriteFields {
+export interface TenantAgentUpdateReqVO {
   tenantId: number
   name: string
   status: number
