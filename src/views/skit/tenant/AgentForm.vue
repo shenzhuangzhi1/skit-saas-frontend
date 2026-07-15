@@ -595,9 +595,7 @@ const clearProviderCredentials = async (provider: TenantApi.TenantAdProvider) =>
   }
 }
 
-const applySecretFields = (
-  data: TenantApi.TenantAgentCreateReqVO
-) => {
+const applySecretFields = (data: TenantApi.TenantAgentCreateReqVO) => {
   if (!isBlank(formData.value.pangleAppSecret)) {
     data.pangleAppSecret = formData.value.pangleAppSecret
   }
