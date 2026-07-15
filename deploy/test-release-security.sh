@@ -23,14 +23,14 @@ grep -Fq 'install -m 600 deploy/known_hosts ~/.ssh/known_hosts' "${workflow}" \
 grep -Fq '124.221.50.30 ssh-ed25519 ' "${known_hosts}" \
   || fail "pinned frontend SSH host key does not cover the production host"
 
-rg -q 'RELEASE_ID: \$\{\{ github\.sha \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}' "${workflow}" \
+grep -Eq 'RELEASE_ID: \$\{\{ github\.sha \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}' "${workflow}" \
   || fail "frontend release staging is not bound to commit, workflow run, and rerun attempt"
 grep -Fq 'releases/frontend-${RELEASE_ID}' "${workflow}" \
   || fail "frontend artifacts do not use the run-unique release identifier"
 if grep -Fq 'releases/frontend-${IMAGE_TAG}' "${workflow}"; then
   fail "frontend release staging can be reused across reruns of the same commit"
 fi
-rg -q 'mkdir -p .*DEPLOY_PATH.*/releases.*&& mkdir -- .*RELEASE_BUNDLE_PATH' "${workflow}" \
+grep -Eq 'mkdir -p .*DEPLOY_PATH.*/releases.*&& mkdir -- .*RELEASE_BUNDLE_PATH' "${workflow}" \
   || fail "frontend upload does not atomically reject an existing release directory"
 for secret_argv_binding in \
   'GHCR_TOKEN=${GHCR_TOKEN_Q}' \
@@ -85,9 +85,9 @@ grep -Fq "if: always() && steps.deploy_config.outputs.enabled == 'true'" "${work
 grep -Fq 'DEPLOY_PATH=${DEPLOY_PATH_Q} RELEASE_ID=${RELEASE_ID_Q} bash ${REMOTE_CLEANUP_SCRIPT_Q}' "${workflow}" \
   || fail "independent frontend cleanup is not scoped to this release ID"
 
-secret_unlink_line="$(rg -n -F 'rm -f -- "${server_env_file}"' "${activation}" | tail -n 1 | cut -d: -f1 || true)"
-secret_source_line="$(rg -n -F -m 1 '. "${server_env_file}"' "${activation}" | cut -d: -f1 || true)"
-docker_access_line="$(rg -n -F -m 1 'prepare_docker_access' "${activation}" | tail -n 1 | cut -d: -f1 || true)"
+secret_unlink_line="$(grep -nF 'rm -f -- "${server_env_file}"' "${activation}" | tail -n 1 | cut -d: -f1 || true)"
+secret_source_line="$(grep -nF -m 1 '. "${server_env_file}"' "${activation}" | cut -d: -f1 || true)"
+docker_access_line="$(grep -nF -m 1 'prepare_docker_access' "${activation}" | tail -n 1 | cut -d: -f1 || true)"
 [[ -n "${secret_source_line}" && -n "${secret_unlink_line}" && -n "${docker_access_line}" ]] \
   || fail "frontend activation does not source, unlink, and then consume release secrets"
 (( secret_source_line < secret_unlink_line && secret_unlink_line < docker_access_line )) \
