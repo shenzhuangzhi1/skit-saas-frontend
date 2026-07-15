@@ -71,26 +71,78 @@
 <script lang="ts" setup>
 import { formatDate } from '@/utils/formatTime'
 import { useWebSocket } from '@vueuse/core'
-import { getRefreshToken } from '@/utils/auth'
 import * as UserApi from '@/api/system/user'
+import { createTicketedWebSocketUrl } from '@/utils/websocketTicket'
 
 defineOptions({ name: 'InfraWebSocket' })
 
 const message = useMessage() // 消息弹窗
 
-const server = ref(
-  (import.meta.env.VITE_BASE_URL + '/infra/ws').replace('http', 'ws') +
-    '?token=' +
-    getRefreshToken() // 使用 getRefreshToken() 方法，而不使用 getAccessToken() 方法的原因：WebSocket 无法方便的刷新访问令牌
-) // WebSocket 服务地址
+const server = ref((import.meta.env.VITE_BASE_URL + '/infra/ws').replace(/^http/, 'ws'))
+const connectionUrl = ref<string>()
 const getIsOpen = computed(() => status.value === 'OPEN') // WebSocket 连接是否打开
 const getTagColor = computed(() => (getIsOpen.value ? 'success' : 'red')) // WebSocket 连接的展示颜色
+let shouldBeConnected = true
+let ticketRequestPending = false
+let connectionGeneration = 0
+let reconnectTimer: ReturnType<typeof setTimeout> | undefined
 
 /** 发起 WebSocket 连接 */
-const { status, data, send, close, open } = useWebSocket(server.value, {
-  autoReconnect: true,
-  heartbeat: true
+const { status, data, send, close, open } = useWebSocket(connectionUrl, {
+  immediate: false,
+  autoConnect: false,
+  autoReconnect: false,
+  heartbeat: true,
+  onDisconnected: () => scheduleReconnect()
 })
+
+function clearReconnectTimer() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = undefined
+  }
+}
+
+function scheduleReconnect() {
+  if (!shouldBeConnected || reconnectTimer) {
+    return
+  }
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = undefined
+    void connectSecurely()
+  }, 1000)
+}
+
+/** 每次连接尝试都重新签发单次票；签发失败时绝不调用 WebSocket.open。 */
+async function connectSecurely() {
+  if (
+    !shouldBeConnected ||
+    ticketRequestPending ||
+    status.value === 'OPEN' ||
+    status.value === 'CONNECTING'
+  ) {
+    return
+  }
+  ticketRequestPending = true
+  const generation = ++connectionGeneration
+  try {
+    const ticketedUrl = await createTicketedWebSocketUrl(server.value)
+    if (!shouldBeConnected || generation !== connectionGeneration) {
+      return
+    }
+    connectionUrl.value = ticketedUrl
+    open()
+  } catch {
+    if (shouldBeConnected && generation === connectionGeneration) {
+      message.error('WebSocket 安全票据签发失败')
+      scheduleReconnect()
+    }
+  } finally {
+    if (generation === connectionGeneration) {
+      ticketRequestPending = false
+    }
+  }
+}
 
 /** 监听接收到的数据 */
 const messageList = ref([] as { time: number; text: string }[]) // 消息列表
@@ -170,16 +222,28 @@ const handlerSend = () => {
 /** 切换 websocket 连接状态 */
 const toggleConnectStatus = () => {
   if (getIsOpen.value) {
+    shouldBeConnected = false
+    connectionGeneration++
+    ticketRequestPending = false
+    clearReconnectTimer()
     close()
   } else {
-    open()
+    shouldBeConnected = true
+    void connectSecurely()
   }
 }
 
 /** 初始化 **/
 const userList = ref<any[]>([]) // 用户列表
 onMounted(async () => {
+  void connectSecurely()
   // 获取用户列表
   userList.value = await UserApi.getSimpleUserList()
+})
+
+onBeforeUnmount(() => {
+  shouldBeConnected = false
+  connectionGeneration++
+  clearReconnectTimer()
 })
 </script>

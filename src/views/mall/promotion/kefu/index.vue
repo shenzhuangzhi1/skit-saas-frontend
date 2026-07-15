@@ -13,9 +13,9 @@
 import { KeFuConversationList, KeFuMessageList, MemberInfo } from './components'
 import { WebSocketMessageTypeConstants } from './components/tools/constants'
 import { KeFuConversationRespVO } from '@/api/mall/promotion/kefu/conversation'
-import { getRefreshToken } from '@/utils/auth'
 import { useWebSocket } from '@vueuse/core'
 import { useMallKefuStore } from '@/store/modules/mall/kefu'
+import { createTicketedWebSocketUrl } from '@/utils/websocketTicket'
 
 defineOptions({ name: 'KeFu' })
 
@@ -23,17 +23,69 @@ const message = useMessage() // 消息弹窗
 const kefuStore = useMallKefuStore() // 客服缓存
 
 // ======================= WebSocket start =======================
-const server = ref(
-  (import.meta.env.VITE_BASE_URL + '/infra/ws').replace('http', 'ws') +
-    '?token=' +
-    getRefreshToken() // 使用 getRefreshToken() 方法，而不使用 getAccessToken() 方法的原因：WebSocket 无法方便的刷新访问令牌
-) // WebSocket 服务地址
+const server = (import.meta.env.VITE_BASE_URL + '/infra/ws').replace(/^http/, 'ws')
+const connectionUrl = ref<string>()
+let shouldBeConnected = false
+let ticketRequestPending = false
+let connectionGeneration = 0
+let reconnectTimer: ReturnType<typeof setTimeout> | undefined
 
 /** 发起 WebSocket 连接 */
-const { data, close, open } = useWebSocket(server.value, {
-  autoReconnect: true,
-  heartbeat: true
+const { status, data, close, open } = useWebSocket(connectionUrl, {
+  immediate: false,
+  autoConnect: false,
+  autoReconnect: false,
+  heartbeat: true,
+  onDisconnected: () => scheduleReconnect()
 })
+
+function clearReconnectTimer() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = undefined
+  }
+}
+
+function scheduleReconnect() {
+  if (!shouldBeConnected || reconnectTimer) {
+    return
+  }
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = undefined
+    void connectSecurely()
+  }, 1000)
+}
+
+/** 每次初连和重连都签发新票；签发失败绝不复用 URL 或打开连接。 */
+async function connectSecurely() {
+  if (
+    !shouldBeConnected ||
+    ticketRequestPending ||
+    status.value === 'OPEN' ||
+    status.value === 'CONNECTING'
+  ) {
+    return
+  }
+  ticketRequestPending = true
+  const generation = ++connectionGeneration
+  try {
+    const ticketedUrl = await createTicketedWebSocketUrl(server)
+    if (!shouldBeConnected || generation !== connectionGeneration) {
+      return
+    }
+    connectionUrl.value = ticketedUrl
+    open()
+  } catch {
+    if (shouldBeConnected && generation === connectionGeneration) {
+      message.error('WebSocket 安全票据签发失败')
+      scheduleReconnect()
+    }
+  } finally {
+    if (generation === connectionGeneration) {
+      ticketRequestPending = false
+    }
+  }
+}
 
 /** 监听 WebSocket 数据 */
 watch(
@@ -93,13 +145,16 @@ onMounted(() => {
   kefuStore.setConversationList().then(() => {
     keFuConversationRef.value?.calculationLastMessageTime()
   })
-  // 打开 websocket 连接
-  open()
+  shouldBeConnected = true
+  void connectSecurely()
 })
 
 /** 销毁 */
 onBeforeUnmount(() => {
-  // 关闭 websocket 连接
+  shouldBeConnected = false
+  connectionGeneration++
+  ticketRequestPending = false
+  clearReconnectTimer()
   close()
 })
 </script>
