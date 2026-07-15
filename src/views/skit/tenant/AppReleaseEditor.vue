@@ -39,11 +39,45 @@
     <el-form-item label="包 SHA-256" prop="hotBundleSha256">
       <el-input v-model="formData.hotBundleSha256" placeholder="64 位十六进制 SHA-256" />
     </el-form-item>
+    <el-form-item label="热更新发布序号" prop="hotReleaseNo">
+      <el-input-number v-model="formData.hotReleaseNo" :min="0" :precision="0" />
+      <span class="ml-12px text-12px text-gray-500">签名范围或公钥变更时必须递增</span>
+    </el-form-item>
+    <el-form-item label="租户热更新 RSA 公钥" prop="runtimeUpdatePublicKey">
+      <el-input
+        v-model="formData.runtimeUpdatePublicKey"
+        :autosize="{ minRows: 3, maxRows: 7 }"
+        maxlength="4096"
+        placeholder="该代理商 APK 内置公钥的 X.509 DER Base64；每个代理商独立配置"
+        show-word-limit
+        type="textarea"
+      />
+    </el-form-item>
+    <el-form-item label="公钥指纹">
+      <el-input
+        v-model="formData.runtimeUpdateKeyFingerprint"
+        disabled
+        placeholder="保存后由服务端校验公钥并生成 SHA-256 指纹"
+      />
+    </el-form-item>
+    <el-form-item label="热更新清单签名" prop="hotManifestSignature">
+      <el-input
+        v-model="formData.hotManifestSignature"
+        :autosize="{ minRows: 3, maxRows: 6 }"
+        maxlength="1024"
+        placeholder="CI 使用该代理商私钥生成的 SHA256withRSA Base64 签名"
+        show-word-limit
+        type="textarea"
+      />
+    </el-form-item>
     <el-form-item label="当前原生版本">
       <el-input v-model="formData.nativeVersion" placeholder="仅供发布记录" />
     </el-form-item>
     <el-form-item label="原生包名">
       <el-input v-model="formData.nativePackage" placeholder="仅供发布记录，不填写任何密钥" />
+    </el-form-item>
+    <el-form-item label="原生协议版本" prop="nativeProtocolVersion">
+      <el-input-number v-model="formData.nativeProtocolVersion" :min="1" :precision="0" />
     </el-form-item>
     <el-form-item label="是否启用" prop="status">
       <el-radio-group v-model="formData.status">
@@ -86,8 +120,13 @@ const emptyProfile = (): TenantApi.TenantAppReleaseProfileVO => ({
   hotVersion: '',
   hotBundleUrl: '',
   hotBundleSha256: '',
+  hotReleaseNo: 0,
+  hotManifestSignature: '',
   nativeVersion: '',
   nativePackage: '',
+  nativeProtocolVersion: 1,
+  runtimeUpdatePublicKey: '',
+  runtimeUpdateKeyFingerprint: '',
   status: 1
 })
 const formData = ref<TenantApi.TenantAppReleaseProfileVO>(emptyProfile())
@@ -108,6 +147,20 @@ const rules = reactive<FormRules<TenantApi.TenantAppReleaseProfileVO>>({
   hotBundleSha256: [
     { validator: requiredWhenEnabled, trigger: 'blur' },
     { pattern: /^[a-f0-9]{64}$/i, message: 'SHA-256 必须为 64 位十六进制', trigger: 'blur' }
+  ],
+  runtimeUpdatePublicKey: [
+    { validator: requiredWhenEnabled, trigger: 'blur' },
+    {
+      pattern: /^[A-Za-z0-9+/]+={0,2}$/,
+      message: '公钥必须是无换行的 X.509 DER Base64',
+      trigger: 'blur'
+    },
+    { min: 128, max: 4096, message: '公钥长度必须为 128–4096 个字符', trigger: 'blur' }
+  ],
+  hotManifestSignature: [{ validator: requiredWhenEnabled, trigger: 'blur' }],
+  nativeProtocolVersion: [
+    { required: true, message: '原生协议版本不能为空', trigger: 'change' },
+    { type: 'integer', min: 1, message: '原生协议版本必须是正整数', trigger: 'change' }
   ]
 })
 
@@ -135,6 +188,8 @@ const save = async () => {
     formData.value = await TenantApi.updateTenantAppReleaseProfile({
       ...formData.value,
       hotBundleSha256: formData.value.hotBundleSha256.toLowerCase(),
+      hotManifestSignature: formData.value.hotManifestSignature.trim(),
+      runtimeUpdatePublicKey: formData.value.runtimeUpdatePublicKey.trim(),
       reason: normalizedReason
     })
     reason.value = ''

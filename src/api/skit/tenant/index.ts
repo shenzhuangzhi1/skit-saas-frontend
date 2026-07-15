@@ -534,8 +534,15 @@ export interface TenantAppReleaseProfileVO {
   hotVersion: string
   hotBundleUrl: string
   hotBundleSha256: string
+  hotReleaseNo: number
+  hotManifestSignature: string
   nativeVersion: string
   nativePackage: string
+  nativeProtocolVersion: number
+  /** X.509 DER RSA public key encoded as base64; public verification material, not a secret. */
+  runtimeUpdatePublicKey: string
+  /** SHA-256 fingerprint derived and returned by the server. */
+  runtimeUpdateKeyFingerprint: string
   status: number
 }
 

@@ -17,9 +17,11 @@ concurrency:
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/skit-saas-frontend
   IMAGE_TAG: ${{ github.sha }}
+  RELEASE_ID: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
 
 jobs:
   build-and-deploy:
+    if: github.ref == 'refs/heads/master'
     name: Build and deploy frontend
     runs-on: ubuntu-latest
 
@@ -41,7 +43,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Verify callback log safety
-        run: bash deploy/test-callback-log-safety.sh
+        run: |
+          bash deploy/test-callback-log-safety.sh
+          ./deploy/test-release-security.sh
 
       - name: Run product tests
         run: |
@@ -68,7 +72,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .deploy
-          chmod +x deploy/activate-frontend.sh
+          chmod +x deploy/activate-frontend.sh deploy/cleanup-frontend-release-env.sh
           docker build \
             --label app=skit-saas-frontend \
             --label org.opencontainers.image.revision="${GITHUB_SHA}" \
@@ -77,6 +81,7 @@ jobs:
             .
           docker push "${IMAGE_NAME}:${IMAGE_TAG}"
           cp deploy/activate-frontend.sh .deploy/activate-frontend.sh
+          cp deploy/cleanup-frontend-release-env.sh .deploy/cleanup-frontend-release-env.sh
 
       - name: Detect deployment secrets
         id: deploy_config
@@ -156,7 +161,13 @@ jobs:
           fi
           EOF
           chmod +x .deploy/ssh .deploy/scp
-          ssh-keyscan -p "${SERVER_PORT}" "${SERVER_HOST}" >> ~/.ssh/known_hosts
+          if [ "${SERVER_PORT}" != "22" ]; then
+            echo "::error::The pinned production SSH host key currently authorizes port 22 only."
+            exit 1
+          fi
+          install -m 600 deploy/known_hosts ~/.ssh/known_hosts
+          ssh-keygen -F "${SERVER_HOST}" -f ~/.ssh/known_hosts >/dev/null \
+            || { echo "::error::SERVER_HOST is not present in deploy/known_hosts"; exit 1; }
 
       - name: Upload release bundle
         if: steps.deploy_config.outputs.enabled == 'true'
@@ -170,13 +181,15 @@ jobs:
           : "${SERVER_USER:?Set SERVER_USER secret}"
           SERVER_PORT="${SERVER_PORT:-22}"
           DEPLOY_PATH="${DEPLOY_PATH:-skit-saas}"
+          RELEASE_BUNDLE_PATH="${DEPLOY_PATH}/releases/frontend-${RELEASE_ID}"
           SSH_TARGET="${SERVER_USER}@${SERVER_HOST}"
           chmod +x .deploy/activate-frontend.sh
           .deploy/ssh "${SSH_TARGET}" \
-            "mkdir -p '${DEPLOY_PATH}'"
+            "mkdir -p '${DEPLOY_PATH}/releases' && mkdir -- '${RELEASE_BUNDLE_PATH}'"
           .deploy/scp \
             ".deploy/activate-frontend.sh" \
-            "${SSH_TARGET}:${DEPLOY_PATH}/"
+            ".deploy/cleanup-frontend-release-env.sh" \
+            "${SSH_TARGET}:${RELEASE_BUNDLE_PATH}/"
 
       - name: Activate frontend on server
         if: steps.deploy_config.outputs.enabled == 'true'
@@ -192,12 +205,75 @@ jobs:
           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
         run: |
           set -euo pipefail
+          trap 'rm -f .deploy/server.env' EXIT
           SERVER_PORT="${SERVER_PORT:-22}"
           DEPLOY_PATH="${DEPLOY_PATH:-skit-saas}"
+          RELEASE_BUNDLE_PATH="${DEPLOY_PATH}/releases/frontend-${RELEASE_ID}"
           SSH_TARGET="${SERVER_USER}@${SERVER_HOST}"
           SUDO_PASSWORD="${SERVER_SUDO_PASSWORD:-${SERVER_PASSWORD:-}}"
-          printf -v GHCR_USERNAME_Q '%q' "${GHCR_USERNAME}"
-          printf -v GHCR_TOKEN_Q '%q' "${GHCR_TOKEN}"
-          printf -v SUDO_PASSWORD_Q '%q' "${SUDO_PASSWORD}"
+          install -m 600 /dev/null .deploy/server.env
+          {
+            printf 'FRONTEND_PORT=%q\n' "${FRONTEND_PORT:-80}"
+            printf 'GHCR_USERNAME=%q\n' "${GHCR_USERNAME}"
+            printf 'GHCR_TOKEN=%q\n' "${GHCR_TOKEN}"
+            printf 'SUDO_PASSWORD=%q\n' "${SUDO_PASSWORD}"
+          } > .deploy/server.env
+          chmod 600 .deploy/server.env
+          .deploy/scp \
+            ".deploy/server.env" \
+            "${SSH_TARGET}:${RELEASE_BUNDLE_PATH}/server.env"
+          printf -v DEPLOY_PATH_Q '%q' "${DEPLOY_PATH}"
+          printf -v RELEASE_ID_Q '%q' "${RELEASE_ID}"
+          printf -v RELEASE_BUNDLE_PATH_Q '%q' "${RELEASE_BUNDLE_PATH}"
+          printf -v IMAGE_NAME_Q '%q' "${IMAGE_NAME}"
+          printf -v IMAGE_TAG_Q '%q' "${IMAGE_TAG}"
           .deploy/ssh "${SSH_TARGET}" \
-            "chmod +x '${DEPLOY_PATH}/activate-frontend.sh' && FRONTEND_PORT='${FRONTEND_PORT:-80}' DEPLOY_PATH='${DEPLOY_PATH}' IMAGE_NAME='${IMAGE_NAME}' IMAGE_TAG='${IMAGE_TAG}' GHCR_USERNAME=${GHCR_USERNAME_Q} GHCR_TOKEN=${GHCR_TOKEN_Q} SUDO_PASSWORD=${SUDO_PASSWORD_Q} '${DEPLOY_PATH}/activate-frontend.sh'"
+            "DEPLOY_PATH=${DEPLOY_PATH_Q} RELEASE_ID=${RELEASE_ID_Q} RELEASE_BUNDLE_PATH=${RELEASE_BUNDLE_PATH_Q} IMAGE_NAME=${IMAGE_NAME_Q} IMAGE_TAG=${IMAGE_TAG_Q} bash -s" <<'REMOTE'
+          set -euo pipefail
+          remote_server_env_file="${RELEASE_BUNDLE_PATH}/server.env"
+          remote_activation_script="${RELEASE_BUNDLE_PATH}/activate-frontend.sh"
+          remote_cleanup_script="${RELEASE_BUNDLE_PATH}/cleanup-frontend-release-env.sh"
+          cleanup_remote_server_env() {
+            cleanup_status="${1:-0}"
+            trap - EXIT HUP INT TERM
+            DEPLOY_PATH="${DEPLOY_PATH}" RELEASE_ID="${RELEASE_ID}" \
+              bash "${remote_cleanup_script}" || true
+            exit "${cleanup_status}"
+          }
+          trap 'cleanup_remote_server_env $?' EXIT
+          trap 'cleanup_remote_server_env 129' HUP
+          trap 'cleanup_remote_server_env 130' INT
+          trap 'cleanup_remote_server_env 143' TERM
+          chmod 600 -- "${remote_server_env_file}"
+          chmod +x -- "${remote_activation_script}"
+          DEPLOY_PATH="${DEPLOY_PATH}" \
+            RELEASE_BUNDLE_PATH="releases/frontend-${RELEASE_ID}" \
+            IMAGE_NAME="${IMAGE_NAME}" \
+            IMAGE_TAG="${IMAGE_TAG}" \
+            "${remote_activation_script}"
+          REMOTE
+
+      - name: Remove staged frontend server environment
+        if: always() && steps.deploy_config.outputs.enabled == 'true'
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          if [ ! -x .deploy/ssh ]; then
+            echo "::notice::Remote server.env cleanup skipped because SSH setup did not complete."
+            exit 0
+          fi
+          : "${SERVER_USER:?Set SERVER_USER secret}"
+          SERVER_PORT="${SERVER_PORT:-22}"
+          DEPLOY_PATH="${DEPLOY_PATH:-skit-saas}"
+          RELEASE_BUNDLE_PATH="${DEPLOY_PATH}/releases/frontend-${RELEASE_ID}"
+          REMOTE_CLEANUP_SCRIPT="${RELEASE_BUNDLE_PATH}/cleanup-frontend-release-env.sh"
+          SSH_TARGET="${SERVER_USER}@${SERVER_HOST}"
+          printf -v DEPLOY_PATH_Q '%q' "${DEPLOY_PATH}"
+          printf -v RELEASE_ID_Q '%q' "${RELEASE_ID}"
+          printf -v REMOTE_CLEANUP_SCRIPT_Q '%q' "${REMOTE_CLEANUP_SCRIPT}"
+          .deploy/ssh "${SSH_TARGET}" \
+            "DEPLOY_PATH=${DEPLOY_PATH_Q} RELEASE_ID=${RELEASE_ID_Q} bash ${REMOTE_CLEANUP_SCRIPT_Q}"
