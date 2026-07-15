@@ -141,6 +141,10 @@ export class RSA {
  * API 加解密主类
  */
 export class ApiEncrypt {
+  static isEnabled(): boolean {
+    return API_ENCRYPT_ENABLE
+  }
+
   /**
    * 获取加密头名称
    */

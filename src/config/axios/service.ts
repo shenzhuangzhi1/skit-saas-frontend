@@ -79,7 +79,11 @@ service.interceptors.request.use(
       }
     }
     // 是否 API 加密
-    if ((config!.headers || {}).isEncrypt && !(config!.headers || {}).isEncrypted) {
+    if (
+      ApiEncrypt.isEnabled() &&
+      (config!.headers || {}).isEncrypt &&
+      !(config!.headers || {}).isEncrypted
+    ) {
       try {
         // 加密请求数据
         if (config.data) {

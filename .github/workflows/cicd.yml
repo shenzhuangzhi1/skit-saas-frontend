@@ -50,7 +50,7 @@ jobs:
       - name: Run product tests
         run: |
           pnpm test:unit
-          node --test test/product-menu.test.mjs
+          node --test test/*.test.mjs
 
       - name: Verify types and production lint
         run: |
