@@ -28,14 +28,17 @@
         <el-tag>租户 {{ selfInvitation.tenantId }}</el-tag>
       </div>
       <el-tabs v-model="activeTab">
+        <el-tab-pane label="广告接入" name="ad-access" lazy>
+          <AdAccessEditor :target="tenantWorkspaceTarget(false, selfInvitation.tenantId)" />
+        </el-tab-pane>
         <el-tab-pane label="分成规则" name="commission" lazy>
-          <CommissionRuleEditor :tenant-id="selfInvitation.tenantId" />
+          <CommissionRuleEditor :target="tenantWorkspaceTarget(false, selfInvitation.tenantId)" />
         </el-tab-pane>
         <el-tab-pane label="成员体系" name="members" lazy>
-          <MemberList :tenant-id="selfInvitation.tenantId" />
+          <MemberList :target="tenantWorkspaceTarget(false, selfInvitation.tenantId)" />
         </el-tab-pane>
         <el-tab-pane label="分成账本" name="ledger" lazy>
-          <CommissionLedger :tenant-id="selfInvitation.tenantId" />
+          <CommissionLedger :target="tenantWorkspaceTarget(false, selfInvitation.tenantId)" />
         </el-tab-pane>
       </el-tabs>
     </ContentWrap>
@@ -221,14 +224,23 @@
         type="warning"
       />
       <el-tabs v-model="activeTab">
-        <el-tab-pane :disabled="selectedAgentArchived" label="分成规则" name="commission" lazy>
-          <CommissionRuleEditor :tenant-id="selectedAgent.tenantId" />
+        <el-tab-pane :disabled="selectedAgentArchived" label="广告接入" name="ad-access" lazy>
+          <AdAccessEditor :target="tenantWorkspaceTarget(true, selectedAgent.tenantId)" />
+        </el-tab-pane>
+        <el-tab-pane label="分成规则" name="commission" lazy>
+          <CommissionRuleEditor
+            :read-only="selectedAgentArchived"
+            :target="tenantWorkspaceTarget(true, selectedAgent.tenantId)"
+          />
         </el-tab-pane>
         <el-tab-pane label="成员体系" name="members" lazy>
-          <MemberList :read-only="selectedAgentArchived" :tenant-id="selectedAgent.tenantId" />
+          <MemberList
+            :read-only="selectedAgentArchived"
+            :target="tenantWorkspaceTarget(true, selectedAgent.tenantId)"
+          />
         </el-tab-pane>
         <el-tab-pane label="分成账本" name="ledger" lazy>
-          <CommissionLedger :tenant-id="selectedAgent.tenantId" />
+          <CommissionLedger :target="tenantWorkspaceTarget(true, selectedAgent.tenantId)" />
         </el-tab-pane>
         <el-tab-pane :disabled="selectedAgentArchived" label="App 发布" name="app-release" lazy>
           <AppReleaseEditor :tenant-id="selectedAgent.tenantId" />
@@ -249,6 +261,7 @@ import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
 import { useUserStore } from '@/store/modules/user'
 import * as TenantApi from '@/api/skit/tenant'
+import AdAccessEditor from './AdAccessEditor.vue'
 import CommissionRuleEditor from './CommissionRuleEditor.vue'
 import MemberList from './MemberList.vue'
 import CommissionLedger from './CommissionLedger.vue'
@@ -256,6 +269,7 @@ import AppReleaseEditor from './AppReleaseEditor.vue'
 import AgentForm from './AgentForm.vue'
 import AgentMobileForm from './AgentMobileForm.vue'
 import AgentPasswordForm from './AgentPasswordForm.vue'
+import { tenantWorkspaceTarget } from './workspaceModel'
 
 defineOptions({ name: 'SkitTenantManagement' })
 
@@ -271,7 +285,7 @@ const loading = ref(false)
 const total = ref(0)
 const list = ref<TenantApi.TenantAgentVO[]>([])
 const selectedAgent = ref<TenantApi.TenantAgentVO>()
-const activeTab = ref('commission')
+const activeTab = ref('ad-access')
 const queryFormRef = ref<FormInstance>()
 const agentTableRef = ref<InstanceType<typeof ElTable>>()
 const agentFormRef = ref<InstanceType<typeof AgentForm>>()
@@ -288,7 +302,7 @@ const isArchived = (agent?: TenantApi.TenantAgentVO) => Boolean(agent?.archivedT
 const selectedAgentArchived = computed(() => isArchived(selectedAgent.value))
 
 const ensureReadableTab = () => {
-  if (selectedAgentArchived.value && ['commission', 'app-release'].includes(activeTab.value)) {
+  if (selectedAgentArchived.value && ['ad-access', 'app-release'].includes(activeTab.value)) {
     activeTab.value = 'members'
   }
 }

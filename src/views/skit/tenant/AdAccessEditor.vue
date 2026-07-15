@@ -1,0 +1,706 @@
+<template>
+  <div class="grid gap-16px xl:grid-cols-2">
+    <ContentWrap>
+      <div class="mb-12px flex items-start justify-between gap-12px">
+        <div>
+          <div class="text-16px font-600">广告平台账号</div>
+          <div class="text-13px text-[var(--el-text-color-secondary)]">
+            密钥只写不读；“已配置”仅代表服务端保存了凭据，页面永不回显原值。
+          </div>
+        </div>
+        <el-button :disabled="!accountForm" :loading="saving" type="primary" @click="saveAccount">
+          保存账号
+        </el-button>
+      </div>
+      <AsyncState
+        :empty="!accountForm"
+        empty-text="暂无广告账号配置"
+        :error="accountError"
+        :loading="accountLoading"
+      >
+        <el-form v-if="accountForm" label-width="132px">
+          <div class="mb-8px flex items-center gap-8px font-600">
+            穿山甲
+            <el-tag :type="accountForm.pangleSecretConfigured ? 'success' : 'info'" size="small">
+              {{ accountForm.pangleSecretConfigured ? '密钥已配置' : '密钥未配置' }}
+            </el-tag>
+          </div>
+          <el-form-item label="启用">
+            <el-switch v-model="accountForm.pangleEnabled" />
+          </el-form-item>
+          <el-form-item label="账号">
+            <el-input v-model="accountForm.pangleUsername" maxlength="128" />
+          </el-form-item>
+          <el-form-item label="App ID">
+            <el-input v-model="accountForm.pangleAppId" maxlength="128" />
+          </el-form-item>
+          <el-form-item label="解锁广告位">
+            <el-input v-model="accountForm.panglePlacementId" maxlength="128" />
+          </el-form-item>
+          <el-form-item label="App Secret">
+            <InputPassword
+              v-model="accountForm.pangleAppSecret"
+              autocomplete="new-password"
+              maxlength="2048"
+              :placeholder="
+                accountForm.pangleSecretConfigured ? '留空保留已配置密钥' : '输入新密钥'
+              "
+            />
+          </el-form-item>
+
+          <el-divider />
+          <div class="mb-8px flex flex-wrap items-center gap-8px font-600">
+            Taku
+            <el-tag :type="accountForm.takuAppKeyConfigured ? 'success' : 'info'" size="small">
+              {{ accountForm.takuAppKeyConfigured ? 'App Key 已配置' : 'App Key 未配置' }}
+            </el-tag>
+          </div>
+          <el-form-item label="启用">
+            <el-switch v-model="accountForm.takuEnabled" />
+          </el-form-item>
+          <el-form-item label="账号">
+            <el-input v-model="accountForm.takuUsername" maxlength="128" />
+          </el-form-item>
+          <el-form-item label="App ID">
+            <el-input v-model="accountForm.takuAppId" maxlength="128" />
+          </el-form-item>
+          <el-form-item label="解锁广告位">
+            <el-input v-model="accountForm.takuPlacementId" maxlength="128" />
+          </el-form-item>
+          <el-form-item label="客户端 App Key">
+            <InputPassword
+              v-model="accountForm.takuAppKey"
+              autocomplete="new-password"
+              maxlength="255"
+              :placeholder="
+                accountForm.takuAppKeyConfigured ? '留空保留已配置 App Key' : '输入新 App Key'
+              "
+            />
+          </el-form-item>
+          <el-form-item label="Taku App Secret">
+            <InputPassword
+              v-model="accountForm.takuAppSecret"
+              autocomplete="new-password"
+              maxlength="2048"
+              :placeholder="accountForm.takuSecretConfigured ? '留空保留已配置密钥' : '输入新密钥'"
+            />
+          </el-form-item>
+          <el-form-item label="变更原因">
+            <el-input
+              v-model="accountReason"
+              maxlength="500"
+              placeholder="必填 10–500 字，用于安全审计"
+              show-word-limit
+              type="textarea"
+            />
+          </el-form-item>
+        </el-form>
+      </AsyncState>
+    </ContentWrap>
+
+    <ContentWrap>
+      <div class="mb-12px flex items-start justify-between gap-12px">
+        <div>
+          <div class="text-16px font-600">Taku 官方报表</div>
+          <div class="text-13px text-[var(--el-text-color-secondary)]">
+            Publisher Key 只写不读；官方报表确认前，收益不能进入可结算余额。
+          </div>
+        </div>
+        <el-button
+          :disabled="!reportingForm"
+          :loading="reportingSaving"
+          type="primary"
+          @click="saveReporting"
+        >
+          保存报表配置
+        </el-button>
+      </div>
+      <AsyncState
+        :empty="!reportingForm"
+        empty-text="暂无报表配置"
+        :error="reportingError"
+        :loading="reportingLoading"
+      >
+        <el-form v-if="reportingForm" label-width="132px">
+          <div class="mb-10px flex flex-wrap gap-8px">
+            <el-tag :type="reportingForm.credentialConfigured ? 'success' : 'info'">
+              {{
+                reportingForm.credentialConfigured
+                  ? `Publisher Key 已配置 · v${reportingForm.credentialVersion}`
+                  : 'Publisher Key 未配置'
+              }}
+            </el-tag>
+            <el-tag :type="reportingForm.permissionVerifiedAt ? 'success' : 'warning'">
+              {{ reportingForm.permissionVerifiedAt ? '报表权限已验证' : '报表权限待验证' }}
+            </el-tag>
+          </div>
+          <el-form-item label="Taku App ID">
+            <el-input :model-value="reportingForm.appId" disabled />
+          </el-form-item>
+          <el-form-item label="解锁广告位">
+            <el-input :model-value="reportingForm.placementId" disabled />
+          </el-form-item>
+          <el-form-item label="报表时区">
+            <el-select v-model="reportingForm.reportTimezone" class="w-full">
+              <el-option label="UTC-8" value="UTC-8" />
+              <el-option label="UTC+8" value="UTC+8" />
+              <el-option label="UTC+0" value="UTC+0" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="ISO 币种">
+            <el-input v-model="reportingForm.currency" maxlength="3" />
+          </el-form-item>
+          <el-form-item label="金额精度">
+            <el-input-number v-model="reportingForm.amountScale" :max="18" :min="0" />
+          </el-form-item>
+          <el-form-item label="广告格式">
+            <el-input model-value="rewarded_video" disabled />
+          </el-form-item>
+          <el-form-item label="Publisher Key">
+            <InputPassword
+              v-model="reportingForm.publisherKey"
+              autocomplete="new-password"
+              maxlength="4096"
+              :placeholder="
+                reportingForm.credentialConfigured
+                  ? '留空保留当前 Publisher Key'
+                  : '输入 Publisher Key'
+              "
+            />
+          </el-form-item>
+          <el-form-item label="变更原因">
+            <el-input
+              v-model="reportingForm.reason"
+              maxlength="500"
+              placeholder="必填 10–500 字，用于跨租户代管和安全审计"
+              :rows="3"
+              show-word-limit
+              type="textarea"
+            />
+          </el-form-item>
+        </el-form>
+      </AsyncState>
+    </ContentWrap>
+
+    <ContentWrap>
+      <div class="mb-12px text-16px font-600">服务端验奖就绪状态</div>
+      <AsyncState
+        :empty="!readiness"
+        empty-text="暂无就绪状态"
+        :error="readinessError"
+        :loading="readinessLoading"
+      >
+        <AdReadinessChecklist
+          v-if="readiness"
+          :readiness="readiness"
+          @rollout="transitionRollout"
+        />
+      </AsyncState>
+    </ContentWrap>
+
+    <ContentWrap v-if="readiness && capabilityForm">
+      <div class="mb-12px flex items-start justify-between gap-12px">
+        <div>
+          <div class="text-16px font-600">服务端验奖配置</div>
+          <div class="text-13px text-[var(--el-text-color-secondary)]">
+            每次保存都校验就绪版本，避免两位管理员互相覆盖。生产启用要求 HTTPS 回调地址。
+          </div>
+        </div>
+        <el-button :loading="capabilitySaving" type="primary" @click="saveCapability">
+          保存验奖配置
+        </el-button>
+      </div>
+      <el-form label-width="150px">
+        <el-form-item label="广告账号编号">
+          <el-input :model-value="readiness.adAccountId || '-'" disabled />
+        </el-form-item>
+        <el-form-item label="专用解锁广告位">
+          <el-input v-model="capabilityForm.dedicatedUnlockPlacementId" maxlength="128" />
+        </el-form-item>
+        <el-form-item label="广告位已核验">
+          <el-switch v-model="capabilityForm.dedicatedPlacementVerified" />
+        </el-form-item>
+        <el-form-item label="奖励模板已核验">
+          <el-switch v-model="capabilityForm.rewardCallbackTemplateVerified" />
+        </el-form-item>
+        <el-form-item label="展示模板已核验">
+          <el-switch v-model="capabilityForm.impressionCallbackTemplateVerified" />
+        </el-form-item>
+        <el-form-item label="权威广告源 ID">
+          <el-input
+            v-model="capabilityForm.unlockNetworkFirmIds"
+            placeholder="逗号分隔，例如 1, 2, 3"
+          />
+        </el-form-item>
+        <el-form-item label="灰度会员 ID">
+          <el-input
+            v-model="capabilityForm.shadowTestMemberIds"
+            placeholder="逗号分隔；仅这些会员进入灰度"
+          />
+        </el-form-item>
+        <el-form-item label="最低原生版本">
+          <el-input v-model="capabilityForm.minNativeVersion" maxlength="64" />
+        </el-form-item>
+        <el-form-item label="最低协议版本">
+          <el-input-number v-model="capabilityForm.minProtocolVersion" :min="1" :precision="0" />
+        </el-form-item>
+        <el-form-item label="配置变更原因">
+          <el-input
+            v-model="capabilityForm.reason"
+            maxlength="500"
+            placeholder="必填 10–500 字"
+            show-word-limit
+            type="textarea"
+          />
+        </el-form-item>
+        <el-form-item label="灰度/启用原因">
+          <el-input
+            v-model="rolloutReason"
+            maxlength="500"
+            placeholder="点击灰度、启用或关闭前填写 10–500 字"
+            show-word-limit
+            type="textarea"
+          />
+        </el-form-item>
+      </el-form>
+    </ContentWrap>
+
+    <ContentWrap v-if="readiness">
+      <div class="mb-12px text-16px font-600">回调密钥轮换</div>
+      <el-alert
+        class="mb-14px"
+        :closable="false"
+        show-icon
+        title="Callback Key 由服务端生成并仅显示一次；奖励验签密钥由管理员只写提交，服务端永不回显。"
+        type="warning"
+      />
+      <el-form label-width="150px">
+        <el-divider content-position="left">Callback Key</el-divider>
+        <el-form-item label="旧版本兼容（分钟）">
+          <el-input-number
+            v-model="callbackRotation.priorAcceptanceMinutes"
+            :max="1440"
+            :min="0"
+            :precision="0"
+          />
+        </el-form-item>
+        <el-form-item label="轮换原因">
+          <el-input
+            v-model="callbackRotation.reason"
+            maxlength="500"
+            placeholder="必填 10–500 字"
+            type="textarea"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button
+            :disabled="!readiness.adAccountId"
+            :loading="callbackRotating"
+            type="primary"
+            @click="rotateCallbackKey"
+          >
+            生成并轮换 Callback Key
+          </el-button>
+        </el-form-item>
+
+        <el-divider content-position="left">奖励回调密钥</el-divider>
+        <el-form-item label="新密钥">
+          <InputPassword
+            v-model="rewardRotation.rewardSecret"
+            autocomplete="new-password"
+            maxlength="2048"
+            placeholder="8–2048 个字符，只写不读"
+          />
+        </el-form-item>
+        <el-form-item label="旧版本兼容（分钟）">
+          <el-input-number
+            v-model="rewardRotation.priorAcceptanceMinutes"
+            :max="1440"
+            :min="0"
+            :precision="0"
+          />
+        </el-form-item>
+        <el-form-item label="轮换原因">
+          <el-input
+            v-model="rewardRotation.reason"
+            maxlength="500"
+            placeholder="必填 10–500 字"
+            type="textarea"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button
+            :disabled="!readiness.adAccountId"
+            :loading="rewardRotating"
+            type="primary"
+            @click="rotateRewardSecret"
+          >
+            轮换奖励回调密钥
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </ContentWrap>
+  </div>
+
+  <Dialog
+    v-model="callbackRevealVisible"
+    destroy-on-close
+    title="新 Callback Key（仅显示一次）"
+    width="760px"
+    @closed="clearCallbackReveal"
+  >
+    <el-alert
+      class="mb-14px"
+      :closable="false"
+      show-icon
+      title="关闭窗口后无法再次查看。请立即保存到 Taku 后台的奖励和展示回调配置中。"
+      type="warning"
+    />
+    <el-form v-if="callbackReveal" label-width="150px">
+      <el-form-item label="Callback Key">
+        <el-input :model-value="callbackReveal.callbackKey" readonly />
+      </el-form-item>
+      <el-form-item label="奖励回调 URL">
+        <el-input :model-value="callbackReveal.rewardCallbackUrl" readonly />
+      </el-form-item>
+      <el-form-item label="展示回调 URL">
+        <el-input :model-value="callbackReveal.impressionCallbackUrl" readonly />
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="copyCallbackBundle">复制全部配置</el-button>
+      </el-form-item>
+    </el-form>
+  </Dialog>
+</template>
+
+<script lang="ts" setup>
+import { reactive, ref, watch } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useClipboard } from '@vueuse/core'
+import { InputPassword } from '@/components/InputPassword'
+import AsyncState from '@/views/skit/shared/AsyncState.vue'
+import * as TenantApi from '@/api/skit/tenant'
+import AdReadinessChecklist from './AdReadinessChecklist.vue'
+import {
+  buildAdAccountWritePayload,
+  sanitizeAdAccountResponse,
+  sanitizeReportingConfiguration,
+  type ManagementTenantTarget,
+  type SafeAdAccountForm,
+  type SafeReportingConfigurationForm
+} from './workspaceModel'
+
+defineOptions({ name: 'SkitTenantAdAccessEditor' })
+
+const props = defineProps<{ target: ManagementTenantTarget }>()
+const { copy: copyToClipboard } = useClipboard({ legacy: true })
+const accountForm = ref<SafeAdAccountForm>()
+const accountReason = ref('')
+const accountLoading = ref(false)
+const accountError = ref('')
+const readiness = ref<TenantApi.TenantAdReadinessVO>()
+const readinessLoading = ref(false)
+const readinessError = ref('')
+const saving = ref(false)
+const reportingForm = ref<SafeReportingConfigurationForm>()
+const reportingLoading = ref(false)
+const reportingError = ref('')
+const reportingSaving = ref(false)
+interface CapabilityForm {
+  dedicatedUnlockPlacementId: string
+  dedicatedPlacementVerified: boolean
+  rewardCallbackTemplateVerified: boolean
+  impressionCallbackTemplateVerified: boolean
+  unlockNetworkFirmIds: string
+  shadowTestMemberIds: string
+  minNativeVersion: string
+  minProtocolVersion: number
+  reason: string
+}
+const capabilityForm = ref<CapabilityForm>()
+const capabilitySaving = ref(false)
+const rolloutReason = ref('')
+const callbackRotation = reactive({ priorAcceptanceMinutes: 30, reason: '' })
+const rewardRotation = reactive({ priorAcceptanceMinutes: 30, rewardSecret: '', reason: '' })
+const callbackRotating = ref(false)
+const rewardRotating = ref(false)
+const callbackReveal = ref<TenantApi.TenantCallbackKeyRotateVO>()
+const callbackRevealVisible = ref(false)
+let requestId = 0
+
+const errorText = (error: unknown, fallback: string) =>
+  error instanceof Error && error.message ? error.message : fallback
+
+const loadAccount = async (currentRequestId: number) => {
+  accountLoading.value = true
+  accountError.value = ''
+  accountForm.value = undefined
+  try {
+    const response = await TenantApi.getManagedTenantAdAccount(props.target)
+    if (currentRequestId !== requestId) return
+    accountForm.value = sanitizeAdAccountResponse(response)
+  } catch (error) {
+    if (currentRequestId !== requestId) return
+    accountError.value = errorText(error, '广告账号加载失败')
+  } finally {
+    if (currentRequestId === requestId) accountLoading.value = false
+  }
+}
+
+const loadReadiness = async (currentRequestId: number) => {
+  readinessLoading.value = true
+  readinessError.value = ''
+  readiness.value = undefined
+  try {
+    const response = await TenantApi.getTenantAdReadiness(props.target)
+    if (currentRequestId !== requestId) return
+    readiness.value = response
+    capabilityForm.value = {
+      dedicatedUnlockPlacementId: response.dedicatedUnlockPlacementId || '',
+      dedicatedPlacementVerified: Boolean(response.dedicatedPlacementVerified),
+      rewardCallbackTemplateVerified: Boolean(response.rewardCallbackTemplateVerified),
+      impressionCallbackTemplateVerified: Boolean(response.impressionCallbackTemplateVerified),
+      unlockNetworkFirmIds: (response.unlockNetworkFirmIds || []).join(', '),
+      shadowTestMemberIds: (response.shadowTestMemberIds || []).join(', '),
+      minNativeVersion: response.minNativeVersion || '',
+      minProtocolVersion: Number(response.minProtocolVersion || 1),
+      reason: ''
+    }
+  } catch (error) {
+    if (currentRequestId !== requestId) return
+    readinessError.value = errorText(error, '广告就绪状态加载失败')
+  } finally {
+    if (currentRequestId === requestId) readinessLoading.value = false
+  }
+}
+
+const loadReporting = async (currentRequestId: number) => {
+  reportingLoading.value = true
+  reportingError.value = ''
+  reportingForm.value = undefined
+  try {
+    const response = await TenantApi.getTenantReportingConfiguration(props.target)
+    if (currentRequestId !== requestId) return
+    reportingForm.value = sanitizeReportingConfiguration(response)
+  } catch (error) {
+    if (currentRequestId !== requestId) return
+    reportingError.value = errorText(error, 'Taku 报表配置加载失败')
+  } finally {
+    if (currentRequestId === requestId) reportingLoading.value = false
+  }
+}
+
+const reload = () => {
+  const currentRequestId = ++requestId
+  accountReason.value = ''
+  rolloutReason.value = ''
+  callbackRotation.reason = ''
+  rewardRotation.reason = ''
+  rewardRotation.rewardSecret = ''
+  clearCallbackReveal()
+  void loadAccount(currentRequestId)
+  void loadReadiness(currentRequestId)
+  void loadReporting(currentRequestId)
+}
+
+const saveAccount = async () => {
+  if (!accountForm.value) return
+  const reason = accountReason.value.trim()
+  if (reason.length < 10 || reason.length > 500) {
+    ElMessage.warning('变更原因必须为 10–500 个字符')
+    return
+  }
+  saving.value = true
+  try {
+    const payload = buildAdAccountWritePayload(accountForm.value, props.target)
+    const response = await TenantApi.saveManagedTenantAdAccount(props.target, {
+      ...payload,
+      reason
+    })
+    accountForm.value = sanitizeAdAccountResponse(response)
+    accountReason.value = ''
+    ElMessage.success('广告账号已保存；输入框中的密钥已清空')
+    await loadReadiness(requestId)
+  } catch (error) {
+    ElMessage.error(errorText(error, '广告账号保存失败'))
+  } finally {
+    saving.value = false
+  }
+}
+
+const auditedReason = (value: string, label: string) => {
+  const reason = value.trim()
+  if (reason.length < 10 || reason.length > 500) {
+    ElMessage.warning(`${label}必须为 10–500 个字符`)
+    return ''
+  }
+  return reason
+}
+
+const parsePositiveIds = (value: string, label: string) => {
+  const source = value.trim()
+  if (!source) return []
+  const ids = source.split(',').map((item) => Number(item.trim()))
+  if (ids.some((id) => !Number.isSafeInteger(id) || id <= 0) || new Set(ids).size !== ids.length) {
+    throw new Error(`${label}必须是逗号分隔且不重复的正整数`)
+  }
+  return ids
+}
+
+const saveCapability = async () => {
+  const form = capabilityForm.value
+  const currentReadiness = readiness.value
+  if (!form || !currentReadiness?.adAccountId) return
+  const reason = auditedReason(form.reason, '配置变更原因')
+  if (!reason) return
+  capabilitySaving.value = true
+  try {
+    const response = await TenantApi.configureTenantAdCapability(props.target, {
+      adAccountId: currentReadiness.adAccountId,
+      dedicatedUnlockPlacementId: form.dedicatedUnlockPlacementId.trim(),
+      dedicatedPlacementVerified: form.dedicatedPlacementVerified,
+      rewardCallbackTemplateVerified: form.rewardCallbackTemplateVerified,
+      impressionCallbackTemplateVerified: form.impressionCallbackTemplateVerified,
+      unlockNetworkFirmIds: parsePositiveIds(form.unlockNetworkFirmIds, '权威广告源 ID'),
+      shadowTestMemberIds: parsePositiveIds(form.shadowTestMemberIds, '灰度会员 ID'),
+      minNativeVersion: form.minNativeVersion.trim(),
+      minProtocolVersion: form.minProtocolVersion,
+      expectedReadinessVersion: currentReadiness.readinessVersion,
+      reason
+    })
+    ElMessage.success(`验奖配置已保存，当前就绪版本 v${response.readinessVersion}`)
+    await loadReadiness(requestId)
+  } catch (error) {
+    ElMessage.error(errorText(error, '验奖配置保存失败'))
+  } finally {
+    capabilitySaving.value = false
+  }
+}
+
+const transitionRollout = async (targetState: TenantApi.TenantAdRolloutState) => {
+  const currentReadiness = readiness.value
+  const form = capabilityForm.value
+  if (!currentReadiness || !form) return
+  const reason = auditedReason(rolloutReason.value, '灰度/启用原因')
+  if (!reason) return
+  if (targetState === 'ENFORCED' && !currentReadiness.productionReady) {
+    ElMessage.warning('生产就绪门禁尚未全部通过，不能启用生产解锁')
+    return
+  }
+  await ElMessageBox.confirm(
+    `确认将服务端验奖状态切换为 ${targetState} 吗？该操作会立即影响本租户 App 解锁。`,
+    '切换验奖状态'
+  )
+  const response = await TenantApi.transitionTenantAdRollout(props.target, {
+    targetState,
+    minNativeVersion: form.minNativeVersion.trim(),
+    minProtocolVersion: form.minProtocolVersion,
+    expectedReadinessVersion: currentReadiness.readinessVersion,
+    reason
+  })
+  rolloutReason.value = ''
+  ElMessage.success(`验奖状态已切换为 ${response.rolloutState}`)
+  await loadReadiness(requestId)
+}
+
+const rotateCallbackKey = async () => {
+  const currentReadiness = readiness.value
+  if (!currentReadiness?.adAccountId) return
+  const reason = auditedReason(callbackRotation.reason, '轮换原因')
+  if (!reason) return
+  await ElMessageBox.confirm('新 Callback Key 只显示一次，确认现在轮换吗？', '轮换 Callback Key')
+  callbackRotating.value = true
+  try {
+    callbackReveal.value = await TenantApi.rotateTenantCallbackKey(props.target, {
+      adAccountId: currentReadiness.adAccountId,
+      expectedReadinessVersion: currentReadiness.readinessVersion,
+      priorAcceptanceMinutes: callbackRotation.priorAcceptanceMinutes,
+      reason
+    })
+    callbackRotation.reason = ''
+    callbackRevealVisible.value = true
+    await loadReadiness(requestId)
+  } catch (error) {
+    ElMessage.error(errorText(error, 'Callback Key 轮换失败'))
+  } finally {
+    callbackRotating.value = false
+  }
+}
+
+const rotateRewardSecret = async () => {
+  const currentReadiness = readiness.value
+  if (!currentReadiness?.adAccountId) return
+  const rewardSecret = rewardRotation.rewardSecret.trim()
+  const reason = auditedReason(rewardRotation.reason, '轮换原因')
+  if (!reason) return
+  if (rewardSecret.length < 8 || rewardSecret.length > 2048) {
+    ElMessage.warning('奖励回调密钥长度必须为 8–2048 个字符')
+    return
+  }
+  await ElMessageBox.confirm('新奖励回调密钥不会被服务端回显，确认现在轮换吗？', '轮换奖励回调密钥')
+  rewardRotating.value = true
+  try {
+    const response = await TenantApi.rotateTenantRewardSecret(props.target, {
+      adAccountId: currentReadiness.adAccountId,
+      expectedReadinessVersion: currentReadiness.readinessVersion,
+      priorAcceptanceMinutes: rewardRotation.priorAcceptanceMinutes,
+      rewardSecret,
+      reason
+    })
+    rewardRotation.rewardSecret = ''
+    rewardRotation.reason = ''
+    ElMessage.success(`奖励回调密钥已轮换为 v${response.version}；输入框已清空`)
+    await loadReadiness(requestId)
+  } catch (error) {
+    ElMessage.error(errorText(error, '奖励回调密钥轮换失败'))
+  } finally {
+    rewardRotating.value = false
+  }
+}
+
+const copyCallbackBundle = async () => {
+  const reveal = callbackReveal.value
+  if (!reveal) return
+  await copyToClipboard(
+    `Callback Key: ${reveal.callbackKey}\n奖励回调 URL: ${reveal.rewardCallbackUrl}\n展示回调 URL: ${reveal.impressionCallbackUrl}`
+  )
+  ElMessage.success('回调配置已复制')
+}
+
+function clearCallbackReveal() {
+  callbackRevealVisible.value = false
+  callbackReveal.value = undefined
+}
+
+const saveReporting = async () => {
+  const form = reportingForm.value
+  if (!form) return
+  const reason = form.reason.trim()
+  if (reason.length < 10 || reason.length > 500) {
+    ElMessage.warning('变更原因必须为 10–500 个字符')
+    return
+  }
+  reportingSaving.value = true
+  try {
+    const publisherKey = form.publisherKey.trim()
+    const response = await TenantApi.saveTenantReportingConfiguration(props.target, {
+      credentialVersion: form.credentialVersion,
+      ...(publisherKey ? { publisherKey } : {}),
+      reportTimezone: form.reportTimezone,
+      currency: form.currency.trim().toUpperCase(),
+      amountScale: form.amountScale,
+      adFormat: 'rewarded_video',
+      reason
+    })
+    reportingForm.value = sanitizeReportingConfiguration(response)
+    ElMessage.success('报表配置已保存；Publisher Key 输入已清空')
+    await loadReadiness(requestId)
+  } catch (error) {
+    ElMessage.error(errorText(error, 'Taku 报表配置保存失败'))
+  } finally {
+    reportingSaving.value = false
+  }
+}
+
+watch(() => `${props.target.kind}:${props.target.tenantId}`, reload, { immediate: true })
+</script>

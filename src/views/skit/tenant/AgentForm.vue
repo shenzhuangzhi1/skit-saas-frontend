@@ -563,12 +563,17 @@ const clearProviderCredentials = async (provider: TenantApi.TenantAdProvider) =>
   if (!tenantId || isArchived.value) return
   const providerName = provider === 'PANGLE' ? '穿山甲' : 'Taku'
   try {
-    await message.confirm(
-      `确认清除${providerName}密钥并停用该平台吗？账号、App ID 和广告位信息会保留，密钥无法恢复。`,
+    const { value } = await message.prompt(
+      `请输入清除${providerName}密钥并停用平台的原因（10–500 字）。密钥无法恢复。`,
       `清除${providerName}密钥`
     )
+    const reason = String(value || '').trim()
+    if (reason.length < 10 || reason.length > 500) {
+      message.warning('清除原因长度必须为 10–500 个字符')
+      return
+    }
     clearingProvider.value = provider
-    await TenantApi.clearTenantAdAccountCredentials({ tenantId, provider })
+    await TenantApi.clearTenantAdAccountCredentials({ tenantId, provider, reason })
     if (provider === 'PANGLE') {
       formData.value.pangleAppSecret = ''
       formData.value.pangleSecretConfigured = false

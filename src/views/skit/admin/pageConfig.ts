@@ -52,69 +52,6 @@ const fields = (items: Array<[string, string, SkitSearchField['type']?]>): SkitS
   items.map(([prop, label, type = 'input']) => ({ prop, label, type }))
 
 export const skitPageConfigs: Record<string, SkitPageConfig> = {
-  systemConfig: {
-    key: 'systemConfig',
-    title: '系统配置',
-    parent: '常规管理',
-    liveRoute: '/manystore/general/config?addtabs=1',
-    apiPath: '/admin-api/skit/general/config',
-    description: '维护平台基础参数、上传策略、积分提现、广告收益和通知配置。',
-    columns: [],
-    searchFields: [],
-    toolbar: ['提交', '重置'],
-    sections: [
-      {
-        title: '基础配置',
-        fields: fields([
-          ['site_name', '站点名称'],
-          ['site_title', '站点标题'],
-          ['site_logo', '站点 Logo'],
-          ['site_icp', 'ICP备案号'],
-          ['site_copyright', '版权信息']
-        ])
-      },
-      {
-        title: '上传配置',
-        fields: fields([
-          ['upload_storage', '上传方式'],
-          ['upload_max_size', '最大上传大小'],
-          ['upload_exts', '允许上传后缀'],
-          ['upload_cdn_url', 'CDN 地址'],
-          ['upload_callback_url', '上传回调地址']
-        ])
-      },
-      {
-        title: '积分提现配置',
-        fields: fields([
-          ['score_per_yuan', '每元兑换积分'],
-          ['withdraw_min_amount', '最低提现金额'],
-          ['withdraw_fee_rate', '提现手续费比例'],
-          ['withdraw_fixed_fee', '提现固定手续费'],
-          ['withdraw_review_mode', '提现审核模式']
-        ])
-      },
-      {
-        title: '广告收益配置',
-        fields: fields([
-          ['ad_base_score', '广告基础积分'],
-          ['max_ad_score', '单日最高积分'],
-          ['self_commission_rate', '本人佣金比例'],
-          ['agent_commission_rate', '代理佣金比例'],
-          ['reward_enabled', '广告奖励开关']
-        ])
-      },
-      {
-        title: '通知配置',
-        fields: fields([
-          ['sms_sign', '短信签名'],
-          ['mail_host', '邮件服务器'],
-          ['mail_username', '邮件账号'],
-          ['mail_from', '发件人'],
-          ['notify_webhook', '通知 Webhook']
-        ])
-      }
-    ]
-  },
   attachment: {
     key: 'attachment',
     title: '附件管理',
@@ -150,47 +87,6 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['createtime', '创建日期', 'dateRange']
     ]),
     toolbar: ['刷新', '添加', '编辑', '删除', '普通搜索', '切换列', '导出数据']
-  },
-  profile: {
-    key: 'profile',
-    title: '个人资料',
-    parent: '常规管理',
-    liveRoute: '/manystore/general/profile?addtabs=1',
-    apiPath: '/admin-api/skit/general/profile',
-    description: '维护管理员账号资料和商家基础信息。',
-    columns: [],
-    searchFields: [],
-    toolbar: ['提交', '重置', '上传', '选择'],
-    sections: [
-      {
-        title: '账号资料',
-        fields: fields([
-          ['username', '用户名'],
-          ['email', 'Email'],
-          ['nickname', '昵称'],
-          ['password', '密码']
-        ])
-      },
-      {
-        title: '商家信息',
-        fields: fields([
-          ['name', '店铺名称'],
-          ['logo', '商家 Logo'],
-          ['image', '店铺封面图'],
-          ['images', '店铺环境图片'],
-          ['addressCity', '城市选择'],
-          ['address', '店铺地址'],
-          ['addressDetail', '店铺详细地址'],
-          ['longitude', '经度'],
-          ['latitude', '纬度'],
-          ['yyzzdm', '营业执照'],
-          ['yyzzImages', '营业执照照片'],
-          ['tel', '服务电话'],
-          ['content', '店铺详情'],
-          ['reviewStatus', '审核状态']
-        ])
-      }
-    ]
   },
   operationLog: {
     key: 'operationLog',
@@ -239,33 +135,32 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
   },
   adRecord: {
     key: 'adRecord',
-    title: '广告记录',
-    liveRoute: '/manystore/duanju/ad_record?addtabs=1',
-    apiPath: '/admin-api/skit/duanju/ad-records',
-    totalRows: 947,
-    description: '记录用户广告展示收益、Taku平台ID、交易ID和业务积分。',
+    title: '广告监控',
+    liveRoute: '/skit/ad-record',
+    apiPath: '/admin-api/skit/tenant/ad-events/page',
+    description: '只读查看服务端验证广告事件、平台回调轨迹、对账差异和分成分录。',
     columns: cols([
-      ['0', '选择', 48],
       ['id', 'ID', 80],
-      ['user_id', '用户ID', 100],
-      ['ad_network', '底层平台', 130],
-      ['network_firm_id', 'Taku平台ID', 140],
-      ['trans_id', '交易ID', 220],
-      ['publisher_revenue', '展示收益', 120],
-      ['reward_points', '业务积分', 120],
-      ['createtime', '创建时间', 170]
+      ['sessionId', '广告会话', 220],
+      ['memberId', '会员ID', 100],
+      ['provider', '平台', 100],
+      ['sourceVerificationStatus', '证据状态', 150],
+      ['rewardQualificationStatus', '奖励资格', 150],
+      ['reconciliationStatus', '收益状态', 150],
+      ['estimatedAmount', '预估收益', 120],
+      ['reconciledAmount', '已对账收益', 130],
+      ['occurredTime', '发生时间', 170]
     ]),
     searchFields: fields([
-      ['id', 'ID'],
-      ['user_id', '用户ID'],
-      ['ad_network', '底层平台'],
-      ['network_firm_id', 'Taku平台ID'],
-      ['trans_id', '交易ID'],
-      ['publisher_revenue', '展示收益'],
-      ['reward_points', '业务积分'],
-      ['createtime', '创建时间', 'dateRange']
+      ['memberId', '会员ID'],
+      ['adAccountId', '广告账号ID'],
+      ['provider', '平台', 'select'],
+      ['reconciliationStatus', '收益状态', 'select'],
+      ['currency', '币种'],
+      ['occurredTime', '发生时间', 'dateRange']
     ]),
-    toolbar: ['刷新', '普通搜索', '切换列', '导出数据']
+    toolbar: ['刷新', '查看轨迹'],
+    operateMode: 'detail'
   },
   withdraw: {
     key: 'withdraw',
@@ -558,7 +453,6 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['appid', 'AppID', 190],
       ['appsecret', 'AppSecret', 220],
       ['ad_base_score', '广告基础积分', 130],
-      ['self_commission_rate', '本人佣金比例(%)', 160],
       ['max_ad_score', '最高积分', 110],
       ['withdraw_min_amount', '最低提现金额', 140],
       ['withdraw_fee_rate', '提现手续费比例(%)', 170],
@@ -574,7 +468,6 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['name', '小程序名称'],
       ['appid', 'AppID'],
       ['ad_base_score', '广告基础积分'],
-      ['self_commission_rate', '本人佣金比例(%)'],
       ['max_ad_score', '最高积分'],
       ['withdraw_min_amount', '最低提现金额'],
       ['withdraw_fee_rate', '提现手续费比例(%)'],
@@ -765,9 +658,7 @@ export const skitMenuGroups: SkitMenuGroup[] = [
   {
     title: '常规管理',
     items: [
-      { key: 'systemConfig', title: '系统配置', routeName: 'SkitSystemConfig' },
       { key: 'attachment', title: '附件管理', routeName: 'SkitAttachment', totalRows: 2 },
-      { key: 'profile', title: '个人资料', routeName: 'SkitProfile' },
       { key: 'operationLog', title: '操作日志', routeName: 'SkitOperationLog', totalRows: 147 }
     ]
   },
@@ -775,42 +666,13 @@ export const skitMenuGroups: SkitMenuGroup[] = [
     title: '短剧运营',
     items: [
       { key: 'drama', title: '短剧管理', routeName: 'SkitDrama' },
-      { key: 'adRecord', title: '广告记录', routeName: 'SkitAdRecord', totalRows: 947 },
+      { key: 'adRecord', title: '广告监控', routeName: 'SkitAdRecord' },
       { key: 'withdraw', title: '积分提现', routeName: 'SkitWithdraw', totalRows: 26 },
       { key: 'scoreLog', title: '积分记录', routeName: 'SkitScoreLog', totalRows: 1936 },
       { key: 'loginRecord', title: '登录记录', routeName: 'SkitLoginRecord', totalRows: 1342 },
       { key: 'deviceLog', title: '设备日志', routeName: 'SkitDeviceLog', totalRows: 153 },
       { key: 'user', title: '用户管理', routeName: 'SkitUser', totalRows: 1258 },
       { key: 'announcement', title: '公告管理', routeName: 'SkitAnnouncement', totalRows: 2 }
-    ]
-  },
-  {
-    title: '抖音管理',
-    items: [
-      {
-        key: 'douyinMiniProgram',
-        title: '抖音小程序',
-        routeName: 'SkitDouyinMiniProgram',
-        totalRows: 3
-      },
-      {
-        key: 'douyinLoginRecord',
-        title: '抖音登录记录',
-        routeName: 'SkitDouyinLoginRecord',
-        totalRows: 1303
-      },
-      {
-        key: 'douyinAdRecord',
-        title: '抖音广告记录',
-        routeName: 'SkitDouyinAdRecord',
-        totalRows: 717
-      },
-      {
-        key: 'douyinTrafficRecord',
-        title: '抖音投流记录',
-        routeName: 'SkitDouyinTrafficRecord',
-        totalRows: 34513
-      }
     ]
   }
 ]

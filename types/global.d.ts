@@ -18,6 +18,8 @@ declare global {
   declare type IntervalHandle = ReturnType<typeof setInterval>
 
   const _hmt: any[]
+  const ElMessage: typeof import('element-plus')['ElMessage']
+  const ElMessageBox: typeof import('element-plus')['ElMessageBox']
 
   interface Window {
     _hmt?: any[]

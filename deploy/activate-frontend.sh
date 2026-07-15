@@ -7,6 +7,72 @@ set -euo pipefail
 
 cd "${DEPLOY_PATH}"
 
+docker_config=""
+portable_lock_dir=""
+server_env_file=""
+cleanup_server_env=0
+
+cleanup() {
+  exit_code=$?
+  trap - EXIT
+  if [ -n "${docker_config}" ]; then
+    rm -rf "${docker_config}"
+  fi
+  if [ "${cleanup_server_env}" = "1" ] && [ -n "${server_env_file}" ]; then
+    rm -f -- "${server_env_file}"
+  fi
+  if [ -n "${portable_lock_dir}" ]; then
+    rmdir "${portable_lock_dir}" >/dev/null 2>&1 || true
+  fi
+  exit "${exit_code}"
+}
+trap cleanup EXIT
+
+release_bundle_path="${RELEASE_BUNDLE_PATH:-}"
+if [ -n "${release_bundle_path}" ]; then
+  if [[ ! "${release_bundle_path}" =~ ^releases/frontend-[0-9A-Fa-f]{40}-[0-9]+-[0-9]+$ ]] ||
+     [ -L "${release_bundle_path}" ] || [ ! -d "${release_bundle_path}" ]; then
+    echo "RELEASE_BUNDLE_PATH must identify a safe staged frontend release."
+    exit 1
+  fi
+  server_env_file="${release_bundle_path}/server.env"
+  cleanup_server_env=1
+  if [ -L "${server_env_file}" ] || [ ! -f "${server_env_file}" ]; then
+    echo "The staged frontend release environment is missing or unsafe."
+    exit 1
+  fi
+  chmod 600 "${server_env_file}"
+  # shellcheck disable=SC1090
+  . "${server_env_file}"
+  rm -f -- "${server_env_file}"
+  cleanup_server_env=0
+  server_env_file=""
+fi
+
+deploy_lock_wait_seconds="${SKIT_DEPLOY_LOCK_WAIT_SECONDS:-900}"
+if [[ ! "${deploy_lock_wait_seconds}" =~ ^[0-9]+$ ]]; then
+  echo "SKIT_DEPLOY_LOCK_WAIT_SECONDS must be a non-negative integer."
+  exit 1
+fi
+if command -v flock >/dev/null 2>&1; then
+  exec 9> .deploy.lock
+  if ! flock -w "${deploy_lock_wait_seconds}" 9; then
+    echo "Another backend or frontend activation holds ${DEPLOY_PATH}/.deploy.lock."
+    exit 1
+  fi
+else
+  portable_lock_dir=".deploy.lock.d"
+  lock_deadline=$((SECONDS + deploy_lock_wait_seconds))
+  until mkdir "${portable_lock_dir}" 2>/dev/null; do
+    if [ "${SECONDS}" -ge "${lock_deadline}" ]; then
+      portable_lock_dir=""
+      echo "Another backend or frontend activation holds ${DEPLOY_PATH}/.deploy.lock."
+      exit 1
+    fi
+    sleep 1
+  done
+fi
+
 if [ ! -f docker-compose.prod.yml ]; then
   echo "docker-compose.prod.yml is missing. Run the backend deployment first."
   exit 1
@@ -15,13 +81,6 @@ fi
 if grep -q 'image: skit-saas-frontend:${FRONTEND_IMAGE_TAG:-latest}' docker-compose.prod.yml; then
   sed -i 's|image: skit-saas-frontend:${FRONTEND_IMAGE_TAG:-latest}|image: ${FRONTEND_IMAGE:-skit-saas-frontend}:${FRONTEND_IMAGE_TAG:-latest}|' docker-compose.prod.yml
 fi
-
-set -a
-if [ -f server.env ]; then
-  # shellcheck disable=SC1091
-  . ./server.env
-fi
-set +a
 
 upsert_env() {
   key="$1"
@@ -101,12 +160,11 @@ compose() {
 
 prepare_docker_access
 
-docker_config=""
 if [ -n "${GHCR_TOKEN:-}" ]; then
   docker_config="$(mktemp -d)"
   export DOCKER_CONFIG="${docker_config}"
   printf '%s' "${GHCR_TOKEN}" | docker_cmd login ghcr.io -u "${GHCR_USERNAME:-github-actions}" --password-stdin
-  trap 'rm -rf "${docker_config}"' EXIT
+  unset GHCR_TOKEN
 fi
 
 upsert_env FRONTEND_IMAGE "${IMAGE_NAME}"

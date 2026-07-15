@@ -1,4 +1,5 @@
 import { Layout, getParentLayout } from '@/utils/routerHelper'
+import { PRODUCT_AD_MONITOR_ROUTE_NAME } from '@/router/productMenu'
 
 const { t } = useI18n()
 /**
@@ -73,7 +74,7 @@ const remainingRouter: AppRouteRecordRaw[] = [
   {
     path: '/skit',
     component: Layout,
-    redirect: '/skit/dashboard',
+    redirect: '/skit/user',
     name: 'SkitSaas',
     meta: {
       title: '短剧 SaaS',
@@ -82,16 +83,6 @@ const remainingRouter: AppRouteRecordRaw[] = [
     },
     children: [
       {
-        path: 'dashboard',
-        component: () => import('@/views/Home/Index.vue'),
-        name: 'SkitDashboard',
-        meta: {
-          title: '控制台',
-          icon: 'ep:data-analysis',
-          noCache: false
-        }
-      },
-      {
         path: 'general',
         component: getParentLayout(),
         redirect: '/skit/general/attachment',
@@ -99,25 +90,11 @@ const remainingRouter: AppRouteRecordRaw[] = [
         meta: { title: '常规管理', icon: 'ep:setting', alwaysShow: true },
         children: [
           {
-            path: 'config',
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitSystemConfig',
-            props: { pageKey: 'systemConfig' },
-            meta: { title: '系统配置', icon: 'ep:tools', noCache: false }
-          },
-          {
             path: 'attachment',
             component: () => import('@/views/skit/admin/AdminTable.vue'),
             name: 'SkitAttachment',
             props: { pageKey: 'attachment' },
             meta: { title: '附件管理', icon: 'ep:folder-opened', noCache: false }
-          },
-          {
-            path: 'profile',
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitProfile',
-            props: { pageKey: 'profile' },
-            meta: { title: '个人资料', icon: 'ep:user', noCache: false }
           },
           {
             path: 'operation-log',
@@ -137,10 +114,9 @@ const remainingRouter: AppRouteRecordRaw[] = [
       },
       {
         path: 'ad-record',
-        component: () => import('@/views/skit/admin/AdminTable.vue'),
-        name: 'SkitAdRecord',
-        props: { pageKey: 'adRecord' },
-        meta: { title: '广告记录', icon: 'ep:histogram', noCache: false }
+        component: () => import('@/views/skit/ad-monitor/index.vue'),
+        name: PRODUCT_AD_MONITOR_ROUTE_NAME,
+        meta: { title: '广告监控', icon: 'ep:histogram', noCache: false }
       },
       {
         path: 'withdraw',
@@ -187,47 +163,6 @@ const remainingRouter: AppRouteRecordRaw[] = [
         name: 'SkitAnnouncement',
         props: { pageKey: 'announcement' },
         meta: { title: '公告管理', icon: 'ep:bell', noCache: false }
-      },
-      {
-        path: 'douyin',
-        component: getParentLayout(),
-        redirect: '/skit/douyin/mini-program',
-        name: 'SkitDouyin',
-        meta: { title: '抖音管理', icon: 'ep:cellphone', alwaysShow: true },
-        children: [
-          {
-            path: 'mini-program',
-            alias: ['/skit/douyin-mini-program'],
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitDouyinMiniProgram',
-            props: { pageKey: 'douyinMiniProgram' },
-            meta: { title: '抖音小程序', icon: 'ep:cellphone', noCache: false }
-          },
-          {
-            path: 'login-record',
-            alias: ['/skit/douyin-login-record'],
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitDouyinLoginRecord',
-            props: { pageKey: 'douyinLoginRecord' },
-            meta: { title: '抖音登录记录', icon: 'ep:connection', noCache: false }
-          },
-          {
-            path: 'ad-record',
-            alias: ['/skit/douyin-ad-record'],
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitDouyinAdRecord',
-            props: { pageKey: 'douyinAdRecord' },
-            meta: { title: '抖音广告记录', icon: 'ep:postcard', noCache: false }
-          },
-          {
-            path: 'traffic-record',
-            alias: ['/skit/douyin-traffic-record'],
-            component: () => import('@/views/skit/admin/AdminTable.vue'),
-            name: 'SkitDouyinTrafficRecord',
-            props: { pageKey: 'douyinTrafficRecord' },
-            meta: { title: '抖音投流记录', icon: 'ep:position', noCache: false }
-          }
-        ]
       }
     ]
   },

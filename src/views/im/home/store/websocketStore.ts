@@ -1,6 +1,7 @@
 import { defineStore, acceptHMRUpdate } from 'pinia'
 import { store } from '@/store'
-import { getCurrentUserId, getRefreshToken } from '@/utils/auth'
+import { getCurrentUserId } from '@/utils/auth'
+import { createTicketedWebSocketUrl } from '@/utils/websocketTicket'
 
 import {
   ImWebSocketMessageType,
@@ -182,6 +183,8 @@ export const useImWebSocketStore = defineStore('imWebSocketStore', {
     reconnectTimer: null as ReturnType<typeof setTimeout> | null,
     /** 连续重连失败次数；onopen 成功 / disconnect 主动断开后清零，用于指数退避 */
     reconnectAttempts: 0,
+    ticketRequestPending: false,
+    connectionGeneration: 0,
     heartbeatTimer: null as ReturnType<typeof setInterval> | null,
     messageBuffer: [] as Array<
       | {
@@ -216,16 +219,9 @@ export const useImWebSocketStore = defineStore('imWebSocketStore', {
      * 连接 WebSocket
      * 复用 yudao 内置 /infra/ws 通道，后端通过 sendObject(type, content) 下发
      *
-     * 调用契约：切账号 / token 刷新前必须先 `disconnect()` 再 `connect()`；
-     * 本方法不感知 token 变化，旧 socket 在 CONNECTING / OPEN 状态会直接复用旧 token，可能拿到错误身份
+     * 每次初连或重连都先通过 access token 签发新的短时单次票据；票据签发失败时不创建 WebSocket。
      */
-    connect() {
-      // 鉴权用 refreshToken（生命周期更长；access token 过期后服务端会通过 frame 通知重登）
-      const refreshToken = getRefreshToken()
-      if (!refreshToken) {
-        console.warn('[IM WS] refreshToken 为空，跳过连接')
-        return
-      }
+    async connect() {
       // 旧 socket 还在 CONNECTING / OPEN 直接复用，避免叠加多份 onmessage 监听导致重复消息 / 提示音 / 已读上报
       const existingSocket = this.socket
       if (
@@ -233,6 +229,9 @@ export const useImWebSocketStore = defineStore('imWebSocketStore', {
         (existingSocket.readyState === WebSocket.OPEN ||
           existingSocket.readyState === WebSocket.CONNECTING)
       ) {
+        return
+      }
+      if (this.ticketRequestPending) {
         return
       }
       // 旧 socket 已 CLOSING / CLOSED：解绑回调 + 清引用再 new，避免老 handler 仍持有 store 引用阻碍 GC
@@ -243,11 +242,36 @@ export const useImWebSocketStore = defineStore('imWebSocketStore', {
         existingSocket.onclose = null
         this.socket = null
       }
-      const url = `${this.buildWsUrl()}/infra/ws?token=${refreshToken}`
-      this.socket = new WebSocket(url)
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer)
+        this.reconnectTimer = null
+      }
+
+      const generation = ++this.connectionGeneration
+      this.ticketRequestPending = true
+      let socket: WebSocket
+      try {
+        const url = await createTicketedWebSocketUrl(`${this.buildWsUrl()}/infra/ws`)
+        if (generation !== this.connectionGeneration || !this.ticketRequestPending) {
+          return
+        }
+        socket = new WebSocket(url)
+        this.socket = socket
+      } catch (error) {
+        if (generation === this.connectionGeneration && this.ticketRequestPending) {
+          this.ticketRequestPending = false
+          console.warn('[IM WS] 安全票据签发失败，未建立连接', error)
+          this.reconnect()
+        }
+        return
+      }
+      this.ticketRequestPending = false
 
       // 连接建立：标记上线 + 启动心跳保活；重连退避计数归零
-      this.socket.onopen = () => {
+      socket.onopen = () => {
+        if (this.socket !== socket) {
+          return
+        }
         this.isConnected = true
         this.reconnectAttempts = 0
         console.log('[IM WS] connected')
@@ -255,7 +279,10 @@ export const useImWebSocketStore = defineStore('imWebSocketStore', {
       }
 
       // 收到帧：'pong' 是心跳应答直接吞掉；其余按 WebSocketFrame 解析后交给 dispatchFrame 分流
-      this.socket.onmessage = (event) => {
+      socket.onmessage = (event) => {
+        if (this.socket !== socket) {
+          return
+        }
         if (event.data === 'pong') {
           return
         }
@@ -268,7 +295,11 @@ export const useImWebSocketStore = defineStore('imWebSocketStore', {
       }
 
       // 服务端关闭 / 网络断：标记下线，按指数退避自动重连
-      this.socket.onclose = () => {
+      socket.onclose = () => {
+        if (this.socket !== socket) {
+          return
+        }
+        this.socket = null
         this.isConnected = false
         console.log('[IM WS] disconnected')
         this.reconnect()
@@ -277,10 +308,13 @@ export const useImWebSocketStore = defineStore('imWebSocketStore', {
       // 异常时不主动 reconnect，主动 close() 让 onclose 成为唯一重连入口：
       // 1）避免 onerror / onclose 双触把 reconnectAttempts 一次断连 +2
       // 2）兜底某些平台 onerror 后 onclose 延迟 / 丢失导致重连卡住
-      this.socket.onerror = (error) => {
+      socket.onerror = (error) => {
+        if (this.socket !== socket) {
+          return
+        }
         console.error('[IM WS] error:', error)
         this.isConnected = false
-        this.socket?.close()
+        socket.close()
       }
     },
 
@@ -1017,6 +1051,8 @@ export const useImWebSocketStore = defineStore('imWebSocketStore', {
 
     /** 主动断开（切换用户 / 退出登录时用）：关 socket + 停心跳 + 取消待重连 */
     disconnect() {
+      this.connectionGeneration++
+      this.ticketRequestPending = false
       if (this.socket) {
         // close() 异步触发 onclose / onerror，回调里会无条件 reconnect；
         // 主动关闭路径必须先全部解绑，否则 onclose 会引发自动重连，CONNECTING 期间的 in-flight message 也可能被老 onmessage 投递到 stale 上下文
@@ -1058,7 +1094,8 @@ export const useImWebSocketStore = defineStore('imWebSocketStore', {
       this.reconnectAttempts++
       console.log(`[IM WS] reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`)
       this.reconnectTimer = setTimeout(() => {
-        this.connect()
+        this.reconnectTimer = null
+        void this.connect()
       }, delay)
     },
 

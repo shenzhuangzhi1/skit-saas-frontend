@@ -39,7 +39,7 @@ const prefixCls = getPrefixCls('login')
   overflow: hidden;
   background: #fff;
   border: 1px solid #e5e8f0;
-  box-shadow: 0 8px 24px rgba(52, 73, 126, 0.08);
+  box-shadow: 0 8px 24px rgb(52 73 126 / 8%);
 }
 
 .skit-login-head img {
@@ -55,7 +55,7 @@ const prefixCls = getPrefixCls('login')
   border-radius: 50%;
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .skit-login-screen {
     padding-top: 56px;
   }
