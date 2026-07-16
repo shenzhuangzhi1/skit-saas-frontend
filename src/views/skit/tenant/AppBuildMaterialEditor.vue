@@ -6,13 +6,7 @@
     type="info"
     title="APK 暂由本地 Mac 构建，本页面只保存租户构建资料；不会在 SaaS 服务器或 GitHub Actions 上打包。"
   />
-  <el-alert
-    v-if="material"
-    class="mb-16px"
-    :closable="false"
-    show-icon
-    type="success"
-  >
+  <el-alert v-if="material" class="mb-16px" :closable="false" show-icon type="success">
     <template #title>
       构建资料版本 {{ material.materialVersion || '未保存' }} ·
       {{ material.verifiedAt ? `最近校验 ${formatTime(material.verifiedAt)}` : '尚未保存' }}
@@ -52,7 +46,12 @@
       <el-input v-model="formData.appName" maxlength="128" placeholder="打包后显示的应用名称" />
     </el-form-item>
     <el-form-item label="原生 versionCode" prop="nativeVersionCode">
-      <el-input-number v-model="formData.nativeVersionCode" :min="1" :max="2100000000" :precision="0" />
+      <el-input-number
+        v-model="formData.nativeVersionCode"
+        :min="1"
+        :max="2100000000"
+        :precision="0"
+      />
     </el-form-item>
     <el-form-item label="原生 versionName" prop="nativeVersionName">
       <el-input v-model="formData.nativeVersionName" placeholder="例如 2.3.0" />
@@ -155,17 +154,51 @@ const rules = reactive<FormRules<BuildForm>>({
     { required: true, message: 'API 地址不能为空', trigger: 'blur' },
     { pattern: /^https:\/\/[^\s]+$/i, message: 'API 地址必须使用 HTTPS', trigger: 'blur' }
   ],
-  appName: [{ required: true, min: 1, max: 128, message: '应用名称长度必须为 1–128 个字符', trigger: 'blur' }],
+  appName: [
+    {
+      required: true,
+      min: 1,
+      max: 128,
+      message: '应用名称长度必须为 1–128 个字符',
+      trigger: 'blur'
+    }
+  ],
   nativeVersionCode: [
-    { required: true, type: 'integer', min: 1, max: 2100000000, message: 'versionCode 必须是 1–2100000000 的整数', trigger: 'change' }
+    {
+      required: true,
+      type: 'integer',
+      min: 1,
+      max: 2100000000,
+      message: 'versionCode 必须是 1–2100000000 的整数',
+      trigger: 'change'
+    }
   ],
   nativeVersionName: [
-    { required: true, pattern: /^\d+(\.\d+){1,3}([.-][A-Za-z0-9._-]+)?$/, message: '版本号格式例如 2.3.0', trigger: 'blur' }
+    {
+      required: true,
+      pattern: /^\d+(\.\d+){1,3}([.-][A-Za-z0-9._-]+)?$/,
+      message: '版本号格式例如 2.3.0',
+      trigger: 'blur'
+    }
   ],
   runtimeReleaseNo: [
-    { required: true, type: 'integer', min: 1, message: '运行时发布序号必须是正整数', trigger: 'change' }
+    {
+      required: true,
+      type: 'integer',
+      min: 1,
+      message: '运行时发布序号必须是正整数',
+      trigger: 'change'
+    }
   ],
-  reason: [{ required: true, min: 10, max: 500, message: '变更原因长度必须为 10–500 个字符', trigger: 'blur' }]
+  reason: [
+    {
+      required: true,
+      min: 10,
+      max: 500,
+      message: '变更原因长度必须为 10–500 个字符',
+      trigger: 'blur'
+    }
+  ]
 })
 
 const formatTime = (value: string) => value.replace('T', ' ').replace(/\.\d+$/, '')
