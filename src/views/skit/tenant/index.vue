@@ -243,6 +243,8 @@
           <CommissionLedger :target="tenantWorkspaceTarget(true, selectedAgent.tenantId)" />
         </el-tab-pane>
         <el-tab-pane :disabled="selectedAgentArchived" label="App 发布" name="app-release" lazy>
+          <AppBuildMaterialEditor :tenant-id="selectedAgent.tenantId" />
+          <el-divider />
           <AppReleaseEditor :tenant-id="selectedAgent.tenantId" />
         </el-tab-pane>
       </el-tabs>
@@ -265,6 +267,7 @@ import AdAccessEditor from './AdAccessEditor.vue'
 import CommissionRuleEditor from './CommissionRuleEditor.vue'
 import MemberList from './MemberList.vue'
 import CommissionLedger from './CommissionLedger.vue'
+import AppBuildMaterialEditor from './AppBuildMaterialEditor.vue'
 import AppReleaseEditor from './AppReleaseEditor.vue'
 import AgentForm from './AgentForm.vue'
 import AgentMobileForm from './AgentMobileForm.vue'

@@ -550,6 +550,37 @@ export interface TenantAppReleaseProfileUpdateReqVO extends TenantAppReleaseProf
   reason: string
 }
 
+export interface TenantAppBuildMaterialVO {
+  tenantId: number
+  materialVersion: number
+  apiBaseUrl: string
+  appName: string
+  nativeVersionCode: number
+  nativeVersionName: string
+  runtimeReleaseNo: number
+  pangleSettingsConfigured: boolean
+  signingConfigured: boolean
+  takuAppKeyConfigured: boolean
+  takuAccountConfigured: boolean
+  appReleaseProfileConfigured: boolean
+  verifiedAt?: string | null
+}
+
+export interface TenantAppBuildMaterialUpdateReqVO {
+  tenantId: number
+  apiBaseUrl: string
+  appName: string
+  nativeVersionCode: number
+  nativeVersionName: string
+  runtimeReleaseNo: number
+  pangleSettingsJson?: string
+  releaseKeystoreBase64?: string
+  storePassword?: string
+  keyAlias?: string
+  keyPassword?: string
+  reason: string
+}
+
 export const getTenantAgentPage = (params: TenantAgentPageReqVO) => {
   return request.get<PageResult<TenantAgentVO>>({ url: '/skit/tenant/agent/page', params })
 }
@@ -807,6 +838,17 @@ export const getTenantAppReleaseProfile = (tenantId: number) => {
 
 export const updateTenantAppReleaseProfile = (data: TenantAppReleaseProfileUpdateReqVO) => {
   return request.put<TenantAppReleaseProfileVO>({ url: '/skit/tenant/app-release', data })
+}
+
+export const getTenantAppBuildMaterial = (tenantId: number) => {
+  return request.get<TenantAppBuildMaterialVO>({
+    url: '/skit/tenant/app-build/material',
+    params: { tenantId }
+  })
+}
+
+export const updateTenantAppBuildMaterial = (data: TenantAppBuildMaterialUpdateReqVO) => {
+  return request.put<TenantAppBuildMaterialVO>({ url: '/skit/tenant/app-build/material', data })
 }
 
 export const getTenantMemberPage = (params: TenantMemberPageReqVO) => {
