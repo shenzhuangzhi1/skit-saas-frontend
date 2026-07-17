@@ -234,10 +234,12 @@
         <el-form-item label="系统权威广告网络">
           <el-input :model-value="PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS.join(', ')" disabled />
         </el-form-item>
-        <el-form-item label="灰度会员 ID">
+        <el-form-item label="灰度会员 ID（当前租户）">
           <el-input
             v-model="capabilityForm.shadowTestMemberIds"
-            placeholder="逗号分隔；仅这些会员进入灰度"
+            :rows="2"
+            placeholder="填写成员体系中的 memberId，支持逗号、中文逗号或换行"
+            type="textarea"
           />
         </el-form-item>
         <el-form-item label="最低原生版本">
@@ -386,6 +388,7 @@ import AdReadinessChecklist from './AdReadinessChecklist.vue'
 import {
   buildAdAccountWritePayload,
   CURRENT_PROTOCOL_VERSION,
+  parseShadowMemberIds,
   PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS,
   sanitizeAdAccountResponse,
   sanitizeReportingConfiguration,
@@ -432,6 +435,20 @@ let requestId = 0
 
 const errorText = (error: unknown, fallback: string) =>
   error instanceof Error && error.message ? error.message : fallback
+
+const capabilityErrorText = (error: unknown) => {
+  const message = errorText(error, '验奖配置保存失败')
+  if (message.includes('SHADOW_MEMBER_TENANT_MISMATCH')) {
+    return '灰度会员 ID 不属于当前租户，请从成员体系复制当前租户的 memberId'
+  }
+  if (message.includes('CROSS_TENANT_CONFIGURATION')) {
+    return '广告账号不属于当前租户，请重新选择当前租户的 Taku 广告账号'
+  }
+  if (message.includes('REQUIRED_FIELD_INVALID')) {
+    return '请填写最低原生版本，并确认已启用有效的 Taku 广告账号'
+  }
+  return message
+}
 
 const loadAccount = async (currentRequestId: number) => {
   accountLoading.value = true
@@ -541,16 +558,6 @@ const auditedReason = (value: string, label: string) => {
   return reason
 }
 
-const parsePositiveIds = (value: string, label: string) => {
-  const source = value.trim()
-  if (!source) return []
-  const ids = source.split(',').map((item) => Number(item.trim()))
-  if (ids.some((id) => !Number.isSafeInteger(id) || id <= 0) || new Set(ids).size !== ids.length) {
-    throw new Error(`${label}必须是逗号分隔且不重复的正整数`)
-  }
-  return ids
-}
-
 const saveCapability = async () => {
   const form = capabilityForm.value
   const currentReadiness = readiness.value
@@ -566,7 +573,7 @@ const saveCapability = async () => {
       rewardCallbackTemplateVerified: form.rewardCallbackTemplateVerified,
       impressionCallbackTemplateVerified: form.impressionCallbackTemplateVerified,
       unlockNetworkFirmIds: [...PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS],
-      shadowTestMemberIds: parsePositiveIds(form.shadowTestMemberIds, '灰度会员 ID'),
+      shadowTestMemberIds: parseShadowMemberIds(form.shadowTestMemberIds),
       minNativeVersion: form.minNativeVersion.trim(),
       minProtocolVersion: CURRENT_PROTOCOL_VERSION,
       expectedReadinessVersion: currentReadiness.readinessVersion,
@@ -575,7 +582,7 @@ const saveCapability = async () => {
     ElMessage.success(`验奖配置已保存，当前就绪版本 v${response.readinessVersion}`)
     await loadReadiness(requestId)
   } catch (error) {
-    ElMessage.error(errorText(error, '验奖配置保存失败'))
+    ElMessage.error(capabilityErrorText(error))
   } finally {
     capabilitySaving.value = false
   }

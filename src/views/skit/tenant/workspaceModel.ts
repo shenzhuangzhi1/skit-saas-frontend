@@ -10,6 +10,17 @@ export type { ManagementTenantTarget }
 export const PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS = [35, 66, 67] as const
 export const CURRENT_PROTOCOL_VERSION = 1
 
+export const parseShadowMemberIds = (value: string): number[] => {
+  const source = value.trim()
+  if (!source) return []
+  const tokens = source.split(/[\s,，、;；]+/).filter(Boolean)
+  const ids = tokens.map((token) => Number(token))
+  if (ids.some((id) => !Number.isSafeInteger(id) || id <= 0) || new Set(ids).size !== ids.length) {
+    throw new Error('灰度会员 ID 必须是逗号、中文逗号或换行分隔且不重复的正整数')
+  }
+  return ids
+}
+
 export interface AdAccountResponseLike {
   pangleUsername?: unknown
   pangleAppId?: unknown

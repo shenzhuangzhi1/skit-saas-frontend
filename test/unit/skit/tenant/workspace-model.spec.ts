@@ -5,12 +5,19 @@ import {
   buildMemberBreadcrumb,
   groupLedgerAmounts,
   mergeMemberChildren,
+  parseShadowMemberIds,
   sanitizeAdAccountResponse,
   sanitizeReportingConfiguration,
   validateCommissionDraft
 } from '@/views/skit/tenant/workspaceModel'
 
 describe('tenant revenue workspace model', () => {
+  it('parses gray-test member ids from common pasted separators', () => {
+    expect(parseShadowMemberIds('101，\n102; 103、104')).toEqual([101, 102, 103, 104])
+    expect(() => parseShadowMemberIds('101, 101')).toThrow('不重复')
+    expect(() => parseShadowMemberIds('member-101')).toThrow('正整数')
+  })
+
   it('treats provider credentials as write-only even if a malformed response contains them', () => {
     const form = sanitizeAdAccountResponse({
       pangleUsername: 'pangle-account',
