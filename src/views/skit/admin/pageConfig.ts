@@ -111,27 +111,30 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     title: '短剧管理',
     liveRoute: '/manystore/duanju?addtabs=1',
     apiPath: '/admin-api/skit/duanju/dramas',
-    description: '管理短剧基础信息、封面、分类、剧集和上下架状态。',
+    description: '导入 SDK 返回的剧单后审核上架。总集数、免费集数和解锁范围均以导入内容为准。',
     columns: cols([
-      ['id', 'ID', 80],
+      ['pangleDramaId', '剧目 ID', 110],
       ['title', '短剧标题', 180],
       ['cover', '封面', 140],
       ['category', '分类', 120],
-      ['episodes', '集数', 90],
-      ['status', '状态', 100],
+      ['episodes', '总集数', 90],
+      ['freeEpisodes', '免费集数', 100],
+      ['unlockSize', '解锁范围', 100],
+      ['contentStatus', '内容状态', 100],
+      ['publishStatus', '上架状态', 100],
       ['createtime', '创建时间', 170],
       ['updatetime', '更新时间', 170],
       ['operate', '操作', 130]
     ]),
     searchFields: fields([
-      ['id', 'ID'],
+      ['pangleDramaId', '剧目 ID'],
       ['title', '短剧标题'],
       ['category', '分类'],
-      ['status', '状态', 'select'],
+      ['publishStatus', '上架状态', 'select'],
       ['createtime', '创建时间', 'dateRange'],
       ['updatetime', '更新时间', 'dateRange']
     ]),
-    toolbar: ['刷新', '添加', '编辑', '上架', '下架']
+    toolbar: ['刷新', '导入 SDK 剧单', '添加', '编辑', '上架', '下架']
   },
   adRecord: {
     key: 'adRecord',

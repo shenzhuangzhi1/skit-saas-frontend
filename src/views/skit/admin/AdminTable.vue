@@ -139,6 +139,14 @@
             添加
           </button>
           <button
+            v-if="hasAction('导入 SDK 剧单')"
+            class="btn btn-primary"
+            type="button"
+            @click="openDramaImport"
+          >
+            导入 SDK 剧单
+          </button>
+          <button
             v-if="hasAction('编辑')"
             class="btn btn-success"
             :class="{ disabled: selectedRows.length !== 1 }"
@@ -175,6 +183,24 @@
             @click="batchSetStatus('审核拒绝')"
           >
             审核拒绝
+          </button>
+          <button
+            v-if="hasAction('上架')"
+            class="btn btn-success"
+            :class="{ disabled: selectedRows.length === 0 }"
+            type="button"
+            @click="batchSetPublishStatus('上架')"
+          >
+            上架
+          </button>
+          <button
+            v-if="hasAction('下架')"
+            class="btn btn-warning-light"
+            :class="{ disabled: selectedRows.length === 0 }"
+            type="button"
+            @click="batchSetPublishStatus('下架')"
+          >
+            下架
           </button>
           <button
             v-if="selectedRows.length"
@@ -392,6 +418,21 @@
         </button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="dramaImportVisible" title="导入 SDK 剧单" width="680px">
+      <textarea
+        v-model="dramaImportText"
+        class="form-control drama-import-input"
+        rows="16"
+        spellcheck="false"
+      ></textarea>
+      <template #footer>
+        <button class="btn btn-default" type="button" @click="dramaImportVisible = false">
+          取消
+        </button>
+        <button class="btn btn-success" type="button" @click="importDramaCatalog">导入</button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -446,6 +487,8 @@ const editorVisible = ref(false)
 const editorMode = ref<'add' | 'edit' | 'view'>('add')
 const editorModel = reactive<Record<string, string | number>>({})
 const editingKey = ref('')
+const dramaImportVisible = ref(false)
+const dramaImportText = ref('')
 type OperateAction = {
   mode: 'edit' | 'view'
   label: string
@@ -573,6 +616,74 @@ watch(filteredRows, () => {
 })
 
 const hasAction = (action: string) => page.value.toolbar.some((item) => item.includes(action))
+
+const isPositiveInteger = (value: unknown) => {
+  const numeric = Number(value)
+  return Number.isSafeInteger(numeric) && numeric > 0 ? numeric : null
+}
+
+const isNonNegativeInteger = (value: unknown) => {
+  const numeric = Number(value)
+  return Number.isSafeInteger(numeric) && numeric >= 0 ? numeric : null
+}
+
+const sourceField = (source: Record<string, unknown>, ...keys: string[]) => {
+  for (const key of keys) {
+    const value = source[key]
+    if (value !== undefined && value !== null && String(value).trim()) return value
+  }
+  return undefined
+}
+
+const sdkContentStatus = (value: unknown) => {
+  if (Number(value) === 1) return '连载中'
+  if (Number(value) === 0) return '已完结'
+  return String(value ?? '').trim() || '未知'
+}
+
+const normalizeSdkDrama = (source: Record<string, unknown>): TableRow | null => {
+  const pangleDramaId = isPositiveInteger(
+    sourceField(source, 'pangleDramaId', 'dramaId', 'drama_id', 'contentId', 'nativeId', 'id')
+  )
+  const episodes = isPositiveInteger(
+    sourceField(source, 'total', 'episodeCount', 'count', 'episodes')
+  )
+  const freeEpisodes = isNonNegativeInteger(
+    sourceField(source, 'freeSet', 'free_set', 'freeEpisodes')
+  )
+  const unlockSize = isPositiveInteger(sourceField(source, 'lockSet', 'lock_set', 'unlockSize'))
+  if (
+    !pangleDramaId ||
+    !episodes ||
+    freeEpisodes === null ||
+    freeEpisodes > episodes ||
+    !unlockSize
+  ) {
+    return null
+  }
+  return {
+    pangleDramaId,
+    title: String(sourceField(source, 'title', 'scriptName', 'name') || '').trim() || '未命名短剧',
+    cover: String(sourceField(source, 'coverImage', 'cover_image', 'cover', 'poster') || '').trim(),
+    category: String(sourceField(source, 'type', 'category') || '').trim() || '热播',
+    episodes,
+    freeEpisodes,
+    unlockSize,
+    contentStatus: sdkContentStatus(source.status),
+    publishStatus: '下架'
+  }
+}
+
+const sdkCatalogItems = (payload: unknown): Record<string, unknown>[] => {
+  const candidate = Array.isArray(payload)
+    ? payload
+    : payload && typeof payload === 'object' && Array.isArray((payload as { list?: unknown }).list)
+      ? (payload as { list: unknown[] }).list
+      : []
+  return candidate.filter(
+    (item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object'
+  )
+}
 
 const fieldMatched = (row: TableRow, field: SkitSearchField) => {
   const exact = (advancedModel[field.prop] || '').trim().toLowerCase()
@@ -861,7 +972,7 @@ const columnStyle = (column: SkitColumn) => ({
 })
 
 const isStatusColumn = (prop: string) =>
-  prop === 'status' || prop.includes('status') || prop.startsWith('is_')
+  prop === 'status' || prop.toLowerCase().includes('status') || prop.startsWith('is_')
 const statusClass = (value: CellValue) => {
   const text = String(value)
   if (text.includes('待')) return 'label label-warning'
@@ -1003,6 +1114,96 @@ const batchSetStatus = async (status: string) => {
     )
   }
   ElMessage.success(status)
+}
+
+const batchSetPublishStatus = async (status: '上架' | '下架') => {
+  if (!selectedRows.value.length) {
+    ElMessage.warning('请先选择短剧')
+    return
+  }
+  selectedRows.value.forEach((row) => {
+    row.publishStatus = status
+  })
+  if (backendAvailable.value) {
+    await Promise.all(
+      selectedRows.value
+        .map((row) => {
+          const id = backendId(row)
+          if (!id) return undefined
+          return updateSkitAdminRecord({
+            id,
+            pageKey: page.value.key,
+            rowKey: String(row.__rowKey || ''),
+            recordData: buildRecordData(row),
+            status: deriveBackendStatus(row),
+            sort: Number(row.__backendSort || 0)
+          })
+        })
+        .filter((request): request is Promise<boolean> => Boolean(request))
+    )
+    await loadPageRows(false)
+  }
+  ElMessage.success(`${status}成功`)
+}
+
+const openDramaImport = () => {
+  dramaImportText.value = ''
+  dramaImportVisible.value = true
+}
+
+const importDramaCatalog = async () => {
+  let payload: unknown
+  try {
+    payload = JSON.parse(dramaImportText.value)
+  } catch {
+    ElMessage.error('剧单 JSON 格式无效')
+    return
+  }
+  const dramas = sdkCatalogItems(payload).map(normalizeSdkDrama).filter(Boolean) as TableRow[]
+  if (!dramas.length) {
+    ElMessage.error('未找到可用的 SDK 剧目')
+    return
+  }
+  const existing = new Map(
+    tableRows.value
+      .filter((row) => isPositiveInteger(row.pangleDramaId))
+      .map((row) => [String(row.pangleDramaId), row])
+  )
+  if (backendAvailable.value) {
+    await Promise.all(
+      dramas.map((drama) => {
+        const current = existing.get(String(drama.pangleDramaId))
+        const recordData = buildRecordData({
+          ...(current || {}),
+          ...drama,
+          publishStatus: current?.publishStatus || drama.publishStatus
+        })
+        const id = current ? backendId(current) : undefined
+        if (id) {
+          return updateSkitAdminRecord({
+            id,
+            pageKey: page.value.key,
+            rowKey: String(current?.__rowKey || `drama-${drama.pangleDramaId}`),
+            recordData,
+            status: deriveBackendStatus(recordData),
+            sort: Number(current?.__backendSort || 0)
+          })
+        }
+        return createSkitAdminRecord({
+          pageKey: page.value.key,
+          rowKey: `drama-${drama.pangleDramaId}`,
+          recordData,
+          status: 0,
+          sort: 0
+        })
+      })
+    )
+    await loadPageRows(false)
+  } else {
+    tableRows.value = dramas
+  }
+  dramaImportVisible.value = false
+  ElMessage.success(`已导入 ${dramas.length} 部短剧`)
 }
 
 const openEditor = (mode: 'add' | 'edit' | 'view', row?: TableRow) => {
@@ -1268,6 +1469,13 @@ watch(
 
 textarea.form-control {
   height: auto;
+}
+
+.drama-import-input {
+  min-height: 300px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  line-height: 1.45;
+  resize: vertical;
 }
 
 .date-range {
