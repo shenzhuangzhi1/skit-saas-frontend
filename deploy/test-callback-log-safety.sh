@@ -26,15 +26,19 @@ grep -Eq '^    error_log /dev/null crit;$' <<<"${callback_block}" \
   || fail "callback upstream errors must not echo the secret route or query"
 grep -Eq '^    proxy_pass http://backend:48080;$' <<<"${callback_block}" \
   || fail "proxy_pass must omit a replacement URI so the untouched path and query reach backend"
-grep -Eq '^    proxy_set_header X-Real-IP \$remote_addr;$' <<<"${callback_block}" \
-  || fail "callback proxy must overwrite X-Real-IP with the direct peer"
-grep -Eq '^    proxy_set_header X-Forwarded-For \$remote_addr;$' <<<"${callback_block}" \
-  || fail "callback proxy must discard caller-supplied forwarding chains"
-grep -Eq '^    proxy_set_header X-Real-IP \$remote_addr;$' <<<"${generic_block}" \
-  || fail "generic API proxy must overwrite X-Real-IP with the direct peer"
-grep -Eq '^    proxy_set_header X-Forwarded-For \$remote_addr;$' <<<"${generic_block}" \
-  || fail "generic API proxy must discard caller-supplied forwarding chains"
+grep -Fq 'map $http_x_real_ip $skit_client_ip {' "${nginx_config}" \
+  || fail "loopback frontend must retain the TLS proxy's canonical client IP"
+grep -Fq 'map $http_x_forwarded_for $skit_forwarded_for {' "${nginx_config}" \
+  || fail "loopback frontend must retain the TLS proxy's canonical forwarding chain"
+grep -Eq '^    proxy_set_header X-Real-IP \$skit_client_ip;$' <<<"${callback_block}" \
+  || fail "callback proxy must forward the canonical client IP"
+grep -Eq '^    proxy_set_header X-Forwarded-For \$skit_forwarded_for;$' <<<"${callback_block}" \
+  || fail "callback proxy must forward the canonical forwarding chain"
+grep -Eq '^    proxy_set_header X-Real-IP \$skit_client_ip;$' <<<"${generic_block}" \
+  || fail "generic API proxy must forward the canonical client IP"
+grep -Eq '^    proxy_set_header X-Forwarded-For \$skit_forwarded_for;$' <<<"${generic_block}" \
+  || fail "generic API proxy must forward the canonical forwarding chain"
 ! grep -Fq '$proxy_add_x_forwarded_for' <<<"${generic_block}" \
-  || fail "generic API proxy must never append an attacker-supplied X-Forwarded-For value"
+  || fail "generic API proxy must never append an untrusted forwarding chain"
 
-echo "PASS: callback logs are secret-safe and all client IP headers are overwritten"
+echo "PASS: callback logs are secret-safe and public proxy client headers are retained"

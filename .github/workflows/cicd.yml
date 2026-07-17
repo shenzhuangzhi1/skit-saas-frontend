@@ -218,7 +218,7 @@ jobs:
           SUDO_PASSWORD="${SERVER_SUDO_PASSWORD:-${SERVER_PASSWORD:-}}"
           install -m 600 /dev/null .deploy/server.env
           {
-            printf 'FRONTEND_PORT=%q\n' "${FRONTEND_PORT:-80}"
+            printf 'FRONTEND_PORT=%q\n' "${FRONTEND_PORT:-48081}"
             printf 'GHCR_USERNAME=%q\n' "${GHCR_USERNAME}"
             printf 'GHCR_TOKEN=%q\n' "${GHCR_TOKEN}"
             printf 'SUDO_PASSWORD=%q\n' "${SUDO_PASSWORD}"

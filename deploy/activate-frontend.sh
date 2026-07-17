@@ -169,7 +169,7 @@ fi
 
 upsert_env FRONTEND_IMAGE "${IMAGE_NAME}"
 upsert_env FRONTEND_IMAGE_TAG "${IMAGE_TAG}"
-upsert_env FRONTEND_PORT "${FRONTEND_PORT:-80}"
+upsert_env FRONTEND_PORT "${FRONTEND_PORT:-48081}"
 
 compose -f docker-compose.prod.yml --env-file .env pull frontend
 compose -f docker-compose.prod.yml --env-file .env up -d --no-deps --force-recreate frontend
@@ -182,7 +182,7 @@ if [ "${actual_image}" != "${expected_image}" ]; then
 fi
 
 for _ in $(seq 1 60); do
-  if curl -fsS "http://127.0.0.1:${FRONTEND_PORT:-80}/" >/dev/null; then
+  if curl -fsS "http://127.0.0.1:${FRONTEND_PORT:-48081}/" >/dev/null; then
     docker_cmd ps --filter name=skit-saas-frontend
     exit 0
   fi
