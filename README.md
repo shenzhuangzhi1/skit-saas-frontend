@@ -16,6 +16,21 @@
 * 启动文档：<https://doc.iocoder.cn/quick-start/>
 * 视频教程：<https://doc.iocoder.cn/video/>
 
+## Skit SaaS 本地联调与 push 前验证
+
+后端本地启动 MySQL/Redis 后，在本仓库执行 `pnpm run dev`。`.env.local` 已将 API
+指向 `http://localhost:48080`，因此不要把生产地址写入本地环境文件。
+
+首次配置本仓库的 push 门禁：
+
+```bash
+./scripts/install-local-hooks.sh
+./scripts/verify-local.sh
+```
+
+验证命令会执行单元测试、类型检查、ESLint/Stylelint/Prettier 和生产构建；格式检查
+不会自动改写文件。源码、配置或构建文件 push 前必须通过，纯文档变更会跳过完整套件。
+
 ## 🐯 平台简介
 
 **芋道**，以开发者为中心，打造中国第一流的快速开发平台，全部开源，个人与企业可 100% 免费使用。
