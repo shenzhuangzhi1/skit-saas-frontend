@@ -229,7 +229,7 @@
         <el-form-item label="权威广告源 ID">
           <el-input
             v-model="capabilityForm.unlockNetworkFirmIds"
-            placeholder="逗号分隔，例如 1, 2, 3"
+            placeholder="当前阶段填写 35, 66, 67"
           />
         </el-form-item>
         <el-form-item label="灰度会员 ID">
@@ -383,8 +383,10 @@ import * as TenantApi from '@/api/skit/tenant'
 import AdReadinessChecklist from './AdReadinessChecklist.vue'
 import {
   buildAdAccountWritePayload,
+  PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS,
   sanitizeAdAccountResponse,
   sanitizeReportingConfiguration,
+  validatePhaseOneUnlockNetworkFirmIds,
   type ManagementTenantTarget,
   type SafeAdAccountForm,
   type SafeReportingConfigurationForm
@@ -460,7 +462,9 @@ const loadReadiness = async (currentRequestId: number) => {
       dedicatedPlacementVerified: Boolean(response.dedicatedPlacementVerified),
       rewardCallbackTemplateVerified: Boolean(response.rewardCallbackTemplateVerified),
       impressionCallbackTemplateVerified: Boolean(response.impressionCallbackTemplateVerified),
-      unlockNetworkFirmIds: (response.unlockNetworkFirmIds || []).join(', '),
+      unlockNetworkFirmIds:
+        (response.unlockNetworkFirmIds || []).join(', ') ||
+        PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS.join(', '),
       shadowTestMemberIds: (response.shadowTestMemberIds || []).join(', '),
       minNativeVersion: response.minNativeVersion || '',
       minProtocolVersion: Number(response.minProtocolVersion || 1),
@@ -553,6 +557,11 @@ const saveCapability = async () => {
   if (!form || !currentReadiness?.adAccountId) return
   const reason = auditedReason(form.reason, '配置变更原因')
   if (!reason) return
+  const networkIds = validatePhaseOneUnlockNetworkFirmIds(form.unlockNetworkFirmIds)
+  if (networkIds.error) {
+    ElMessage.warning(networkIds.error)
+    return
+  }
   capabilitySaving.value = true
   try {
     const response = await TenantApi.configureTenantAdCapability(props.target, {
@@ -561,7 +570,7 @@ const saveCapability = async () => {
       dedicatedPlacementVerified: form.dedicatedPlacementVerified,
       rewardCallbackTemplateVerified: form.rewardCallbackTemplateVerified,
       impressionCallbackTemplateVerified: form.impressionCallbackTemplateVerified,
-      unlockNetworkFirmIds: parsePositiveIds(form.unlockNetworkFirmIds, '权威广告源 ID'),
+      unlockNetworkFirmIds: networkIds.ids,
       shadowTestMemberIds: parsePositiveIds(form.shadowTestMemberIds, '灰度会员 ID'),
       minNativeVersion: form.minNativeVersion.trim(),
       minProtocolVersion: form.minProtocolVersion,

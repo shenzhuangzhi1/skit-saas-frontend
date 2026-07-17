@@ -7,6 +7,7 @@ import {
   mergeMemberChildren,
   sanitizeAdAccountResponse,
   sanitizeReportingConfiguration,
+  validatePhaseOneUnlockNetworkFirmIds,
   validateCommissionDraft
 } from '@/views/skit/tenant/workspaceModel'
 
@@ -76,6 +77,25 @@ describe('tenant revenue workspace model', () => {
     expect(form.publisherKey).toBe('')
     expect(form.credentialConfigured).toBe(true)
     expect(JSON.stringify(form)).not.toContain('must-never-render')
+  })
+
+  it('matches the backend phase-one gate for authoritative unlock networks', () => {
+    expect(validatePhaseOneUnlockNetworkFirmIds('')).toEqual({
+      ids: [],
+      error: '权威广告源 ID 不能为空，当前阶段填写 35, 66, 67'
+    })
+    expect(validatePhaseOneUnlockNetworkFirmIds('35, 35')).toEqual({
+      ids: [],
+      error: '权威广告源 ID 不能重复'
+    })
+    expect(validatePhaseOneUnlockNetworkFirmIds('35, 99')).toEqual({
+      ids: [],
+      error: '当前阶段仅支持权威广告源 ID：35, 66, 67'
+    })
+    expect(validatePhaseOneUnlockNetworkFirmIds('67, 35, 66')).toEqual({
+      ids: [67, 35, 66],
+      error: ''
+    })
   })
 
   it('supports arbitrary commission levels and makes the agent remainder explicit', () => {
