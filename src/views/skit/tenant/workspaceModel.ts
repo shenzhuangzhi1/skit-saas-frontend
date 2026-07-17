@@ -22,10 +22,7 @@ export const validatePhaseOneUnlockNetworkFirmIds = (
 
   const tokens = normalized.split(',').map((item) => item.trim())
   const ids = tokens.map((token) => Number(token))
-  if (
-    tokens.some((token) => !token) ||
-    ids.some((id) => !Number.isSafeInteger(id) || id <= 0)
-  ) {
+  if (tokens.some((token) => !token) || ids.some((id) => !Number.isSafeInteger(id) || id <= 0)) {
     return { ids: [], error: '权威广告源 ID 必须是逗号分隔的正整数' }
   }
   if (new Set(ids).size !== ids.length) {
