@@ -8,34 +8,7 @@ export { managementTenantBody, managementTenantQuery }
 export type { ManagementTenantTarget }
 
 export const PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS = [35, 66, 67] as const
-
-export const validatePhaseOneUnlockNetworkFirmIds = (
-  value: string
-): { ids: number[]; error: string } => {
-  const normalized = value.trim()
-  if (!normalized) {
-    return {
-      ids: [],
-      error: '权威广告源 ID 不能为空，当前阶段填写 35, 66, 67'
-    }
-  }
-
-  const tokens = normalized.split(',').map((item) => item.trim())
-  const ids = tokens.map((token) => Number(token))
-  if (tokens.some((token) => !token) || ids.some((id) => !Number.isSafeInteger(id) || id <= 0)) {
-    return { ids: [], error: '权威广告源 ID 必须是逗号分隔的正整数' }
-  }
-  if (new Set(ids).size !== ids.length) {
-    return { ids: [], error: '权威广告源 ID 不能重复' }
-  }
-  if (ids.some((id) => !PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS.includes(id as 35 | 66 | 67))) {
-    return {
-      ids: [],
-      error: '当前阶段仅支持权威广告源 ID：35, 66, 67'
-    }
-  }
-  return { ids, error: '' }
-}
+export const CURRENT_PROTOCOL_VERSION = 1
 
 export interface AdAccountResponseLike {
   pangleUsername?: unknown

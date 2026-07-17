@@ -72,7 +72,7 @@ describe('tenant advertising access API client', () => {
       dedicatedPlacementVerified: true,
       rewardCallbackTemplateVerified: true,
       impressionCallbackTemplateVerified: true,
-      unlockNetworkFirmIds: [1, 2],
+      unlockNetworkFirmIds: [35, 66, 67],
       shadowTestMemberIds: [7],
       minNativeVersion: '2026.7.15',
       minProtocolVersion: 1,

@@ -215,7 +215,12 @@
           <el-input :model-value="readiness.adAccountId || '-'" disabled />
         </el-form-item>
         <el-form-item label="专用解锁广告位">
-          <el-input v-model="capabilityForm.dedicatedUnlockPlacementId" maxlength="128" />
+          <el-input
+            :model-value="
+              capabilityForm.dedicatedUnlockPlacementId || '未读取到已启用的 Taku 广告位'
+            "
+            disabled
+          />
         </el-form-item>
         <el-form-item label="广告位已核验">
           <el-switch v-model="capabilityForm.dedicatedPlacementVerified" />
@@ -226,11 +231,8 @@
         <el-form-item label="展示模板已核验">
           <el-switch v-model="capabilityForm.impressionCallbackTemplateVerified" />
         </el-form-item>
-        <el-form-item label="权威广告源 ID">
-          <el-input
-            v-model="capabilityForm.unlockNetworkFirmIds"
-            placeholder="当前阶段填写 35, 66, 67"
-          />
+        <el-form-item label="系统权威广告网络">
+          <el-input :model-value="PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS.join(', ')" disabled />
         </el-form-item>
         <el-form-item label="灰度会员 ID">
           <el-input
@@ -242,7 +244,7 @@
           <el-input v-model="capabilityForm.minNativeVersion" maxlength="64" />
         </el-form-item>
         <el-form-item label="最低协议版本">
-          <el-input-number v-model="capabilityForm.minProtocolVersion" :min="1" :precision="0" />
+          <el-input :model-value="String(CURRENT_PROTOCOL_VERSION)" disabled />
         </el-form-item>
         <el-form-item label="配置变更原因">
           <el-input
@@ -383,10 +385,10 @@ import * as TenantApi from '@/api/skit/tenant'
 import AdReadinessChecklist from './AdReadinessChecklist.vue'
 import {
   buildAdAccountWritePayload,
+  CURRENT_PROTOCOL_VERSION,
   PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS,
   sanitizeAdAccountResponse,
   sanitizeReportingConfiguration,
-  validatePhaseOneUnlockNetworkFirmIds,
   type ManagementTenantTarget,
   type SafeAdAccountForm,
   type SafeReportingConfigurationForm
@@ -413,10 +415,8 @@ interface CapabilityForm {
   dedicatedPlacementVerified: boolean
   rewardCallbackTemplateVerified: boolean
   impressionCallbackTemplateVerified: boolean
-  unlockNetworkFirmIds: string
   shadowTestMemberIds: string
   minNativeVersion: string
-  minProtocolVersion: number
   reason: string
 }
 const capabilityForm = ref<CapabilityForm>()
@@ -441,6 +441,9 @@ const loadAccount = async (currentRequestId: number) => {
     const response = await TenantApi.getManagedTenantAdAccount(props.target)
     if (currentRequestId !== requestId) return
     accountForm.value = sanitizeAdAccountResponse(response)
+    if (capabilityForm.value && !capabilityForm.value.dedicatedUnlockPlacementId) {
+      capabilityForm.value.dedicatedUnlockPlacementId = accountForm.value.takuPlacementId
+    }
   } catch (error) {
     if (currentRequestId !== requestId) return
     accountError.value = errorText(error, '广告账号加载失败')
@@ -458,16 +461,13 @@ const loadReadiness = async (currentRequestId: number) => {
     if (currentRequestId !== requestId) return
     readiness.value = response
     capabilityForm.value = {
-      dedicatedUnlockPlacementId: response.dedicatedUnlockPlacementId || '',
+      dedicatedUnlockPlacementId:
+        response.dedicatedUnlockPlacementId || accountForm.value?.takuPlacementId || '',
       dedicatedPlacementVerified: Boolean(response.dedicatedPlacementVerified),
       rewardCallbackTemplateVerified: Boolean(response.rewardCallbackTemplateVerified),
       impressionCallbackTemplateVerified: Boolean(response.impressionCallbackTemplateVerified),
-      unlockNetworkFirmIds:
-        (response.unlockNetworkFirmIds || []).join(', ') ||
-        PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS.join(', '),
       shadowTestMemberIds: (response.shadowTestMemberIds || []).join(', '),
       minNativeVersion: response.minNativeVersion || '',
-      minProtocolVersion: Number(response.minProtocolVersion || 1),
       reason: ''
     }
   } catch (error) {
@@ -557,11 +557,6 @@ const saveCapability = async () => {
   if (!form || !currentReadiness?.adAccountId) return
   const reason = auditedReason(form.reason, '配置变更原因')
   if (!reason) return
-  const networkIds = validatePhaseOneUnlockNetworkFirmIds(form.unlockNetworkFirmIds)
-  if (networkIds.error) {
-    ElMessage.warning(networkIds.error)
-    return
-  }
   capabilitySaving.value = true
   try {
     const response = await TenantApi.configureTenantAdCapability(props.target, {
@@ -570,10 +565,10 @@ const saveCapability = async () => {
       dedicatedPlacementVerified: form.dedicatedPlacementVerified,
       rewardCallbackTemplateVerified: form.rewardCallbackTemplateVerified,
       impressionCallbackTemplateVerified: form.impressionCallbackTemplateVerified,
-      unlockNetworkFirmIds: networkIds.ids,
+      unlockNetworkFirmIds: [...PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS],
       shadowTestMemberIds: parsePositiveIds(form.shadowTestMemberIds, '灰度会员 ID'),
       minNativeVersion: form.minNativeVersion.trim(),
-      minProtocolVersion: form.minProtocolVersion,
+      minProtocolVersion: CURRENT_PROTOCOL_VERSION,
       expectedReadinessVersion: currentReadiness.readinessVersion,
       reason
     })
@@ -603,7 +598,7 @@ const transitionRollout = async (targetState: TenantApi.TenantAdRolloutState) =>
   const response = await TenantApi.transitionTenantAdRollout(props.target, {
     targetState,
     minNativeVersion: form.minNativeVersion.trim(),
-    minProtocolVersion: form.minProtocolVersion,
+    minProtocolVersion: CURRENT_PROTOCOL_VERSION,
     expectedReadinessVersion: currentReadiness.readinessVersion,
     reason
   })
