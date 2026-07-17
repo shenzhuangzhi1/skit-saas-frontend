@@ -6,6 +6,7 @@ import {
   groupLedgerAmounts,
   mergeMemberChildren,
   parseShadowMemberIds,
+  resolveTenantAdAccountId,
   sanitizeAdAccountResponse,
   sanitizeReportingConfiguration,
   validateCommissionDraft
@@ -16,6 +17,13 @@ describe('tenant revenue workspace model', () => {
     expect(parseShadowMemberIds('101，\n102; 103、104')).toEqual([101, 102, 103, 104])
     expect(() => parseShadowMemberIds('101, 101')).toThrow('不重复')
     expect(() => parseShadowMemberIds('member-101')).toThrow('正整数')
+  })
+
+  it('derives one tenant-scoped Taku account id and rejects conflicting sources', () => {
+    expect(resolveTenantAdAccountId({ adAccountId: undefined }, { adAccountId: 9 })).toBe(9)
+    expect(resolveTenantAdAccountId({ adAccountId: 9 }, { adAccountId: 9 })).toBe(9)
+    expect(resolveTenantAdAccountId({ adAccountId: 9 }, { adAccountId: 10 })).toBe(0)
+    expect(resolveTenantAdAccountId({ adAccountId: '9' }, { adAccountId: 0 })).toBe(0)
   })
 
   it('treats provider credentials as write-only even if a malformed response contains them', () => {

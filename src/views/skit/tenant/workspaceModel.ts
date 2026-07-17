@@ -21,6 +21,17 @@ export const parseShadowMemberIds = (value: string): number[] => {
   return ids
 }
 
+export const resolveTenantAdAccountId = (
+  ...sources: Array<{ adAccountId?: unknown } | undefined>
+): number => {
+  const ids = sources.flatMap((source) => {
+    const value = source?.adAccountId
+    return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? [value] : []
+  })
+  if (ids.length === 0 || ids.some((value) => value !== ids[0])) return 0
+  return ids[0]
+}
+
 export interface AdAccountResponseLike {
   pangleUsername?: unknown
   pangleAppId?: unknown

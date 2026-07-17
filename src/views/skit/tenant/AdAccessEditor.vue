@@ -212,7 +212,11 @@
       </div>
       <el-form label-width="150px">
         <el-form-item label="广告账号编号">
-          <el-input :model-value="readiness.adAccountId || '-'" disabled />
+          <el-input
+            data-testid="capability-ad-account-id"
+            :model-value="capabilityAdAccountId || '-'"
+            disabled
+          />
         </el-form-item>
         <el-form-item label="专用解锁广告位">
           <el-input
@@ -298,7 +302,7 @@
         </el-form-item>
         <el-form-item>
           <el-button
-            :disabled="!readiness.adAccountId"
+            :disabled="!capabilityAdAccountId"
             :loading="callbackRotating"
             type="primary"
             @click="rotateCallbackKey"
@@ -334,7 +338,7 @@
         </el-form-item>
         <el-form-item>
           <el-button
-            :disabled="!readiness.adAccountId"
+            :disabled="!capabilityAdAccountId"
             :loading="rewardRotating"
             type="primary"
             @click="rotateRewardSecret"
@@ -378,7 +382,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useClipboard } from '@vueuse/core'
 import { InputPassword } from '@/components/InputPassword'
@@ -390,6 +394,7 @@ import {
   CURRENT_PROTOCOL_VERSION,
   parseShadowMemberIds,
   PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS,
+  resolveTenantAdAccountId,
   sanitizeAdAccountResponse,
   sanitizeReportingConfiguration,
   type ManagementTenantTarget,
@@ -413,6 +418,9 @@ const reportingForm = ref<SafeReportingConfigurationForm>()
 const reportingLoading = ref(false)
 const reportingError = ref('')
 const reportingSaving = ref(false)
+const capabilityAdAccountId = computed(() =>
+  resolveTenantAdAccountId(readiness.value, reportingForm.value)
+)
 interface CapabilityForm {
   dedicatedUnlockPlacementId: string
   dedicatedPlacementVerified: boolean
@@ -561,13 +569,17 @@ const auditedReason = (value: string, label: string) => {
 const saveCapability = async () => {
   const form = capabilityForm.value
   const currentReadiness = readiness.value
-  if (!form || !currentReadiness?.adAccountId) return
+  const adAccountId = capabilityAdAccountId.value
+  if (!form || !currentReadiness || !adAccountId) {
+    ElMessage.warning('未读取到当前租户已启用的 Taku 广告账号')
+    return
+  }
   const reason = auditedReason(form.reason, '配置变更原因')
   if (!reason) return
   capabilitySaving.value = true
   try {
     const response = await TenantApi.configureTenantAdCapability(props.target, {
-      adAccountId: currentReadiness.adAccountId,
+      adAccountId,
       dedicatedUnlockPlacementId: form.dedicatedUnlockPlacementId.trim(),
       dedicatedPlacementVerified: form.dedicatedPlacementVerified,
       rewardCallbackTemplateVerified: form.rewardCallbackTemplateVerified,
@@ -616,14 +628,15 @@ const transitionRollout = async (targetState: TenantApi.TenantAdRolloutState) =>
 
 const rotateCallbackKey = async () => {
   const currentReadiness = readiness.value
-  if (!currentReadiness?.adAccountId) return
+  const adAccountId = capabilityAdAccountId.value
+  if (!currentReadiness || !adAccountId) return
   const reason = auditedReason(callbackRotation.reason, '轮换原因')
   if (!reason) return
   await ElMessageBox.confirm('新 Callback Key 只显示一次，确认现在轮换吗？', '轮换 Callback Key')
   callbackRotating.value = true
   try {
     callbackReveal.value = await TenantApi.rotateTenantCallbackKey(props.target, {
-      adAccountId: currentReadiness.adAccountId,
+      adAccountId,
       expectedReadinessVersion: currentReadiness.readinessVersion,
       priorAcceptanceMinutes: callbackRotation.priorAcceptanceMinutes,
       reason
@@ -640,7 +653,8 @@ const rotateCallbackKey = async () => {
 
 const rotateRewardSecret = async () => {
   const currentReadiness = readiness.value
-  if (!currentReadiness?.adAccountId) return
+  const adAccountId = capabilityAdAccountId.value
+  if (!currentReadiness || !adAccountId) return
   const rewardSecret = rewardRotation.rewardSecret.trim()
   const reason = auditedReason(rewardRotation.reason, '轮换原因')
   if (!reason) return
@@ -652,7 +666,7 @@ const rotateRewardSecret = async () => {
   rewardRotating.value = true
   try {
     const response = await TenantApi.rotateTenantRewardSecret(props.target, {
-      adAccountId: currentReadiness.adAccountId,
+      adAccountId,
       expectedReadinessVersion: currentReadiness.readinessVersion,
       priorAcceptanceMinutes: rewardRotation.priorAcceptanceMinutes,
       rewardSecret,

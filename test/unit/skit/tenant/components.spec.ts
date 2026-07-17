@@ -233,6 +233,7 @@ describe('AdAccessEditor', () => {
     expect(wrapper.html()).not.toContain('leaked-taku-secret')
     expect(wrapper.html()).not.toContain('leaked-publisher-key')
     expect(wrapper.text()).toContain('Publisher Key 已配置')
+    expect(wrapper.get('[data-testid="capability-ad-account-id"]').attributes('value')).toBe('9')
     expect(
       wrapper.findAll('input[type="password"]').every((input) => !input.attributes('value'))
     ).toBe(true)
