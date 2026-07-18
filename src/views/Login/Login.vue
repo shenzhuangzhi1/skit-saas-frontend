@@ -4,6 +4,7 @@ import { useAppStore } from '@/store/modules/app'
 import { useLocaleStore } from '@/store/modules/locale'
 import { useLocale } from '@/hooks/web/useLocale'
 import { LoginForm } from './components'
+import { runThemeTransition } from '@/plugins/microInteractions/transitions'
 
 defineOptions({ name: 'Login' })
 
@@ -14,7 +15,12 @@ const isDark = computed(() => appStore.getIsDark)
 const currentLang = computed(() => localeStore.getCurrentLocale)
 const langMap = computed(() => localeStore.getLocaleMap)
 
-const toggleTheme = () => appStore.setIsDark(!appStore.getIsDark)
+const toggleTheme = (event: MouseEvent) => {
+  return runThemeTransition(
+    () => appStore.setIsDark(!appStore.getIsDark),
+    event.currentTarget as HTMLElement
+  )
+}
 
 const setLang = (lang: LocaleType) => {
   if (lang === currentLang.value.lang) return

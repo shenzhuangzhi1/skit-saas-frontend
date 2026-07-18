@@ -68,6 +68,7 @@ import { useIcon } from '@/hooks/web/useIcon'
 
 import * as authUtil from '@/utils/auth'
 import * as LoginApi from '@/api/login'
+import { runLoginTransition } from '@/plugins/microInteractions/transitions'
 import { useFormValid } from './useLogin'
 
 defineOptions({ name: 'LoginForm' })
@@ -149,7 +150,7 @@ const handleLogin = async (params: any) => {
     if (!redirect.value) {
       redirect.value = '/'
     }
-    await push({ path: redirect.value })
+    await runLoginTransition(() => push({ path: redirect.value }))
   } finally {
     loginLoading.value = false
     loading.value?.close?.()

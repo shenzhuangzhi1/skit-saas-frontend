@@ -2,6 +2,7 @@
 import { useAppStore } from '@/store/modules/app'
 import { useIcon } from '@/hooks/web/useIcon'
 import { useDesign } from '@/hooks/web/useDesign'
+import { runThemeTransition } from '@/plugins/microInteractions/transitions'
 
 defineOptions({ name: 'ThemeSwitch' })
 
@@ -19,10 +20,13 @@ const CrescentMoon = useIcon({
 const appStore = useAppStore()
 
 // 初始化获取是否是暗黑主题
-const isDark = computed({
-  get: () => appStore.getIsDark,
-  set: (value: boolean) => appStore.setIsDark(value)
-})
+const isDark = computed(() => appStore.getIsDark)
+const themeSwitch = ref()
+
+const toggleTheme = (value: boolean) => {
+  const origin = themeSwitch.value?.$el as HTMLElement | undefined
+  return runThemeTransition(() => appStore.setIsDark(value), origin)
+}
 
 // 设置switch的背景颜色
 const trackColor = 'var(--theme-switch-track)'
@@ -30,7 +34,8 @@ const trackColor = 'var(--theme-switch-track)'
 
 <template>
   <ElSwitch
-    v-model="isDark"
+    ref="themeSwitch"
+    :model-value="isDark"
     aria-label="切换亮色和深色模式"
     :active-color="trackColor"
     :active-icon="Sun"
@@ -39,6 +44,7 @@ const trackColor = 'var(--theme-switch-track)'
     :inactive-color="trackColor"
     :inactive-icon="CrescentMoon"
     inline-prompt
+    @change="toggleTheme"
   />
 </template>
 <style lang="scss" scoped>

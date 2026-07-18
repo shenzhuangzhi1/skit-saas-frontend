@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { runWorkspaceTransition } from '@/plugins/microInteractions/transitions'
 
 defineOptions({ name: 'WorkspaceSwitch' })
 
@@ -11,7 +12,8 @@ const activeWorkspace = computed(() => (route.path.startsWith('/skit') ? 'admin'
 
 const switchWorkspace = (path: string) => {
   if (route.path !== path) {
-    router.push(path)
+    const direction = path.startsWith('/skit') ? 1 : -1
+    return runWorkspaceTransition(() => router.push(path), direction)
   }
 }
 </script>

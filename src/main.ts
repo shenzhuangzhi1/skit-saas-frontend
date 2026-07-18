@@ -25,6 +25,9 @@ import '@/styles/index.scss'
 // 引入动画
 import '@/plugins/animate.css'
 
+// 全局微交互：手势反馈、动态列表过渡与页面入场
+import { setupMicroInteractions } from '@/plugins/microInteractions'
+
 // 路由
 import router, { setupRouter } from '@/router'
 
@@ -84,6 +87,8 @@ const setupAll = async () => {
   app.use(print)
 
   app.mount('#app')
+
+  setupMicroInteractions(router)
 }
 
 setupAll()
