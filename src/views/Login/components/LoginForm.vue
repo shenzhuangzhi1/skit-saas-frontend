@@ -53,6 +53,7 @@
         v-if="loginData.captchaEnable === 'true'"
         ref="verify"
         :captchaType="captchaType"
+        :barSize="{ width: '400px', height: '46px' }"
         :imgSize="{ width: '400px', height: '200px' }"
         mode="pop"
         @success="handleLogin"
@@ -68,7 +69,10 @@ import { useIcon } from '@/hooks/web/useIcon'
 
 import * as authUtil from '@/utils/auth'
 import * as LoginApi from '@/api/login'
-import { runLoginTransition } from '@/plugins/microInteractions/transitions'
+import {
+  runLoginChallengeTransition,
+  runLoginTransition
+} from '@/plugins/microInteractions/transitions'
 import { useFormValid } from './useLogin'
 
 defineOptions({ name: 'LoginForm' })
@@ -106,7 +110,7 @@ const getCode = async () => {
   } else {
     // 情况二，已开启：则展示验证码；只有完成验证码的情况，才进行登录
     // 弹出验证码
-    verify.value.show()
+    await runLoginChallengeTransition(() => verify.value.show())
   }
 }
 // 记住我

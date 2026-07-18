@@ -1,5 +1,5 @@
 import autoAnimate, { type AnimationController } from '@formkit/auto-animate'
-import { hover, press } from 'motion'
+import { hover, press, stagger } from 'motion'
 import { animate } from 'motion/mini'
 import type { Router } from 'vue-router'
 
@@ -111,7 +111,7 @@ const bindInteractive = (element: HTMLElement, prefersReducedMotion: () => boole
     element.dataset.microActive = ''
     animate(
       target,
-      { transform: 'translate3d(0, -1px, 0) scale(1.01)' },
+      { transform: 'translate3d(0, -2px, 0) scale(1.018)' },
       { duration: 0.18, ease: [0.22, 1, 0.36, 1] }
     )
 
@@ -131,7 +131,7 @@ const bindInteractive = (element: HTMLElement, prefersReducedMotion: () => boole
 
     animate(
       target,
-      { transform: 'translate3d(0, 0, 0) scale(0.985)' },
+      { transform: 'translate3d(0, 0, 0) scale(0.965)' },
       { duration: 0.1, ease: 'easeOut' }
     )
 
@@ -141,7 +141,7 @@ const bindInteractive = (element: HTMLElement, prefersReducedMotion: () => boole
         target,
         {
           transform: isHovered
-            ? 'translate3d(0, -1px, 0) scale(1.01)'
+            ? 'translate3d(0, -2px, 0) scale(1.018)'
             : 'translate3d(0, 0, 0) scale(1)'
         },
         { duration: 0.2, ease: [0.22, 1, 0.36, 1] }
@@ -206,19 +206,34 @@ const animateCurrentPage = (prefersReducedMotion: () => boolean) => {
 
   requestAnimationFrame(() => {
     const page = document.querySelector<HTMLElement>(
-      '.v-layout-content-scrollbar .el-scrollbar__view > section'
+      '.v-layout-content-scrollbar .el-scrollbar__view > section, .skit-login-page'
     )
     if (!page) return
 
     animate(
       page,
       {
-        opacity: [0.84, 1],
-        transform: ['translate3d(0, 5px, 0)', 'translate3d(0, 0, 0)'],
-        filter: ['blur(1.5px)', 'blur(0px)']
+        opacity: [0.68, 1],
+        transform: ['translate3d(0, 10px, 0) scale(0.995)', 'translate3d(0, 0, 0) scale(1)'],
+        filter: ['blur(3px)', 'blur(0px)']
       },
-      { duration: 0.28, ease: [0.22, 1, 0.36, 1] }
+      { duration: 0.46, ease: [0.22, 1, 0.36, 1] }
     )
+
+    const children = page.querySelectorAll<HTMLElement>(
+      '.el-card, .skit-panel, .login-card, .dashboard-card, .overview-card, .stat-card, .metric-card, .el-form-item, .el-table, .el-tabs'
+    )
+    if (children.length) {
+      animate(
+        children,
+        {
+          opacity: [0.42, 1],
+          transform: ['translate3d(0, 14px, 0) scale(0.985)', 'translate3d(0, 0, 0) scale(1)'],
+          filter: ['blur(2px)', 'blur(0px)']
+        },
+        { duration: 0.5, delay: stagger(0.055, { startDelay: 0.06 }), ease: [0.22, 1, 0.36, 1] }
+      )
+    }
   })
 }
 

@@ -14,10 +14,11 @@ const motionMocks = vi.hoisted(() => ({
   })
 }))
 
-vi.mock('motion', () => ({ animateView: motionMocks.animateView }))
+vi.mock('motion', () => ({ animateView: motionMocks.animateView, stagger: vi.fn(() => 0) }))
 vi.mock('motion/mini', () => ({ animate: motionMocks.animate }))
 
 import {
+  runLoginChallengeTransition,
   runLoginTransition,
   runThemeTransition,
   runWorkspaceTransition
@@ -54,6 +55,24 @@ describe('micro interaction transitions', () => {
     expect(motionMocks.animateView).toHaveBeenCalledOnce()
     expect(motionMocks.animate.mock.calls.length).toBeGreaterThanOrEqual(7)
     expect(document.querySelector('.micro-login-transition')).toBeNull()
+    expect(document.documentElement.dataset.motionTransition).toBeUndefined()
+  })
+
+  it('animates the login controls and expands the captcha challenge', async () => {
+    document.body.innerHTML = `
+      <div class="login-card"><button class="skit-login-button">Login</button></div>
+    `
+    const update = vi.fn(() => {
+      document.body.insertAdjacentHTML(
+        'beforeend',
+        '<div class="mask"><div class="verifybox"></div></div>'
+      )
+    })
+
+    await runLoginChallengeTransition(update)
+
+    expect(update).toHaveBeenCalledOnce()
+    expect(motionMocks.animate).toHaveBeenCalledTimes(4)
     expect(document.documentElement.dataset.motionTransition).toBeUndefined()
   })
 

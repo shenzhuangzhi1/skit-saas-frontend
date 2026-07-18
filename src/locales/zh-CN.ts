@@ -159,7 +159,10 @@ export default {
     point: '请依次点击',
     code: '请输入验证码',
     success: '验证成功',
-    fail: '验证失败'
+    fail: '验证失败',
+    loading: '正在加载验证码',
+    loadFailed: '验证码加载失败，请点击重试',
+    retry: '重新加载'
   },
   router: {
     login: '登录',

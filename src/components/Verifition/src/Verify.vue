@@ -489,6 +489,7 @@ export default {
 }
 
 .verify-bar-area {
+  min-height: 44px;
   overflow: hidden;
   color: var(--captcha-text-secondary);
   background: var(--captcha-panel-soft);
@@ -499,17 +500,41 @@ export default {
 .verify-bar-area .verify-move-block {
   z-index: 4;
   color: var(--captcha-icon);
+  cursor: grab;
   background: var(--captcha-handle-bg);
   border: 1px solid var(--captcha-handle-border);
   border-radius: 11px;
   box-shadow:
     0 0 0 2px var(--captcha-handle-ring),
     0 8px 18px -12px var(--captcha-handle-shadow);
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+  touch-action: none;
 }
 
-.verify-bar-area .verify-move-block:hover {
+.verify-bar-area .verify-move-block:hover:not(.is-disabled),
+.verify-bar-area .verify-move-block.is-dragging {
   color: var(--skit-active-text);
   background: var(--captcha-primary);
+  transform: scale(1.055);
+  box-shadow:
+    0 0 0 4px var(--captcha-handle-ring),
+    0 10px 28px -10px var(--captcha-handle-shadow);
+}
+
+.verify-bar-area .verify-move-block.is-dragging {
+  cursor: grabbing;
+}
+
+.verify-bar-area .verify-move-block.is-disabled {
+  cursor: not-allowed;
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 6px, var(--skit-primary-soft) 6px 12px),
+    var(--captcha-handle-bg);
+  opacity: 0.82;
 }
 
 .verify-bar-area .verify-left-bar {
@@ -531,7 +556,7 @@ export default {
   position: absolute;
   inset: auto;
   top: 50%;
-  left: 50%;
+  left: 44%;
   z-index: 1;
   display: block;
   width: 8px;
@@ -544,11 +569,89 @@ export default {
   transform: translate(-65%, -50%) rotate(45deg);
 }
 
+.verify-bar-area .verify-move-block .icon-right::after {
+  position: absolute;
+  top: 50%;
+  left: 61%;
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid currentcolor;
+  border-right: 2px solid currentcolor;
+  content: '';
+  transform: translate(-65%, -50%) rotate(45deg);
+}
+
+.verify-bar-area .verify-msg {
+  padding-inline: 56px 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 .verify-img-panel {
+  position: relative;
   overflow: hidden;
   background: var(--captcha-panel-soft);
   border-color: var(--captcha-border);
   border-radius: 13px;
+}
+
+.verify-image-state {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--captcha-text-secondary);
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 30%, var(--skit-primary-soft), transparent 54%),
+    var(--captcha-panel-soft);
+  inset: 0;
+}
+
+.verify-image-state__icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  color: var(--el-color-danger);
+  background: color-mix(in srgb, var(--el-color-danger) 12%, transparent);
+  border-radius: 50%;
+  place-items: center;
+}
+
+.verify-loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--captcha-border);
+  border-top-color: var(--captcha-primary);
+  border-radius: 50%;
+  animation: captcha-spin 750ms linear infinite;
+}
+
+.verify-retry-button {
+  display: inline-flex;
+  min-height: 34px;
+  padding: 0 14px;
+  font: inherit;
+  font-weight: 650;
+  color: var(--skit-active-text);
+  cursor: pointer;
+  background: var(--captcha-primary);
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 9px 24px -14px var(--captcha-handle-shadow);
+  gap: 7px;
+  align-items: center;
+}
+
+@keyframes captcha-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .verify-img-panel .verify-refresh {

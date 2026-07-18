@@ -1,5 +1,5 @@
 import { nextTick } from 'vue'
-import { animateView } from 'motion'
+import { animateView, stagger } from 'motion'
 import { animate } from 'motion/mini'
 
 type ViewUpdate = () => void | Promise<unknown>
@@ -97,22 +97,111 @@ export const runWorkspaceTransition = async (update: ViewUpdate, direction = 1) 
 
 const createLoginPortal = () => {
   const portal = document.createElement('div')
+  const grid = document.createElement('div')
   const halo = document.createElement('div')
   const core = document.createElement('div')
   const orbit = document.createElement('div')
+  const orbitOuter = document.createElement('div')
   const line = document.createElement('div')
+  const copy = document.createElement('div')
+  const eyebrow = document.createElement('span')
+  const title = document.createElement('strong')
+  const particles = Array.from({ length: 10 }, (_, index) => {
+    const particle = document.createElement('i')
+    const angle = (index / 10) * Math.PI * 2
+    particle.className = 'micro-login-transition__particle'
+    particle.style.setProperty('--particle-index', String(index))
+    particle.style.left = `calc(50% + ${Math.cos(angle) * 54}%)`
+    particle.style.top = `calc(50% + ${Math.sin(angle) * 54}%)`
+    return particle
+  })
 
   portal.className = 'micro-login-transition'
+  grid.className = 'micro-login-transition__grid'
   halo.className = 'micro-login-transition__halo'
   core.className = 'micro-login-transition__core'
   orbit.className = 'micro-login-transition__orbit'
+  orbitOuter.className = 'micro-login-transition__orbit micro-login-transition__orbit--outer'
   line.className = 'micro-login-transition__line'
+  copy.className = 'micro-login-transition__copy'
+  eyebrow.className = 'micro-login-transition__eyebrow'
+  title.className = 'micro-login-transition__title'
+  eyebrow.textContent = 'ACCESS GRANTED'
+  title.textContent = 'ENTERING SKIT WORKSPACE'
   portal.setAttribute('aria-hidden', 'true')
-  halo.append(core, orbit)
-  portal.append(halo, line)
+  copy.append(eyebrow, title)
+  halo.append(core, orbit, orbitOuter, ...particles)
+  portal.append(grid, halo, line, copy)
   document.body.append(portal)
 
-  return { portal, halo, core, orbit, line }
+  return { portal, grid, halo, core, orbit, orbitOuter, line, copy, particles }
+}
+
+export const runLoginChallengeTransition = async (update: ViewUpdate) => {
+  if (prefersReducedMotion()) {
+    await updateView(update)
+    return
+  }
+
+  setTransitionState('login-challenge')
+  const card = document.querySelector<HTMLElement>('.login-card')
+  const button = document.querySelector<HTMLElement>('.skit-login-button')
+
+  try {
+    await Promise.all([
+      card
+        ? animate(
+            card,
+            {
+              transform: ['scale(1)', 'scale(0.975)', 'scale(1.018)', 'scale(1)'],
+              filter: ['brightness(1)', 'brightness(0.94)', 'brightness(1.1)', 'brightness(1)']
+            },
+            { duration: 0.48, ease: EASE_OUT }
+          )
+        : Promise.resolve(),
+      button
+        ? animate(
+            button,
+            {
+              transform: ['scale(1)', 'scale(0.92)', 'scale(1.065)', 'scale(1)'],
+              filter: [
+                'brightness(1) saturate(1)',
+                'brightness(1.35) saturate(1.4)',
+                'brightness(1.08) saturate(1.15)',
+                'brightness(1) saturate(1)'
+              ]
+            },
+            { duration: 0.48, ease: EASE_OUT }
+          )
+        : Promise.resolve()
+    ])
+
+    await updateView(update)
+    const box = document.querySelector<HTMLElement>('.verifybox')
+    const mask = document.querySelector<HTMLElement>('.mask')
+    await Promise.all([
+      box
+        ? animate(
+            box,
+            {
+              opacity: [0, 1],
+              transform: [
+                'translate3d(0, 34px, 0) scale(0.76) rotateX(12deg)',
+                'translate3d(0, -5px, 0) scale(1.025) rotateX(0deg)',
+                'translate3d(0, 0, 0) scale(1) rotateX(0deg)'
+              ],
+              filter: ['blur(10px) brightness(1.2)', 'blur(0px) brightness(1)']
+            },
+            { duration: 0.68, ease: EASE_OUT }
+          )
+        : Promise.resolve(),
+      mask
+        ? animate(mask, { opacity: [0, 1] }, { duration: 0.5, ease: 'easeOut' })
+        : Promise.resolve()
+    ])
+  } finally {
+    setTransitionState(null)
+  }
 }
 
 export const runLoginTransition = async (update: ViewUpdate) => {
@@ -126,24 +215,51 @@ export const runLoginTransition = async (update: ViewUpdate) => {
 
   try {
     await Promise.all([
-      animate(parts.portal, { opacity: [0, 1] }, { duration: 0.24, ease: 'easeOut' }),
+      animate(parts.portal, { opacity: [0, 1] }, { duration: 0.42, ease: 'easeOut' }),
+      animate(
+        parts.grid,
+        { opacity: [0, 0.72], transform: ['scale(1.2)', 'scale(1)'] },
+        { duration: 0.72, ease: EASE_OUT }
+      ),
       animate(
         parts.halo,
         {
           opacity: [0, 1],
-          transform: ['scale(0.28) rotate(-12deg)', 'scale(1) rotate(0deg)']
+          transform: [
+            'scale(0.08) rotate(-36deg)',
+            'scale(1.08) rotate(3deg)',
+            'scale(1) rotate(0deg)'
+          ]
         },
-        { duration: 0.46, ease: EASE_OUT }
+        { duration: 0.82, ease: EASE_OUT }
       ),
       animate(
         parts.line,
-        { opacity: [0, 0.9], transform: ['scaleX(0)', 'scaleX(1)'] },
-        { duration: 0.38, delay: 0.08, ease: EASE_OUT }
+        { opacity: [0, 1], transform: ['scaleX(0)', 'scaleX(1.08)', 'scaleX(1)'] },
+        { duration: 0.68, delay: 0.08, ease: EASE_OUT }
+      ),
+      animate(
+        parts.copy,
+        {
+          opacity: [0, 1],
+          transform: ['translate3d(0, 24px, 0) scale(0.92)', 'translate3d(0, 0, 0) scale(1)']
+        },
+        { duration: 0.62, delay: 0.22, ease: EASE_OUT }
+      ),
+      animate(
+        parts.orbitOuter,
+        { transform: ['rotate(-150deg) scale(0.45)', 'rotate(0deg) scale(1)'] },
+        { duration: 0.9, ease: EASE_OUT }
+      ),
+      animate(
+        parts.particles,
+        { opacity: [0, 1], transform: ['scale(0) translateY(28px)', 'scale(1) translateY(0)'] },
+        { duration: 0.5, delay: stagger(0.045, { startDelay: 0.18 }), ease: EASE_OUT }
       )
     ])
 
     const transition = animateView(() => updateView(update), {
-      duration: 0.72,
+      duration: 1.02,
       ease: EASE_OUT,
       interrupt: 'immediate'
     })
@@ -153,35 +269,40 @@ export const runLoginTransition = async (update: ViewUpdate) => {
         transform: ['scale(1)', 'scale(1.025)'],
         filter: ['blur(0px)', 'blur(4px)']
       },
-      { duration: 0.38, ease: 'easeIn' }
+      { duration: 0.55, ease: 'easeIn' }
     )
     transition.new(
       {
         opacity: [0, 1],
-        transform: ['scale(1.025)', 'scale(1)'],
-        filter: ['blur(5px)', 'blur(0px)']
+        transform: ['scale(1.045)', 'scale(1)'],
+        filter: ['blur(12px) brightness(1.25)', 'blur(0px) brightness(1)']
       },
-      { duration: 0.72, ease: EASE_OUT }
+      { duration: 1.02, ease: EASE_OUT }
     )
 
     await Promise.all([
       transition,
       animate(
         parts.halo,
-        { opacity: [1, 0], transform: ['scale(1)', 'scale(8)'] },
-        { duration: 0.72, ease: EASE_OUT }
+        { opacity: [1, 0], transform: ['scale(1)', 'scale(10) rotate(28deg)'] },
+        { duration: 1.02, ease: EASE_OUT }
       ),
       animate(
         parts.core,
-        { opacity: [1, 0], transform: ['scale(1)', 'scale(3.2)'] },
-        { duration: 0.52, ease: EASE_OUT }
+        { opacity: [1, 0], transform: ['scale(1)', 'scale(5.4)'] },
+        { duration: 0.82, ease: EASE_OUT }
       ),
       animate(
         parts.orbit,
-        { opacity: [0.75, 0], transform: ['rotate(0deg) scale(1)', 'rotate(90deg) scale(2.4)'] },
-        { duration: 0.62, ease: EASE_OUT }
+        { opacity: [0.75, 0], transform: ['rotate(0deg) scale(1)', 'rotate(210deg) scale(3.2)'] },
+        { duration: 0.96, ease: EASE_OUT }
       ),
-      animate(parts.portal, { opacity: [1, 0] }, { duration: 0.34, delay: 0.4, ease: 'easeIn' })
+      animate(
+        parts.copy,
+        { opacity: [1, 0], transform: ['translateY(0)', 'translateY(-26px)'] },
+        { duration: 0.48, delay: 0.34, ease: 'easeIn' }
+      ),
+      animate(parts.portal, { opacity: [1, 0] }, { duration: 0.52, delay: 0.58, ease: 'easeIn' })
     ])
   } finally {
     parts.portal.remove()

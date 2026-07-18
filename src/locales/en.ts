@@ -158,7 +158,10 @@ export default {
     point: 'Please click',
     code: 'Please enter the verification code',
     success: 'Verification succeeded',
-    fail: 'verification failed'
+    fail: 'Verification failed',
+    loading: 'Loading verification image',
+    loadFailed: 'Verification image failed to load. Please retry.',
+    retry: 'Reload'
   },
   router: {
     login: 'Login',

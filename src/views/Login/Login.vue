@@ -114,6 +114,7 @@ const setLang = (lang: LocaleType) => {
   width: 330px;
   height: 330px;
   background: var(--login-orb-primary);
+  animation: login-orb-pink 15s ease-in-out infinite alternate;
 }
 
 .login-orb--blue {
@@ -122,6 +123,19 @@ const setLang = (lang: LocaleType) => {
   width: 220px;
   height: 220px;
   background: var(--login-orb-accent);
+  animation: login-orb-blue 18s ease-in-out infinite alternate;
+}
+
+@keyframes login-orb-pink {
+  to {
+    transform: translate3d(42px, -28px, 0) scale(1.08);
+  }
+}
+
+@keyframes login-orb-blue {
+  to {
+    transform: translate3d(-34px, 24px, 0) scale(0.94);
+  }
 }
 
 .login-actions {

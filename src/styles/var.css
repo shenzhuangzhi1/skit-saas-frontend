@@ -164,10 +164,11 @@
   --motion-duration-base: 260ms;
   --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
-  --motion-pointer-highlight: color-mix(in srgb, var(--el-color-primary-light-3) 28%, transparent);
-  --motion-pointer-glow: color-mix(in srgb, var(--el-color-primary) 22%, transparent);
-  --motion-border-glow: color-mix(in srgb, var(--el-color-primary) 34%, transparent);
-  --motion-row-glow: color-mix(in srgb, var(--el-color-primary) 9%, transparent);
+  --motion-pointer-highlight: color-mix(in srgb, var(--el-color-primary-light-3) 48%, transparent);
+  --motion-pointer-sheen: color-mix(in srgb, var(--skit-active-text) 38%, transparent);
+  --motion-pointer-glow: color-mix(in srgb, var(--el-color-primary) 36%, transparent);
+  --motion-border-glow: color-mix(in srgb, var(--el-color-primary) 50%, transparent);
+  --motion-row-glow: color-mix(in srgb, var(--el-color-primary) 14%, transparent);
   --motion-focus-ring: 0 0 0 4px color-mix(in srgb, var(--el-color-primary) 13%, transparent);
 }
 

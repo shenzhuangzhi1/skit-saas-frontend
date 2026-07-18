@@ -7,10 +7,22 @@
     >
       <div :style="{ width: setSize.imgWidth, height: setSize.imgHeight }" class="verify-img-panel">
         <img
+          v-if="backImgBase && !imageLoadError"
           :src="'data:image/png;base64,' + backImgBase"
           alt=""
           style="display: block; width: 100%; height: 100%"
+          @error="handleImageError"
+          @load="handleImageLoad"
         />
+        <div v-else class="verify-image-state" role="status">
+          <span v-if="isLoading" class="verify-loading-spinner" aria-hidden="true"></span>
+          <i v-else class="iconfont icon-close verify-image-state__icon" aria-hidden="true"></i>
+          <span>{{ isLoading ? t('captcha.loading') : loadError || t('captcha.loadFailed') }}</span>
+          <button v-if="!isLoading" class="verify-retry-button" type="button" @click="refresh">
+            <i class="iconfont icon-refresh" aria-hidden="true"></i>
+            {{ t('captcha.retry') }}
+          </button>
+        </div>
         <div v-show="showRefresh" class="verify-refresh" @click="refresh">
           <i class="iconfont icon-refresh"></i>
         </div>
@@ -45,7 +57,10 @@
             left: moveBlockLeft,
             transition: transitionLeft
           }"
+          :aria-disabled="!isReady"
+          :class="{ 'is-disabled': !isReady, 'is-dragging': status }"
           class="verify-move-block"
+          role="slider"
           @mousedown="start"
           @touchstart="start"
         >
@@ -61,6 +76,7 @@
             class="verify-sub-block"
           >
             <img
+              v-if="blockBackImgBase"
               :src="'data:image/png;base64,' + blockBackImgBase"
               alt=""
               style="display: block; width: 100%; height: 100%; -webkit-user-drag: none"
@@ -161,7 +177,20 @@ let secretKey = ref(''), //后端返回的ase加密秘钥
   showRefresh = ref(true),
   transitionLeft = ref(''),
   transitionWidth = ref(''),
-  startLeft = ref(0)
+  startLeft = ref(0),
+  isLoading = ref(false),
+  loadError = ref(''),
+  imageLoaded = ref(false),
+  imageLoadError = ref(false)
+
+const isReady = computed(
+  () =>
+    !isLoading.value &&
+    !loadError.value &&
+    imageLoaded.value &&
+    Boolean(backImgBase.value) &&
+    Boolean(blockBackImgBase.value)
+)
 
 const barArea = computed(() => {
   return proxy.$el.querySelector('.verify-bar-area')
@@ -218,6 +247,7 @@ onBeforeUnmount(() => {
 })
 //鼠标按下
 const start = (e) => {
+  if (!isReady.value) return
   e = e || window.event
   if (!e.touches) {
     //兼容PC端
@@ -343,28 +373,58 @@ const refresh = async () => {
   iconColor.value = 'var(--captcha-icon)'
   iconClass.value = 'icon-right'
   isEnd.value = false
+  status.value = false
 
   await getPictrue()
   setTimeout(() => {
     transitionWidth.value = ''
     transitionLeft.value = ''
-    text.value = explain.value
+    if (!loadError.value) text.value = explain.value || t('captcha.slide')
   }, 300)
+}
+
+const handleImageLoad = () => {
+  imageLoaded.value = true
+  imageLoadError.value = false
+  loadError.value = ''
+  text.value = explain.value || t('captcha.slide')
+}
+
+const handleImageError = () => {
+  imageLoaded.value = false
+  imageLoadError.value = true
+  loadError.value = t('captcha.loadFailed')
+  text.value = loadError.value
 }
 
 // 请求背景图片和验证图片
 const getPictrue = async () => {
-  let data = {
-    captchaType: captchaType.value
-  }
-  const res = await getCode(data)
-  if (res.repCode == '0000') {
-    backImgBase.value = res.repData.originalImageBase64
-    blockBackImgBase.value = res.repData.jigsawImageBase64
+  isLoading.value = true
+  loadError.value = ''
+  imageLoaded.value = false
+  imageLoadError.value = false
+  backImgBase.value = ''
+  blockBackImgBase.value = ''
+  text.value = t('captcha.loading')
+
+  try {
+    const res = await getCode({ captchaType: captchaType.value })
+    const originalImage = res?.repData?.originalImageBase64
+    const jigsawImage = res?.repData?.jigsawImageBase64
+
+    if (res?.repCode !== '0000' || !originalImage || !jigsawImage) {
+      throw new Error(res?.repMsg || t('captcha.loadFailed'))
+    }
+
+    backImgBase.value = originalImage
+    blockBackImgBase.value = jigsawImage
     backToken.value = res.repData.token
     secretKey.value = res.repData.secretKey
-  } else {
-    tipWords.value = res.repMsg
+  } catch {
+    loadError.value = t('captcha.loadFailed')
+    text.value = loadError.value
+  } finally {
+    isLoading.value = false
   }
 }
 </script>
