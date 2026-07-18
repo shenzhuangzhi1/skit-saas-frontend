@@ -192,30 +192,37 @@ onMounted(load)
 .skit-home {
   display: grid;
   min-height: calc(100vh - 84px);
-  padding: 16px;
-  color: #18212f;
-  background: #f4f6f9;
-  gap: 16px;
+  color: #202531;
+  background: transparent;
+  gap: 4px;
 }
 
 .skit-home__hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 90% 10%, rgb(126 154 224 / 14%), transparent 34%),
+    radial-gradient(circle at 8% 110%, rgb(227 150 182 / 19%), transparent 38%), #fff;
+
   :deep(.el-card__body) {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 24px;
+    padding: 27px 28px !important;
+    gap: 26px;
   }
 
   h1 {
     margin: 0;
-    font-size: 26px;
+    font-size: 28px;
+    letter-spacing: -0.025em;
   }
 
   p {
     max-width: 820px;
     margin: 10px 0 0;
     line-height: 1.7;
-    color: #475467;
+    color: #5f6878;
   }
 }
 
@@ -233,16 +240,16 @@ onMounted(load)
   margin-bottom: 8px;
   font-size: 13px;
   font-weight: 700;
-  color: #15803d;
+  color: #b85580;
   gap: 8px;
 }
 
 .skit-home__status-dot {
   width: 8px;
   height: 8px;
-  background: #16a34a;
+  background: #e396b6;
   border-radius: 50%;
-  box-shadow: 0 0 0 4px rgb(22 163 74 / 12%);
+  box-shadow: 0 0 0 4px rgb(227 150 182 / 15%);
 }
 
 .skit-home__scope {
@@ -289,24 +296,35 @@ onMounted(load)
 .health-grid article,
 .money-grid article {
   background: #fff;
-  border: 1px solid #e4e7ec;
-  border-radius: 8px;
+  border: 1px solid #e6e9ef;
+  border-radius: 14px;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+
+  &:hover {
+    border-color: rgb(227 150 182 / 44%);
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px -26px rgb(31 42 68 / 52%);
+  }
 }
 
 .count-grid article,
 .health-grid article {
-  padding: 16px;
+  padding: 18px;
 
   span,
   small {
     display: block;
-    color: #667085;
+    color: #707887;
   }
 
   strong {
     display: block;
     margin: 8px 0;
-    font-size: 25px;
+    font-size: 26px;
+    color: #242936;
   }
 }
 
@@ -315,13 +333,13 @@ onMounted(load)
 }
 
 .money-grid article {
-  padding: 16px;
+  padding: 18px;
 }
 
 .money-card__header {
   justify-content: space-between;
   padding-bottom: 12px;
-  border-bottom: 1px solid #eaecf0;
+  border-bottom: 1px solid #eceef3;
 
   strong {
     font-size: 18px;
@@ -364,9 +382,9 @@ onMounted(load)
   span {
     padding: 5px 8px;
     font-size: 12px;
-    color: #1d4ed8;
-    background: #eff6ff;
-    border-radius: 5px;
+    color: #b85580;
+    background: #fdf1f6;
+    border-radius: 8px;
   }
 }
 
@@ -377,6 +395,49 @@ onMounted(load)
 
 .health-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dark .skit-home {
+  color: #edf0f5;
+
+  .skit-home__hero {
+    background:
+      radial-gradient(circle at 90% 10%, rgb(126 154 224 / 12%), transparent 34%),
+      radial-gradient(circle at 8% 110%, rgb(227 150 182 / 14%), transparent 38%), #141a24;
+  }
+
+  .skit-home__hero p,
+  .section-heading p,
+  .skit-home__scope,
+  .count-grid article span,
+  .count-grid article small,
+  .health-grid article span,
+  .health-grid article small,
+  .money-card__header span,
+  .money-grid dt {
+    color: #aab2c0;
+  }
+
+  .count-grid article,
+  .health-grid article,
+  .money-grid article {
+    background: #171e29;
+    border-color: rgb(255 255 255 / 8%);
+  }
+
+  .count-grid article strong,
+  .health-grid article strong {
+    color: #f2f4f8;
+  }
+
+  .money-card__header {
+    border-bottom-color: rgb(255 255 255 / 8%);
+  }
+
+  .level-shares span {
+    color: #f0a9c7;
+    background: rgb(227 150 182 / 13%);
+  }
 }
 
 @media (width <= 960px) {

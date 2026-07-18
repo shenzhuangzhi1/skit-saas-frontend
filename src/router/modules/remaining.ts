@@ -63,7 +63,7 @@ const remainingRouter: AppRouteRecordRaw[] = [
         component: () => import('@/views/Home/Index.vue'),
         name: 'Index',
         meta: {
-          title: t('router.home'),
+          title: '数据总览',
           icon: 'ep:home-filled',
           noCache: false,
           affix: true
@@ -77,7 +77,7 @@ const remainingRouter: AppRouteRecordRaw[] = [
     redirect: '/skit/user',
     name: 'SkitSaas',
     meta: {
-      title: '短剧 SaaS',
+      title: '管理后台',
       icon: 'ep:video-play',
       alwaysShow: true
     },

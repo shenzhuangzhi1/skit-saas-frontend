@@ -1,41 +1,55 @@
 :root {
-  --login-bg-color: #293146;
+  --el-color-primary: #e396b6;
+  --el-color-primary-light-3: #ecb6cc;
+  --el-color-primary-light-5: #f1cbd9;
+  --el-color-primary-light-7: #f7e0e9;
+  --el-color-primary-light-8: #faeaf0;
+  --el-color-primary-light-9: #fdf5f8;
+  --el-color-primary-dark-2: #b67892;
+  --el-border-radius-base: 10px;
+  --el-border-radius-small: 8px;
+  --el-border-color: #e5e8ef;
+  --el-border-color-light: #eceef3;
+  --el-fill-color-light: #f7f8fb;
+  --el-bg-color-page: #f5f7fa;
+
+  --login-bg-color: #f5f7fa;
 
   --left-menu-max-width: 200px;
 
   --left-menu-min-width: 64px;
 
-  --left-menu-bg-color: #001529;
+  --left-menu-bg-color: #fff;
 
-  --left-menu-bg-light-color: #0f2438;
+  --left-menu-bg-light-color: #fafbfc;
 
-  --left-menu-bg-active-color: var(--el-color-primary);
+  --left-menu-bg-active-color: #fdf1f6;
 
-  --left-menu-text-color: #bfcbd9;
+  --left-menu-text-color: #5f6878;
 
-  --left-menu-text-active-color: #fff;
+  --left-menu-text-active-color: #c7628d;
 
-  --left-menu-collapse-bg-active-color: var(--el-color-primary);
+  --left-menu-collapse-bg-active-color: #fdf1f6;
   /* left menu end */
 
   /* logo start */
   --logo-height: 50px;
 
-  --logo-title-text-color: #fff;
+  --logo-title-text-color: #202531;
   /* logo end */
 
   /* header start */
-  --top-header-bg-color: '#fff';
+  --top-header-bg-color: #fff;
 
-  --top-header-text-color: 'inherit';
+  --top-header-text-color: #505867;
 
-  --top-header-hover-color: #f6f6f6;
+  --top-header-hover-color: #fdf1f6;
 
-  --top-tool-height: var(--logo-height);
+  --top-tool-height: 60px;
 
   --top-tool-p-x: 0;
 
-  --tags-view-height: 35px;
+  --tags-view-height: 40px;
   /* header start */
 
   /* tab menu start */
@@ -46,9 +60,9 @@
   --tab-menu-collapse-height: 36px;
   /* tab menu end */
 
-  --app-content-padding: 20px;
+  --app-content-padding: 18px;
 
-  --app-content-bg-color: #f5f7f9;
+  --app-content-bg-color: #f5f7fa;
 
   --app-footer-height: 50px;
 
@@ -56,13 +70,37 @@
 }
 
 .dark {
-  --app-content-bg-color: var(--el-bg-color);
+  --left-menu-bg-color: #141a24;
+  --left-menu-bg-light-color: #19212d;
+  --left-menu-bg-active-color: rgb(227 150 182 / 16%);
+  --left-menu-text-color: #aab2c0;
+  --left-menu-text-active-color: #f0a9c7;
+  --left-menu-collapse-bg-active-color: rgb(227 150 182 / 16%);
+  --logo-title-text-color: #f7f8fb;
+  --top-header-bg-color: #141a24;
+  --top-header-text-color: #d5d9e2;
+  --top-header-hover-color: rgb(227 150 182 / 12%);
+  --app-content-bg-color: #0f141d;
 }
 
 html,
 body {
+  color: #202531;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.dark body {
+  color: #edf0f5;
 }
 
 *,

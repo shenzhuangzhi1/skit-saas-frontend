@@ -1,6 +1,6 @@
 import type { LayoutRenderMode, LayoutType, VbenLayoutType } from '@/types/layout'
 
-const DEFAULT_LAYOUT: VbenLayoutType = 'sidebar-nav'
+const DEFAULT_LAYOUT: VbenLayoutType = 'mixed-nav'
 
 const LEGACY_LAYOUT_MAP: Record<string, VbenLayoutType> = {
   classic: 'sidebar-nav',

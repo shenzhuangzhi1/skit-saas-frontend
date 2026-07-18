@@ -8,19 +8,23 @@
   >
     <el-row>
       <el-col :span="24">
+        <label class="skit-field-label" for="skit-login-username">账号</label>
         <el-form-item prop="username">
           <el-input
+            id="skit-login-username"
             v-model="loginData.loginForm.username"
-            placeholder="用户名"
+            placeholder="请输入账号"
             :prefix-icon="iconAvatar"
           />
         </el-form-item>
       </el-col>
       <el-col :span="24">
+        <label class="skit-field-label" for="skit-login-password">密码</label>
         <el-form-item prop="password">
           <el-input
+            id="skit-login-password"
             v-model="loginData.loginForm.password"
-            placeholder="密码"
+            placeholder="请输入密码"
             :prefix-icon="iconLock"
             show-password
             type="password"
@@ -30,7 +34,7 @@
       </el-col>
       <el-col :span="24" class="skit-keep-login">
         <el-form-item>
-          <el-checkbox v-model="loginData.loginForm.rememberMe">保持会话</el-checkbox>
+          <el-checkbox v-model="loginData.loginForm.rememberMe">保持登录状态</el-checkbox>
         </el-form-item>
       </el-col>
       <el-col :span="24">
@@ -170,54 +174,85 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .skit-login-form {
-  width: 370px;
-  max-width: calc(100vw - 92px);
-  margin: 0 auto;
-  color: #999;
+  width: 100%;
+  margin: 0;
+  color: var(--login-text-secondary);
 
   :deep(.el-form-item) {
-    margin-bottom: 15px;
+    margin: 8px 0 17px;
   }
 
   :deep(.el-input__wrapper) {
-    min-height: 33px;
-    background: #fff;
-    border-radius: 0;
-    box-shadow: 0 0 0 1px #d2d6de inset;
+    min-height: 46px;
+    padding: 0 14px;
+    background: rgb(255 255 255 / 74%);
+    border-radius: 14px;
+    box-shadow: 0 0 0 1px var(--login-border) inset;
+
+    &:hover {
+      box-shadow: 0 0 0 1px rgb(227 150 182 / 75%) inset;
+    }
+
+    &.is-focus {
+      background: var(--login-panel);
+      box-shadow:
+        0 0 0 1px #e396b6 inset,
+        0 0 0 4px rgb(227 150 182 / 13%) !important;
+    }
   }
 
   :deep(.el-input__inner) {
-    color: #555;
-    -webkit-text-fill-color: #555;
+    font-size: 14px;
+    color: var(--login-text);
+    -webkit-text-fill-color: var(--login-text);
   }
 
   :deep(.el-input__inner::placeholder) {
-    color: #999;
-    -webkit-text-fill-color: #999;
+    color: #9aa2af;
+    -webkit-text-fill-color: #9aa2af;
   }
 
   :deep(.el-input-group__prepend),
   :deep(.el-input__prefix) {
-    color: #555;
+    color: #8a93a2;
   }
 }
 
+.skit-field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--login-text);
+}
+
 .skit-keep-login {
-  margin-top: -6px;
+  margin-top: -8px;
 
   :deep(.el-checkbox__label) {
-    color: #999;
+    font-size: 13px;
+    color: var(--login-text-secondary);
   }
 }
 
 .skit-login-button {
   width: 100%;
-  min-height: 43px;
-  font-size: 18px;
-  font-weight: 400;
-  letter-spacing: 0;
-  background: #708eea;
-  border-color: #708eea;
-  border-radius: 0;
+  min-height: 46px;
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  background: linear-gradient(135deg, #e99abb 0%, #d8749f 100%);
+  border: 0;
+  border-radius: 14px;
+  box-shadow: 0 16px 28px -18px rgb(216 111 154 / 76%);
+
+  &:hover,
+  &:focus {
+    background: linear-gradient(135deg, #eda8c4 0%, #cf698f 100%);
+    transform: translateY(-1px);
+  }
+}
+
+.is-dark .skit-login-form :deep(.el-input__wrapper) {
+  background: rgb(15 23 42 / 72%);
 }
 </style>

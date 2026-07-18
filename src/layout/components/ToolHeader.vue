@@ -13,6 +13,7 @@ import { useSetting } from '@/layout/components/Setting'
 import { useAppStore } from '@/store/modules/app'
 import { useDesign } from '@/hooks/web/useDesign'
 import { Icon } from '@/components/Icon'
+import WorkspaceSwitch from '@/layout/components/WorkspaceSwitch.vue'
 import { isHorizontalMenuLayout, isMixedNavLayout, isTwoColumnLayout } from '@/utils/layout'
 
 const { getPrefixCls, variables } = useDesign()
@@ -83,6 +84,7 @@ export default defineComponent({
             {showBreadcrumb.value && breadcrumb.value ? (
               <Breadcrumb class="lt-md:hidden"></Breadcrumb>
             ) : undefined}
+            {!isHorizontalMenuLayout(layout.value) ? <WorkspaceSwitch /> : undefined}
           </div>
         ) : undefined}
         <div class="h-full flex items-center">
@@ -129,6 +131,14 @@ export default defineComponent({
 $prefix-cls: #{$namespace}-tool-header;
 
 .#{$prefix-cls} {
+  gap: 14px;
+  padding-right: 14px;
+  background: rgb(255 255 255 / 88%);
+  backdrop-filter: blur(18px);
   transition: left var(--transition-time-02);
+}
+
+.dark .#{$prefix-cls} {
+  background: rgb(20 26 36 / 90%);
 }
 </style>

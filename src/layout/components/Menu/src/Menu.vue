@@ -545,6 +545,7 @@ export default defineComponent({
         class={[
           `${prefixCls} ${prefixCls}__${unref(menuMode)}`,
           `${prefixCls}--${props.theme}`,
+          { [`${prefixCls}--root-switch`]: props.rootOnly },
           'h-[100%] overflow-hidden flex-col bg-[var(--left-menu-bg-color)]',
           {
             'w-[var(--left-menu-min-width)]':
@@ -683,6 +684,32 @@ $prefix-cls: #{$namespace}-menu;
     }
   }
 
+  &--root-switch.#{$prefix-cls}__horizontal {
+    display: flex;
+    align-items: center;
+
+    :deep(.#{$elNamespace}-menu--horizontal) {
+      align-items: center;
+      gap: 5px;
+
+      > .#{$elNamespace}-menu-item,
+      > .#{$elNamespace}-sub-menu > .#{$elNamespace}-sub-menu__title {
+        height: 38px;
+        padding: 0 15px;
+        color: #626b7a;
+        border: 0 !important;
+        border-radius: 11px;
+      }
+
+      > .#{$elNamespace}-menu-item.is-active,
+      > .#{$elNamespace}-sub-menu.is-active > .#{$elNamespace}-sub-menu__title {
+        font-weight: 700;
+        color: #b85580 !important;
+        background: #fdf1f6 !important;
+      }
+    }
+  }
+
   &--header {
     :deep(.#{$elNamespace}-menu) {
       .is-active {
@@ -714,6 +741,21 @@ $prefix-cls: #{$namespace}-menu;
           background-color: var(--top-header-bg-color) !important;
         }
       }
+    }
+  }
+}
+
+.dark .#{$prefix-cls}--root-switch.#{$prefix-cls}__horizontal {
+  :deep(.#{$elNamespace}-menu--horizontal) {
+    > .#{$elNamespace}-menu-item,
+    > .#{$elNamespace}-sub-menu > .#{$elNamespace}-sub-menu__title {
+      color: #abb3c1;
+    }
+
+    > .#{$elNamespace}-menu-item.is-active,
+    > .#{$elNamespace}-sub-menu.is-active > .#{$elNamespace}-sub-menu__title {
+      color: #f0a9c7 !important;
+      background: rgb(227 150 182 / 14%) !important;
     }
   }
 }

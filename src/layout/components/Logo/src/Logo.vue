@@ -72,13 +72,13 @@ watch(
       to="/"
     >
       <img
-        class="h-[calc(var(--logo-height)-10px)] w-[calc(var(--logo-height)-10px)]"
+        class="app-brand-logo h-[calc(var(--logo-height)-18px)] w-[calc(var(--logo-height)-18px)]"
         src="@/assets/imgs/logo.png"
       />
       <div
         v-if="show"
         :class="[
-          'ml-10px text-16px font-700',
+          'app-brand-title ml-10px text-16px font-700',
           {
             'text-[var(--logo-title-text-color)]': getLayoutRenderMode(layout) === 'classic',
             'text-[var(--top-header-text-color)]':
@@ -93,3 +93,19 @@ watch(
     </router-link>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.app-brand-logo {
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px -10px rgb(31 42 68 / 52%);
+}
+
+.app-brand-title {
+  max-width: 190px;
+  overflow: hidden;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+</style>
