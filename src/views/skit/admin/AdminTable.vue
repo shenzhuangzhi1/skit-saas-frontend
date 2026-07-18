@@ -1,6 +1,13 @@
 <template>
   <div class="skit-fastadmin-page">
     <div class="skit-panel">
+      <div v-if="isDramaPage" class="tenant-scope-row">
+        <TenantScopeBar v-model="scopeModel" :tenants="tenantOptions" />
+        <span v-if="tenantOptionsError || dramaPageError" class="tenant-scope-error">
+          {{ tenantOptionsError || dramaPageError }}
+        </span>
+      </div>
+
       <div v-show="advancedVisible" class="commonsearch-table">
         <div class="commonsearch-grid">
           <label v-for="field in page.searchFields" :key="field.prop" class="commonsearch-item">
@@ -448,6 +455,11 @@ import {
   updateSkitAdminRecord,
   type SkitAdminRecordRespVO
 } from '@/api/skit/adminRecord'
+import * as TenantApi from '@/api/skit/tenant'
+import TenantScopeBar from '@/views/skit/shared/TenantScopeBar.vue'
+import type { TenantScope, TenantScopeSelection } from '@/views/skit/shared/tenantScope'
+import { useTenantScope } from '@/views/skit/shared/useTenantScope'
+import { buildDramaMutationScope, buildDramaQueryScope } from './dramaTenantScope'
 import { skitPageConfigs, type SkitColumn, type SkitSearchField } from './pageConfig'
 
 defineOptions({ name: 'SkitAdminTable' })
@@ -462,8 +474,13 @@ type TableRow = Record<string, CellValue>
 const route = useRoute()
 const pageKey = computed(() => (props.pageKey || route.meta?.skitPageKey || 'adRecord') as string)
 const page = computed(() => skitPageConfigs[pageKey.value] || skitPageConfigs.adRecord)
+const isDramaPage = computed(() => page.value.key === 'drama')
+const scopeManager = useTenantScope()
 
 const tableRows = ref<TableRow[]>([])
+const tenantOptions = ref<Array<{ tenantId: number; name: string }>>([])
+const tenantOptionsError = ref('')
+const dramaPageError = ref('')
 const selectedKeys = ref(new Set<string>())
 const visibleColumnKeys = ref(new Set<string>())
 const advancedModel = reactive<Record<string, string>>({})
@@ -495,6 +512,17 @@ type OperateAction = {
   text: string
   icon: string
 }
+
+const scopeModel = computed<TenantScope>({
+  get: () => scopeManager.scope.value,
+  set: (value) => {
+    const selection: TenantScopeSelection = value.kind === 'all' ? 'all' : value.targetTenantId
+    scopeManager.select(selection)
+    currentPage.value = 1
+    selectedKeys.value = new Set()
+    void loadPageRows(false)
+  }
+})
 
 const hasSelection = computed(() =>
   page.value.columns.some((column) => column.prop === 'state' || column.prop === '0')
@@ -559,8 +587,13 @@ const rowOperateActions = computed<OperateAction[]>(() => {
     { mode: 'edit', label: '编辑', text: '', icon: 'ep:edit' }
   ]
 })
-const displayTotalRows = computed(() =>
-  backendAvailable.value && !hasLocalFilters.value
+const displayTotalRows = computed(() => {
+  if (isDramaPage.value) {
+    return backendAvailable.value && !hasLocalFilters.value
+      ? backendTotalRows.value
+      : filteredRows.value.length
+  }
+  return backendAvailable.value && !hasLocalFilters.value
     ? Math.max(
         backendTotalRows.value,
         !hasActiveFilters.value && page.value.totalRows !== undefined ? page.value.totalRows : 0
@@ -568,7 +601,7 @@ const displayTotalRows = computed(() =>
     : !hasActiveFilters.value && page.value.totalRows !== undefined
       ? page.value.totalRows
       : filteredRows.value.length
-)
+})
 const totalPages = computed(() => Math.max(1, Math.ceil(displayTotalRows.value / pageSize.value)))
 const pagedRows = computed(() => {
   if (backendAvailable.value) return filteredRows.value
@@ -685,6 +718,35 @@ const sdkCatalogItems = (payload: unknown): Record<string, unknown>[] => {
   )
 }
 
+const dramaMutationScope = (reason: string) => {
+  if (!isDramaPage.value) return {}
+  try {
+    return buildDramaMutationScope(scopeModel.value, reason)
+  } catch {
+    ElMessage.warning('请先选择代理商')
+    return null
+  }
+}
+
+const loadTenantOptions = async () => {
+  tenantOptionsError.value = ''
+  try {
+    if (scopeManager.isPlatformAdmin.value) {
+      const result = await TenantApi.getTenantAgentPage({ pageNo: 1, pageSize: 100 })
+      tenantOptions.value = (result.list || []).map((tenant) => ({
+        tenantId: tenant.tenantId,
+        name: tenant.name
+      }))
+      return
+    }
+    const invitation = await TenantApi.getTenantInvitation()
+    tenantOptions.value = [{ tenantId: invitation.tenantId, name: invitation.tenantName }]
+  } catch {
+    tenantOptions.value = []
+    tenantOptionsError.value = '代理商列表加载失败'
+  }
+}
+
 const fieldMatched = (row: TableRow, field: SkitSearchField) => {
   const exact = (advancedModel[field.prop] || '').trim().toLowerCase()
   const start = (advancedModel[`${field.prop}Start`] || '').trim()
@@ -698,7 +760,7 @@ const fieldMatched = (row: TableRow, field: SkitSearchField) => {
 }
 
 const buildRows = () => {
-  if (page.value.status === 'empty') return []
+  if (page.value.status === 'empty' || isDramaPage.value) return []
   const count = Math.min(page.value.totalRows || 12, 2000)
   return Array.from({ length: count }, (_, index) => {
     const row = buildRow(index + 1)
@@ -725,6 +787,7 @@ const loadPageRows = async (fallback = true) => {
     loading.value = false
     return
   }
+  dramaPageError.value = ''
   loading.value = true
   try {
     const result = await fetchBackendRows(page.value.key)
@@ -732,11 +795,17 @@ const loadPageRows = async (fallback = true) => {
     backendAvailable.value = true
     backendTotalRows.value = Number(result.total || 0)
     tableRows.value = (result.list || []).map((record) => mapBackendRecord(record))
-  } catch {
+  } catch (cause) {
     if (seq !== backendLoadSeq.value) return
-    backendAvailable.value = false
+    backendAvailable.value = isDramaPage.value
     backendTotalRows.value = 0
-    if (fallback) {
+    tableRows.value = []
+    if (isDramaPage.value) {
+      dramaPageError.value =
+        cause instanceof Error && cause.message.includes('select one tenant')
+          ? '请先选择代理商'
+          : '真实剧单加载失败'
+    } else if (fallback) {
       tableRows.value = buildRows()
     }
   } finally {
@@ -747,10 +816,12 @@ const loadPageRows = async (fallback = true) => {
 }
 
 const fetchBackendRows = (targetPageKey: string) => {
+  const tenantScope = targetPageKey === 'drama' ? buildDramaQueryScope(scopeModel.value) : {}
   return getSkitAdminRecordPage({
     pageNo: currentPage.value,
     pageSize: pageSize.value,
     pageKey: targetPageKey,
+    ...tenantScope,
     keyword: keyword.value.trim() || undefined
   })
 }
@@ -1121,6 +1192,8 @@ const batchSetPublishStatus = async (status: '上架' | '下架') => {
     ElMessage.warning('请先选择短剧')
     return
   }
+  const managementScope = dramaMutationScope('更新穿山甲短剧目录上架状态')
+  if (!managementScope) return
   selectedRows.value.forEach((row) => {
     row.publishStatus = status
   })
@@ -1132,6 +1205,7 @@ const batchSetPublishStatus = async (status: '上架' | '下架') => {
           if (!id) return undefined
           return updateSkitAdminRecord({
             id,
+            ...managementScope,
             pageKey: page.value.key,
             rowKey: String(row.__rowKey || ''),
             recordData: buildRecordData(row),
@@ -1147,11 +1221,14 @@ const batchSetPublishStatus = async (status: '上架' | '下架') => {
 }
 
 const openDramaImport = () => {
+  if (!dramaMutationScope('同步穿山甲 SDK 真实剧单')) return
   dramaImportText.value = ''
   dramaImportVisible.value = true
 }
 
 const importDramaCatalog = async () => {
+  const managementScope = dramaMutationScope('同步穿山甲 SDK 真实剧单')
+  if (!managementScope) return
   let payload: unknown
   try {
     payload = JSON.parse(dramaImportText.value)
@@ -1164,40 +1241,54 @@ const importDramaCatalog = async () => {
     ElMessage.error('未找到可用的 SDK 剧目')
     return
   }
+  const existingResult = backendAvailable.value
+    ? await getSkitAdminRecordPage({
+        pageNo: 1,
+        pageSize: 100,
+        pageKey: page.value.key,
+        ...buildDramaQueryScope(scopeModel.value)
+      })
+    : undefined
+  const existingRows = existingResult
+    ? existingResult.list.map((record) => mapBackendRecord(record))
+    : tableRows.value
   const existing = new Map(
-    tableRows.value
+    existingRows
       .filter((row) => isPositiveInteger(row.pangleDramaId))
       .map((row) => [String(row.pangleDramaId), row])
   )
   if (backendAvailable.value) {
-    await Promise.all(
-      dramas.map((drama) => {
-        const current = existing.get(String(drama.pangleDramaId))
-        const recordData = buildRecordData({
-          ...(current || {}),
-          ...drama,
-          publishStatus: current?.publishStatus || drama.publishStatus
-        })
-        const id = current ? backendId(current) : undefined
-        if (id) {
-          return updateSkitAdminRecord({
-            id,
-            pageKey: page.value.key,
-            rowKey: String(current?.__rowKey || `drama-${drama.pangleDramaId}`),
-            recordData,
-            status: deriveBackendStatus(recordData),
-            sort: Number(current?.__backendSort || 0)
-          })
-        }
-        return createSkitAdminRecord({
-          pageKey: page.value.key,
-          rowKey: `drama-${drama.pangleDramaId}`,
-          recordData,
-          status: 0,
-          sort: 0
-        })
+    const persistDrama = (drama: TableRow) => {
+      const current = existing.get(String(drama.pangleDramaId))
+      const recordData = buildRecordData({
+        ...(current || {}),
+        ...drama,
+        publishStatus: current?.publishStatus || drama.publishStatus
       })
-    )
+      const id = current ? backendId(current) : undefined
+      if (id) {
+        return updateSkitAdminRecord({
+          id,
+          ...managementScope,
+          pageKey: page.value.key,
+          rowKey: String(current?.__rowKey || `drama-${drama.pangleDramaId}`),
+          recordData,
+          status: deriveBackendStatus(recordData),
+          sort: Number(current?.__backendSort || 0)
+        })
+      }
+      return createSkitAdminRecord({
+        ...managementScope,
+        pageKey: page.value.key,
+        rowKey: `drama-${drama.pangleDramaId}`,
+        recordData,
+        status: 0,
+        sort: 0
+      })
+    }
+    for (let start = 0; start < dramas.length; start += 5) {
+      await Promise.all(dramas.slice(start, start + 5).map(persistDrama))
+    }
     await loadPageRows(false)
   } else {
     tableRows.value = dramas
@@ -1207,6 +1298,7 @@ const importDramaCatalog = async () => {
 }
 
 const openEditor = (mode: 'add' | 'edit' | 'view', row?: TableRow) => {
+  if (mode !== 'view' && !dramaMutationScope('维护穿山甲短剧目录元数据')) return
   if (mode === 'edit' && !row && selectedRows.value.length !== 1) {
     ElMessage.warning('请选择一条记录')
     return
@@ -1222,11 +1314,14 @@ const openEditor = (mode: 'add' | 'edit' | 'view', row?: TableRow) => {
 }
 
 const saveEditor = async () => {
+  const managementScope = dramaMutationScope('维护穿山甲短剧目录元数据')
+  if (!managementScope) return
   if (editorMode.value === 'add') {
     if (backendAvailable.value) {
       const rowKey = `${page.value.key}-custom-${Date.now()}`
       const data = buildRecordData(editorModel)
       await createSkitAdminRecord({
+        ...managementScope,
         pageKey: page.value.key,
         rowKey,
         recordData: data,
@@ -1257,6 +1352,7 @@ const saveEditor = async () => {
           const data = buildRecordData(row)
           await updateSkitAdminRecord({
             id,
+            ...managementScope,
             pageKey: page.value.key,
             rowKey: String(row.__rowKey || ''),
             recordData: data,
@@ -1400,6 +1496,11 @@ watch(
     advancedVisible.value = false
     columnMenuOpen.value = false
     exportMenuOpen.value = false
+    tenantOptionsError.value = ''
+    dramaPageError.value = ''
+    if (isDramaPage.value) {
+      await loadTenantOptions()
+    }
     await loadPageRows()
   },
   { immediate: true }
@@ -1423,6 +1524,21 @@ watch(
   background: var(--admin-surface);
   border-radius: 3px;
   box-shadow: none;
+}
+
+.tenant-scope-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.tenant-scope-error {
+  color: #c0392b;
 }
 
 .commonsearch-table {

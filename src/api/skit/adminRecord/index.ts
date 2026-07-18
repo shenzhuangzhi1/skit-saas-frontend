@@ -15,12 +15,15 @@ export interface SkitAdminRecordPageReqVO {
   pageNo: number
   pageSize: number
   pageKey: string
+  tenantId?: number
   keyword?: string
   status?: number
 }
 
 export interface SkitAdminRecordSaveReqVO {
   id?: number
+  tenantId?: number
+  reason?: string
   pageKey: string
   rowKey?: string
   recordData: Record<string, unknown>
