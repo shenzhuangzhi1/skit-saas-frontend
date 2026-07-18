@@ -78,3 +78,11 @@ router.afterEach((to) => {
   done() // 结束Progress
   loadDone()
 })
+
+// Route initialization may fail before afterEach runs (for example while loading
+// user permissions). Always remove the full-page loading mask so the UI cannot
+// be left behind an opaque overlay.
+router.onError(() => {
+  done()
+  loadDone()
+})

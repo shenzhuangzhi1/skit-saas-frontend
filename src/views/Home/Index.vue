@@ -136,14 +136,22 @@ import { buildDashboardSnapshot, type DashboardSnapshot } from './dashboardModel
 defineOptions({ name: 'Index' })
 
 const router = useRouter()
-const scopeManager = useTenantScope()
 const loading = ref(false)
 const error = ref('')
 const snapshot = ref<DashboardSnapshot>()
 const countFormat = new Intl.NumberFormat('zh-CN')
+const scopeManager = (() => {
+  try {
+    return useTenantScope()
+  } catch (cause) {
+    error.value =
+      cause instanceof Error && cause.message ? cause.message : '无法确定当前租户范围'
+    return undefined
+  }
+})()
 
 const scopeLabel = computed(() =>
-  scopeManager.scope.value.kind === 'all' ? '全部代理商（只读）' : '当前代理商租户'
+  scopeManager?.scope.value.kind === 'all' ? '全部代理商（只读）' : '当前代理商租户'
 )
 
 const countCards = computed(() => {
@@ -158,6 +166,7 @@ const countCards = computed(() => {
 })
 
 const load = async () => {
+  if (!scopeManager) return
   loading.value = true
   error.value = ''
   try {

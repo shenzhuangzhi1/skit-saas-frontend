@@ -235,9 +235,13 @@ select {
   }
 
   .el-alert,
-  .el-skeleton__item,
-  .el-loading-mask {
+  .el-skeleton__item {
     background-color: var(--el-fill-color-light);
+  }
+
+  .el-loading-mask {
+    background-color: rgb(11 17 32 / 58%);
+    backdrop-filter: blur(2px);
   }
 
   .el-dropdown-menu__item:not(.is-disabled):focus,

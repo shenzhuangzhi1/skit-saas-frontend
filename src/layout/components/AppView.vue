@@ -30,7 +30,7 @@ provide('reload', reload)
 <template>
   <section
     :class="[
-      'app-view-shell p-[var(--app-content-padding)] w-full bg-[var(--app-content-bg-color)] dark:bg-[var(--el-bg-color)]',
+      'p-[var(--app-content-padding)] w-full bg-[var(--app-content-bg-color)] dark:bg-[var(--el-bg-color)]',
       {
         '!min-h-[calc(100vh-var(--top-tool-height)-var(--tags-view-height)-var(--app-footer-height))] pb-0':
           footer
@@ -47,27 +47,3 @@ provide('reload', reload)
   </section>
   <Footer v-if="footer" />
 </template>
-
-<style lang="scss" scoped>
-.app-view-shell {
-  position: relative;
-  background: transparent !important;
-
-  &::before {
-    position: fixed;
-    z-index: -1;
-    pointer-events: none;
-    background:
-      radial-gradient(circle at 76% 4%, rgb(99 102 241 / 9%), transparent 28rem),
-      radial-gradient(circle at 24% 96%, rgb(20 184 166 / 7%), transparent 26rem);
-    content: '';
-    inset: 0;
-  }
-}
-
-:global(.dark) .app-view-shell::before {
-  background:
-    radial-gradient(circle at 76% 4%, rgb(99 102 241 / 13%), transparent 30rem),
-    radial-gradient(circle at 24% 96%, rgb(45 212 191 / 7%), transparent 28rem);
-}
-</style>
