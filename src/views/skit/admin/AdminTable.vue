@@ -1534,11 +1534,11 @@ watch(
   gap: 10px;
   padding-bottom: 12px;
   margin-bottom: 12px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .tenant-scope-error {
-  color: #c0392b;
+  color: var(--el-color-danger);
 }
 
 .commonsearch-table {
