@@ -106,3 +106,21 @@ test('legacy generic dashboard and system configuration sources are removed', ()
   assert.doesNotMatch(routes, /SkitSystemConfig/)
   assert.doesNotMatch(api, /dashboard-summary|SkitDashboardSummaryRespVO|getSkitDashboardSummary/)
 })
+
+test('drama cleanup is selectable and carries the audited tenant mutation scope', () => {
+  const config = readFileSync(
+    new URL('../src/views/skit/admin/pageConfig.ts', import.meta.url),
+    'utf8'
+  )
+  const table = readFileSync(
+    new URL('../src/views/skit/admin/AdminTable.vue', import.meta.url),
+    'utf8'
+  )
+  const api = readFileSync(new URL('../src/api/skit/adminRecord/index.ts', import.meta.url), 'utf8')
+
+  assert.match(config, /\['state', '选择', 48\]/)
+  assert.match(config, /'导入 SDK 剧单'.*'删除'.*'上架'/)
+  assert.match(table, /dramaMutationScope\('删除目标租户短剧目录记录'\)/)
+  assert.match(api, /params: \{ id, \.\.\.scope \}/)
+  assert.match(api, /params: \{ ids: ids\.join\(','\), \.\.\.scope \}/)
+})

@@ -113,6 +113,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
     apiPath: '/admin-api/skit/duanju/dramas',
     description: '导入 SDK 返回的剧单后审核上架。总集数、免费集数和解锁范围均以导入内容为准。',
     columns: cols([
+      ['state', '选择', 48],
       ['pangleDramaId', '剧目 ID', 110],
       ['title', '短剧标题', 180],
       ['cover', '封面', 140],
@@ -134,7 +135,7 @@ export const skitPageConfigs: Record<string, SkitPageConfig> = {
       ['createtime', '创建时间', 'dateRange'],
       ['updatetime', '更新时间', 'dateRange']
     ]),
-    toolbar: ['刷新', '导入 SDK 剧单', '添加', '编辑', '上架', '下架']
+    toolbar: ['刷新', '导入 SDK 剧单', '添加', '编辑', '删除', '上架', '下架']
   },
   adRecord: {
     key: 'adRecord',

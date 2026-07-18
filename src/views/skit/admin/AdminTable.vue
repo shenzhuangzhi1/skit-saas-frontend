@@ -1131,6 +1131,8 @@ const deleteSelected = async () => {
     ElMessage.warning('请先选择记录')
     return
   }
+  const managementScope = dramaMutationScope('删除目标租户短剧目录记录')
+  if (!managementScope) return
   try {
     await ElMessageBox.confirm(`确定删除选中的 ${selectedRows.value.length} 条记录？`, '提示', {
       type: 'warning'
@@ -1141,9 +1143,9 @@ const deleteSelected = async () => {
   if (backendAvailable.value) {
     const ids = selectedRows.value.map((row) => backendId(row)).filter(Boolean) as number[]
     if (ids.length > 1) {
-      await deleteSkitAdminRecordList(ids)
+      await deleteSkitAdminRecordList(ids, managementScope)
     } else if (ids.length === 1) {
-      await deleteSkitAdminRecord(ids[0])
+      await deleteSkitAdminRecord(ids[0], managementScope)
     }
     await loadPageRows(false)
     clearSelection()

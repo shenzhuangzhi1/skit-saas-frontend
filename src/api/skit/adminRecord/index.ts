@@ -31,6 +31,8 @@ export interface SkitAdminRecordSaveReqVO {
   sort?: number
 }
 
+export type SkitAdminRecordMutationScope = Pick<SkitAdminRecordSaveReqVO, 'tenantId' | 'reason'>
+
 export interface PageResult<T> {
   list: T[]
   total: number
@@ -63,18 +65,21 @@ export const updateSkitAdminRecord = (data: SkitAdminRecordSaveReqVO) => {
   })
 }
 
-export const deleteSkitAdminRecord = (id: number) => {
+export const deleteSkitAdminRecord = (id: number, scope: SkitAdminRecordMutationScope = {}) => {
   return request.delete<boolean>({
     url: '/skit/admin-record/delete',
-    params: { id },
+    params: { id, ...scope },
     ...silent
   })
 }
 
-export const deleteSkitAdminRecordList = (ids: number[]) => {
+export const deleteSkitAdminRecordList = (
+  ids: number[],
+  scope: SkitAdminRecordMutationScope = {}
+) => {
   return request.delete<boolean>({
     url: '/skit/admin-record/delete-list',
-    params: { ids: ids.join(',') },
+    params: { ids: ids.join(','), ...scope },
     ...silent
   })
 }
