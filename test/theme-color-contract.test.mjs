@@ -67,6 +67,16 @@ test('captcha handle and sidebar selection have theme-specific contrast tokens',
   assert.match(variables, /--left-menu-active-text:/)
   assert.match(captcha, /\.verify-move-block \.icon-right::before/)
   assert.match(captcha, /background-image:\s*none/)
+  const sliderTrackRules = captcha.match(/\.verify-bar-area\s*\{[^}]*\}/g) || []
+  assert.ok(
+    sliderTrackRules.some((rule) => /overflow:\s*visible/.test(rule)),
+    'the slider track must allow the puzzle piece to extend into the image panel'
+  )
+  assert.ok(
+    sliderTrackRules.every((rule) => !/overflow:\s*hidden/.test(rule)),
+    'overflow hidden clips the moving puzzle piece above the slider track'
+  )
+  assert.match(captcha, /\.verify-sub-block\s*\{[^}]*pointer-events:\s*none/s)
   assert.match(menu, /background:\s*var\(--left-menu-active-bg\)/)
   assert.match(menu, /color:\s*var\(--left-menu-active-text\)/)
 })

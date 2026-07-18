@@ -490,7 +490,7 @@ export default {
 
 .verify-bar-area {
   min-height: 44px;
-  overflow: hidden;
+  overflow: visible;
   color: var(--captcha-text-secondary);
   background: var(--captcha-panel-soft);
   border-color: var(--captcha-border);
@@ -542,6 +542,12 @@ export default {
   background: var(--skit-primary-soft);
   border-color: var(--captcha-border);
   border-radius: 11px;
+}
+
+.verify-bar-area .verify-move-block .verify-sub-block {
+  overflow: visible;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 4px var(--captcha-handle-shadow));
 }
 
 .verify-bar-area .verify-move-block .verify-icon {
