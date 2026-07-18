@@ -7,7 +7,7 @@ import {
 export { managementTenantBody, managementTenantQuery }
 export type { ManagementTenantTarget }
 
-export const PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS = [35, 66, 67] as const
+export const TAKU_ADX_UNLOCK_NETWORK_FIRM_IDS = [66] as const
 export const CURRENT_PROTOCOL_VERSION = 1
 
 export const parseShadowMemberIds = (value: string): number[] => {

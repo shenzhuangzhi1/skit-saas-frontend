@@ -235,9 +235,6 @@
         <el-form-item label="展示模板已核验">
           <el-switch v-model="capabilityForm.impressionCallbackTemplateVerified" />
         </el-form-item>
-        <el-form-item label="系统权威广告网络">
-          <el-input :model-value="PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS.join(', ')" disabled />
-        </el-form-item>
         <el-form-item label="灰度会员 ID（当前租户）">
           <el-input
             v-model="capabilityForm.shadowTestMemberIds"
@@ -393,7 +390,7 @@ import {
   buildAdAccountWritePayload,
   CURRENT_PROTOCOL_VERSION,
   parseShadowMemberIds,
-  PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS,
+  TAKU_ADX_UNLOCK_NETWORK_FIRM_IDS,
   resolveTenantAdAccountId,
   sanitizeAdAccountResponse,
   sanitizeReportingConfiguration,
@@ -584,7 +581,7 @@ const saveCapability = async () => {
       dedicatedPlacementVerified: form.dedicatedPlacementVerified,
       rewardCallbackTemplateVerified: form.rewardCallbackTemplateVerified,
       impressionCallbackTemplateVerified: form.impressionCallbackTemplateVerified,
-      unlockNetworkFirmIds: [...PHASE_ONE_UNLOCK_NETWORK_FIRM_IDS],
+      unlockNetworkFirmIds: [...TAKU_ADX_UNLOCK_NETWORK_FIRM_IDS],
       shadowTestMemberIds: parseShadowMemberIds(form.shadowTestMemberIds),
       minNativeVersion: form.minNativeVersion.trim(),
       minProtocolVersion: CURRENT_PROTOCOL_VERSION,
