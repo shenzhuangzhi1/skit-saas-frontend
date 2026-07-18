@@ -77,6 +77,26 @@
   --captcha-image-control: rgb(15 23 42 / 58%);
   --captcha-gap-border: rgb(255 255 255 / 72%);
 
+  --admin-page-bg: transparent;
+  --admin-surface: var(--skit-surface-glass);
+  --admin-surface-soft: var(--skit-surface-muted);
+  --admin-surface-hover: var(--skit-hover-bg);
+  --admin-text: var(--skit-text-primary);
+  --admin-text-secondary: var(--skit-text-secondary);
+  --admin-muted: var(--skit-text-placeholder);
+  --admin-border: var(--skit-border-color);
+  --admin-border-strong: var(--skit-border-strong);
+  --admin-primary: var(--el-color-primary);
+  --admin-primary-soft: var(--skit-primary-soft);
+  --admin-overlay: color-mix(in srgb, var(--skit-surface-solid) 88%, transparent);
+  --admin-shadow: 0 20px 54px -40px var(--skit-shadow-strong);
+  --admin-focus-ring: 0 0 0 4px var(--skit-primary-soft);
+  --admin-control-shadow: 0 8px 18px -14px var(--skit-shadow-color);
+  --admin-dropdown-shadow: 0 18px 46px -28px var(--skit-shadow-strong);
+  --admin-primary-gradient: var(--skit-active-gradient);
+  --admin-primary-shadow: 0 12px 24px -17px var(--skit-shadow-strong);
+  --admin-active-text: var(--skit-active-text);
+
   --left-menu-max-width: 224px;
 
   --left-menu-min-width: 72px;
@@ -216,6 +236,7 @@
   --captcha-mask: rgb(2 6 23 / 72%);
   --captcha-image-control: rgb(2 6 23 / 68%);
   --captcha-gap-border: rgb(148 163 184 / 34%);
+  --admin-primary: var(--el-color-primary-light-5);
   --left-menu-bg-color: #080f1f;
   --left-menu-bg-light-color: #0e1830;
   --left-menu-bg-active-color: rgb(99 102 241 / 25%);

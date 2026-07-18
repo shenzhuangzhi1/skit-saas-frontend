@@ -4,7 +4,12 @@ import { extname, join, relative } from 'node:path'
 import test from 'node:test'
 
 const projectRoot = process.cwd()
-const managedRoots = ['src/layout', 'src/views/Login', 'src/components/Verifition']
+const managedRoots = [
+  'src/layout',
+  'src/views/Login',
+  'src/views/skit/admin',
+  'src/components/Verifition'
+]
 const managedExtensions = new Set(['.vue', '.tsx', '.scss', '.css'])
 const forbiddenPatterns = [
   { label: 'hex color', pattern: /#[0-9a-f]{3,8}\b/i },

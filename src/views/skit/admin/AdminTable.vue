@@ -1412,15 +1412,15 @@ watch(
   padding: 15px;
   font-size: 14px;
   line-height: 1.4286;
-  color: #333;
-  background: #f1f4f6;
+  color: var(--admin-text);
+  background: var(--admin-page-bg);
 }
 
 .skit-panel {
   min-height: 172px;
   padding: 15px;
-  color: #333;
-  background: #fff;
+  color: var(--admin-text);
+  background: var(--admin-surface);
   border-radius: 3px;
   box-shadow: none;
 }
@@ -1428,7 +1428,7 @@ watch(
 .commonsearch-table {
   padding-bottom: 12px;
   margin-bottom: 12px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .commonsearch-grid,
@@ -1446,7 +1446,7 @@ watch(
     display: block;
     margin-bottom: 5px;
     font-weight: 600;
-    color: #333;
+    color: var(--admin-text);
   }
 }
 
@@ -1455,15 +1455,15 @@ watch(
   height: 34px;
   padding: 6px 12px;
   font-size: 14px;
-  color: #555;
-  background: #fff;
-  border: 1px solid #d2d6de;
+  color: var(--admin-text-secondary);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 0;
   outline: none;
   box-shadow: none;
 
   &:focus {
-    border-color: #3c8dbc;
+    border-color: var(--admin-primary);
   }
 }
 
@@ -1486,7 +1486,7 @@ textarea.form-control {
 
   span {
     margin: 0;
-    color: #777;
+    color: var(--admin-text-secondary);
     text-align: center;
   }
 }
@@ -1513,7 +1513,7 @@ textarea.form-control {
   flex-wrap: wrap;
   gap: 0;
   margin-bottom: -1px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--admin-border-strong);
 }
 
 .config-tab {
@@ -1522,7 +1522,7 @@ textarea.form-control {
   padding: 8px 15px;
   font-size: 14px;
   line-height: 20px;
-  color: #337ab7;
+  color: var(--admin-primary);
   white-space: nowrap;
   cursor: pointer;
   background: transparent;
@@ -1531,33 +1531,33 @@ textarea.form-control {
   border-radius: 3px 3px 0 0;
 
   &.active {
-    color: #333;
+    color: var(--admin-text);
     cursor: default;
-    background: #fff;
-    border-color: #ddd;
+    background: var(--admin-surface);
+    border-color: var(--admin-border-strong);
   }
 
   &:not(.active):hover {
-    color: #23527c;
-    background: #f5f5f5;
+    color: var(--admin-primary);
+    background: var(--admin-surface-hover);
   }
 }
 
 .profile-section {
   padding: 12px;
-  border: 1px solid #eee;
+  border: 1px solid var(--admin-border);
 
   h3 {
     margin: 0 0 12px;
     font-size: 15px;
-    color: #333;
+    color: var(--admin-text);
   }
 }
 
 .profile-section--tab {
   min-height: 210px;
   border-top: 0;
-  border-color: #ddd;
+  border-color: var(--admin-border-strong);
 }
 
 .fixed-table-toolbar {
@@ -1593,10 +1593,10 @@ textarea.form-control {
   padding: 6px 12px;
   font-size: 14px;
   line-height: 1.4286;
-  color: #333;
+  color: var(--admin-text);
   white-space: nowrap;
   cursor: pointer;
-  background: #fff;
+  background: var(--admin-surface);
   border: 1px solid transparent;
   border-radius: 3px;
   align-items: center;
@@ -1611,32 +1611,32 @@ textarea.form-control {
 }
 
 .btn-default {
-  background: #fff;
-  border-color: #ddd;
+  background: var(--admin-surface);
+  border-color: var(--admin-border-strong);
 }
 
 .btn-primary {
-  color: #fff;
-  background: #3c8dbc;
-  border-color: #367fa9;
+  color: var(--admin-active-text);
+  background: var(--admin-primary-gradient);
+  border-color: transparent;
 }
 
 .btn-success {
-  color: #fff;
-  background: #00a65a;
-  border-color: #008d4c;
+  color: var(--admin-active-text);
+  background: var(--el-color-success);
+  border-color: var(--el-color-success);
 }
 
 .btn-danger {
-  color: #fff;
-  background: #dd4b39;
-  border-color: #d73925;
+  color: var(--admin-active-text);
+  background: var(--el-color-danger);
+  border-color: var(--el-color-danger);
 }
 
 .btn-warning-light {
-  color: #8a6d3b;
-  background: #fff8e6;
-  border-color: #f0ad4e;
+  color: var(--el-color-warning);
+  background: color-mix(in srgb, var(--el-color-warning) 13%, transparent);
+  border-color: color-mix(in srgb, var(--el-color-warning) 46%, transparent);
 }
 
 .keep-open,
@@ -1657,17 +1657,17 @@ textarea.form-control {
   z-index: 10;
   min-width: 150px;
   padding: 6px 0;
-  background: #fff;
-  border: 1px solid #ccc;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 4px;
-  box-shadow: 0 6px 12px rgb(0 0 0 / 18%);
+  box-shadow: var(--admin-dropdown-shadow);
 }
 
 .column-menu {
   label {
     display: block;
     padding: 4px 12px;
-    color: #333;
+    color: var(--admin-text);
     white-space: nowrap;
     cursor: pointer;
   }
@@ -1678,7 +1678,7 @@ textarea.form-control {
     display: block;
     width: 100%;
     padding: 5px 16px;
-    color: #333;
+    color: var(--admin-text);
     text-align: left;
     cursor: pointer;
     background: transparent;
@@ -1695,14 +1695,14 @@ textarea.form-control {
     display: block;
     width: 100%;
     padding: 5px 14px;
-    color: #333;
+    color: var(--admin-text);
     text-align: left;
     cursor: pointer;
     background: transparent;
     border: 0;
 
     &:hover {
-      background: #f5f5f5;
+      background: var(--admin-surface-hover);
     }
   }
 }
@@ -1726,9 +1726,9 @@ textarea.form-control {
   position: absolute;
   z-index: 2;
   padding: 8px;
-  color: #333;
+  color: var(--admin-text);
   text-align: center;
-  background: rgb(255 255 255 / 85%);
+  background: var(--admin-overlay);
   inset: 0 0 auto;
 }
 
@@ -1736,28 +1736,28 @@ textarea.form-control {
   width: 100%;
   min-width: 760px;
   margin-bottom: 0;
-  color: #333;
-  background: #fff;
+  color: var(--admin-text);
+  background: var(--admin-surface);
   border-collapse: collapse;
 
   th,
   td {
     padding: 8px;
     font-size: 14px;
-    color: #333;
+    color: var(--admin-text);
     white-space: nowrap;
     vertical-align: middle;
-    border: 1px solid #f4f4f4;
+    border: 1px solid var(--admin-border);
   }
 
   th {
     font-weight: 700;
-    background: #fff;
+    background: var(--admin-surface-soft);
     border-bottom-width: 2px;
   }
 
   tbody tr:nth-of-type(odd) {
-    background: #f9f9f9;
+    background: color-mix(in srgb, var(--admin-surface-soft) 58%, transparent);
   }
 }
 
@@ -1777,13 +1777,13 @@ textarea.form-control {
 .sortable::after {
   margin-left: 6px;
   font-size: 12px;
-  color: #ddd;
+  color: var(--admin-muted);
   content: '↕';
 }
 
 .no-record {
   height: 42px;
-  color: #777;
+  color: var(--admin-text-secondary);
   text-align: center;
 }
 
@@ -1794,7 +1794,7 @@ textarea.form-control {
   padding: 0 4px;
   margin-right: 4px;
   line-height: 1;
-  color: #3c8dbc;
+  color: var(--admin-primary);
   cursor: pointer;
   background: transparent;
   border: 0;
@@ -1803,7 +1803,7 @@ textarea.form-control {
   justify-content: center;
 
   &:hover {
-    background: #eaf4fb;
+    background: var(--admin-primary-soft);
   }
 
   span {
@@ -1817,21 +1817,21 @@ textarea.form-control {
   font-size: 75%;
   font-weight: 700;
   line-height: 1;
-  color: #fff;
+  color: var(--admin-active-text);
   white-space: nowrap;
   border-radius: 0.25em;
 }
 
 .label-success {
-  background-color: #00a65a;
+  background-color: var(--el-color-success);
 }
 
 .label-warning {
-  background-color: #f39c12;
+  background-color: var(--el-color-warning);
 }
 
 .label-danger {
-  background-color: #dd4b39;
+  background-color: var(--el-color-danger);
 }
 
 .fixed-table-pagination {
@@ -1839,7 +1839,7 @@ textarea.form-control {
   justify-content: space-between;
   gap: 12px;
   padding-top: 12px;
-  color: #333;
+  color: var(--admin-text);
 }
 
 .pagination-detail,
@@ -1854,22 +1854,22 @@ textarea.form-control {
   width: 58px;
   min-width: 58px;
   padding: 4px 8px;
-  color: #333;
+  color: var(--admin-text);
 }
 
 .page-btn {
   height: 34px;
   min-width: 34px;
   padding: 6px 12px;
-  color: #777;
+  color: var(--admin-text-secondary);
   cursor: pointer;
-  background: #fff;
-  border: 1px solid #ddd;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
 
   &.active {
-    color: #fff;
-    background: #3c8dbc;
-    border-color: #3c8dbc;
+    color: var(--admin-active-text);
+    background: var(--admin-primary-gradient);
+    border-color: transparent;
   }
 
   &:disabled {
@@ -1882,7 +1882,7 @@ textarea.form-control {
   width: 52px;
   height: 34px;
   padding: 6px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--admin-border-strong);
 }
 
 @media (width <= 768px) {
@@ -1908,40 +1908,10 @@ textarea.form-control {
 
 <style scoped lang="scss">
 .skit-fastadmin-page {
-  --admin-page-bg: transparent;
-  --admin-surface: rgb(255 255 255 / 82%);
-  --admin-surface-soft: rgb(241 245 249 / 78%);
-  --admin-surface-hover: #eef2ff;
-  --admin-text: #1e293b;
-  --admin-text-secondary: #64748b;
-  --admin-muted: #94a3b8;
-  --admin-border: rgb(148 163 184 / 18%);
-  --admin-border-strong: rgb(148 163 184 / 28%);
-  --admin-primary: #4f46e5;
-  --admin-primary-soft: rgb(99 102 241 / 12%);
-  --admin-overlay: rgb(255 255 255 / 86%);
-  --admin-shadow: 0 20px 54px -40px rgb(30 41 59 / 44%);
-
   min-height: calc(100vh - 100px);
   padding: 0;
   color: var(--admin-text);
   background: var(--admin-page-bg);
-}
-
-:global(.dark) .skit-fastadmin-page {
-  --admin-page-bg: transparent;
-  --admin-surface: rgb(15 23 42 / 84%);
-  --admin-surface-soft: rgb(23 32 51 / 82%);
-  --admin-surface-hover: rgb(99 102 241 / 13%);
-  --admin-text: #f1f5f9;
-  --admin-text-secondary: #cbd5e1;
-  --admin-muted: #7f8fa8;
-  --admin-border: rgb(148 163 184 / 13%);
-  --admin-border-strong: rgb(148 163 184 / 22%);
-  --admin-primary: #a5b4fc;
-  --admin-primary-soft: rgb(99 102 241 / 15%);
-  --admin-overlay: rgb(15 23 42 / 90%);
-  --admin-shadow: 0 20px 54px -38px rgb(0 0 0 / 92%);
 }
 
 .skit-panel {
@@ -1990,12 +1960,12 @@ textarea.form-control {
   }
 
   &:hover {
-    border-color: rgb(99 102 241 / 52%);
+    border-color: var(--el-color-primary-light-3);
   }
 
   &:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 4px rgb(99 102 241 / 13%);
+    border-color: var(--el-color-primary);
+    box-shadow: var(--admin-focus-ring);
   }
 }
 
@@ -2022,7 +1992,7 @@ textarea.form-control {
     color: var(--admin-primary);
     background: var(--admin-surface);
     border: 0;
-    box-shadow: 0 8px 18px -14px rgb(31 42 68 / 48%);
+    box-shadow: var(--admin-control-shadow);
   }
 
   &:not(.active):hover {
@@ -2068,33 +2038,33 @@ textarea.form-control {
   &:hover {
     color: var(--admin-primary);
     background: var(--admin-primary-soft);
-    border-color: rgb(99 102 241 / 40%);
+    border-color: var(--el-color-primary-light-5);
   }
 }
 
 .btn-primary {
-  color: #fff;
-  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  color: var(--admin-active-text);
+  background: var(--admin-primary-gradient);
   border-color: transparent;
-  box-shadow: 0 12px 24px -17px rgb(79 70 229 / 82%);
+  box-shadow: var(--admin-primary-shadow);
 }
 
 .btn-success {
-  color: #fff;
-  background: #2f9e70;
-  border-color: #2f9e70;
+  color: var(--admin-active-text);
+  background: var(--el-color-success);
+  border-color: var(--el-color-success);
 }
 
 .btn-danger {
-  color: #fff;
-  background: #d95d68;
-  border-color: #d95d68;
+  color: var(--admin-active-text);
+  background: var(--el-color-danger);
+  border-color: var(--el-color-danger);
 }
 
 .btn-warning-light {
-  color: #9a6518;
-  background: rgb(245 179 66 / 13%);
-  border-color: rgb(245 179 66 / 46%);
+  color: var(--el-color-warning);
+  background: color-mix(in srgb, var(--el-color-warning) 13%, transparent);
+  border-color: color-mix(in srgb, var(--el-color-warning) 46%, transparent);
 }
 
 .dropdown-menu {
@@ -2103,7 +2073,7 @@ textarea.form-control {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: 12px;
-  box-shadow: 0 18px 46px -28px rgb(10 18 30 / 58%);
+  box-shadow: var(--admin-dropdown-shadow);
 }
 
 .column-menu label,
@@ -2175,14 +2145,14 @@ textarea.form-control {
 
   &:hover:not(:disabled),
   &.active {
-    color: #fff;
-    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    color: var(--admin-active-text);
+    background: var(--admin-primary-gradient);
     border-color: transparent;
   }
 }
 
 input[type='checkbox'] {
-  accent-color: #6366f1;
+  accent-color: var(--el-color-primary);
 }
 
 @media (width <= 768px) {
