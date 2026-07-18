@@ -497,11 +497,14 @@ export default {
 }
 
 .verify-bar-area .verify-move-block {
+  z-index: 4;
   color: var(--captcha-icon);
   background: var(--captcha-handle-bg);
-  border-right: 1px solid var(--captcha-border);
+  border: 1px solid var(--captcha-handle-border);
   border-radius: 11px;
-  box-shadow: 0 8px 18px -12px var(--captcha-handle-shadow);
+  box-shadow:
+    0 0 0 2px var(--captcha-handle-ring),
+    0 8px 18px -12px var(--captcha-handle-shadow);
 }
 
 .verify-bar-area .verify-move-block:hover {
@@ -510,9 +513,35 @@ export default {
 }
 
 .verify-bar-area .verify-left-bar {
+  z-index: 2;
   background: var(--skit-primary-soft);
   border-color: var(--captcha-border);
   border-radius: 11px;
+}
+
+.verify-bar-area .verify-move-block .verify-icon {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  font-family: inherit !important;
+}
+
+.verify-bar-area .verify-move-block .icon-right::before {
+  position: absolute;
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  display: block;
+  width: 8px;
+  height: 8px;
+  margin: 0;
+  background-image: none;
+  border-top: 2px solid currentcolor;
+  border-right: 2px solid currentcolor;
+  content: '';
+  transform: translate(-65%, -50%) rotate(45deg);
 }
 
 .verify-img-panel {

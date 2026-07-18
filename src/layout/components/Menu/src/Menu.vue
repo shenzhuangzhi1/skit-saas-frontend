@@ -774,9 +774,18 @@ $prefix-cls: #{$namespace}-menu;
   }
 
   :deep(.#{$elNamespace}-menu-item.is-active) {
-    color: var(--skit-active-text) !important;
-    background: var(--skit-active-gradient) !important;
-    box-shadow: inset 3px 0 var(--el-color-primary-light-3);
+    font-weight: 720;
+    color: var(--left-menu-active-text) !important;
+    background: var(--left-menu-active-bg) !important;
+    border: 1px solid var(--left-menu-active-border);
+    box-shadow: var(--left-menu-active-shadow);
+  }
+
+  :deep(.#{$elNamespace}-menu--collapse > .is-active),
+  :deep(.#{$elNamespace}-menu--collapse > .is-active > .#{$elNamespace}-sub-menu__title) {
+    color: var(--left-menu-active-text) !important;
+    background: var(--left-menu-active-bg) !important;
+    box-shadow: var(--left-menu-active-shadow);
   }
 }
 

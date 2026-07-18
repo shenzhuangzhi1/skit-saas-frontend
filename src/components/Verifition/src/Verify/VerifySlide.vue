@@ -32,7 +32,7 @@
           width: leftBarWidth !== undefined ? leftBarWidth : barSize.height,
           height: barSize.height,
           'border-color': leftBarBorderColor,
-          transaction: transitionWidth
+          transition: transitionWidth
         }"
         class="verify-left-bar"
       >

@@ -64,6 +64,8 @@
   --captcha-panel: rgb(255 255 255 / 97%);
   --captcha-panel-soft: #f7f8fb;
   --captcha-handle-bg: #fff;
+  --captcha-handle-border: #aeb8c8;
+  --captcha-handle-ring: rgb(99 102 241 / 24%);
   --captcha-text: #252a36;
   --captcha-text-secondary: #707887;
   --captcha-border: #dfe4ec;
@@ -90,6 +92,15 @@
   --left-menu-text-active-color: var(--el-color-primary);
 
   --left-menu-collapse-bg-active-color: var(--skit-primary-soft);
+
+  --left-menu-active-bg: linear-gradient(135deg, #e0e7ff 0%, #dcfce7 100%);
+
+  --left-menu-active-text: #312e81;
+
+  --left-menu-active-border: rgb(99 102 241 / 38%);
+
+  --left-menu-active-shadow:
+    inset 3px 0 var(--el-color-primary), 0 12px 24px -20px rgb(79 70 229 / 78%);
   /* left menu end */
 
   /* logo start */
@@ -193,6 +204,8 @@
   --captcha-panel: rgb(15 23 42 / 97%);
   --captcha-panel-soft: #1b2639;
   --captcha-handle-bg: #243047;
+  --captcha-handle-border: #64748b;
+  --captcha-handle-ring: rgb(129 140 248 / 24%);
   --captcha-text: #f1f5f9;
   --captcha-text-secondary: #94a3b8;
   --captcha-border: #334155;
@@ -209,6 +222,10 @@
   --left-menu-text-color: #91a0b8;
   --left-menu-text-active-color: #fff;
   --left-menu-collapse-bg-active-color: rgb(99 102 241 / 25%);
+  --left-menu-active-bg: var(--skit-active-gradient);
+  --left-menu-active-text: var(--skit-active-text);
+  --left-menu-active-border: transparent;
+  --left-menu-active-shadow: inset 3px 0 var(--el-color-primary-light-3);
   --logo-title-text-color: #f8fafc;
   --top-header-bg-color: rgb(15 23 42 / 84%);
   --top-header-text-color: #cbd5e1;

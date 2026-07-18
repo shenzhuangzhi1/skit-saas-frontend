@@ -47,3 +47,21 @@ test('theme-managed surfaces use semantic color variables', () => {
     `Theme-managed components must consume variables from src/styles/var.css:\n${violations.join('\n')}`
   )
 })
+
+test('captcha handle and sidebar selection have theme-specific contrast tokens', () => {
+  const variables = readFileSync(join(projectRoot, 'src/styles/var.css'), 'utf8')
+  const captcha = readFileSync(
+    join(projectRoot, 'src/components/Verifition/src/Verify.vue'),
+    'utf8'
+  )
+  const menu = readFileSync(join(projectRoot, 'src/layout/components/Menu/src/Menu.vue'), 'utf8')
+
+  assert.match(variables, /--captcha-handle-border:/)
+  assert.match(variables, /--captcha-handle-ring:/)
+  assert.match(variables, /--left-menu-active-bg:/)
+  assert.match(variables, /--left-menu-active-text:/)
+  assert.match(captcha, /\.verify-move-block \.icon-right::before/)
+  assert.match(captcha, /background-image:\s*none/)
+  assert.match(menu, /background:\s*var\(--left-menu-active-bg\)/)
+  assert.match(menu, /color:\s*var\(--left-menu-active-text\)/)
+})
