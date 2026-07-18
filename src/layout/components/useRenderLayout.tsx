@@ -128,7 +128,7 @@ export const useRenderLayout = () => {
     const showHeaderMenu = isMixedNavLayout(layout.value)
     return (
       <>
-        <div class="relative flex items-center bg-[var(--top-header-bg-color)] layout-border__bottom dark:bg-[var(--el-bg-color)]">
+        <div class="relative flex items-center bg-[var(--top-header-bg-color)] layout-border__bottom">
           {logo.value ? <Logo class="custom-hover !w-auto !pr-15px"></Logo> : undefined}
 
           {showHeaderMenu ? (

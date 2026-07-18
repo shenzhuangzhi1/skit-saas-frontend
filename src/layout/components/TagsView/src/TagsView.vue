@@ -47,8 +47,6 @@ const tagsViewImmerse = computed(() => appStore.getTagsViewImmerse)
 
 const tagsViewIcon = computed(() => appStore.getTagsViewIcon)
 
-const isDark = computed(() => appStore.getIsDark)
-
 // 初始化tag
 const initTags = () => {
   affixTagArr.value = filterAffixTags(unref(routers))
@@ -274,18 +272,14 @@ watch(
 </script>
 
 <template>
-  <div
-    :id="prefixCls"
-    :class="prefixCls"
-    class="relative w-full flex bg-[#fff] dark:bg-[var(--el-bg-color)]"
-  >
+  <div :id="prefixCls" :class="prefixCls" class="relative w-full flex">
     <span
       :class="tagsViewImmerse ? '' : `${prefixCls}__tool ${prefixCls}__tool--first`"
       class="h-[var(--tags-view-height)] w-[var(--tags-view-height)] flex cursor-pointer items-center justify-center"
       @click="move(-200)"
     >
       <Icon
-        :hover-color="isDark ? '#fff' : 'var(--el-color-black)'"
+        hover-color="var(--skit-text-primary)"
         color="var(--el-text-color-placeholder)"
         icon="ep:d-arrow-left"
       />
@@ -393,7 +387,7 @@ watch(
                   <Icon
                     :class="`${prefixCls}__item--close`"
                     :size="12"
-                    color="#333"
+                    color="var(--skit-text-regular)"
                     icon="ep:close"
                     @click.prevent.stop="closeSelectedTag(item)"
                   />
@@ -410,7 +404,7 @@ watch(
       @click="move(200)"
     >
       <Icon
-        :hover-color="isDark ? '#fff' : 'var(--el-color-black)'"
+        hover-color="var(--skit-text-primary)"
         color="var(--el-text-color-placeholder)"
         icon="ep:d-arrow-right"
       />
@@ -421,7 +415,7 @@ watch(
       @click="refreshSelectedTag(selectedTag)"
     >
       <Icon
-        :hover-color="isDark ? '#fff' : 'var(--el-color-black)'"
+        hover-color="var(--skit-text-primary)"
         color="var(--el-text-color-placeholder)"
         icon="ep:refresh-right"
       />
@@ -485,7 +479,7 @@ watch(
         class="block h-[var(--tags-view-height)] w-[var(--tags-view-height)] flex cursor-pointer items-center justify-center"
       >
         <Icon
-          :hover-color="isDark ? '#fff' : 'var(--el-color-black)'"
+          hover-color="var(--skit-text-primary)"
           color="var(--el-text-color-placeholder)"
           icon="ep:menu"
         />
@@ -498,7 +492,7 @@ watch(
 $prefix-cls: #{$namespace}-tags-view;
 
 .#{$prefix-cls} {
-  background: rgb(255 255 255 / 68%);
+  background: var(--skit-tags-bg);
   backdrop-filter: blur(18px);
 
   :deep(.#{$elNamespace}-scrollbar__view) {
@@ -540,10 +534,10 @@ $prefix-cls: #{$namespace}-tags-view;
     padding-right: 16px;
     margin-left: 4px;
     font-size: 12px;
-    color: #64748b;
+    color: var(--skit-text-secondary);
     cursor: pointer;
-    background: rgb(248 250 252 / 76%);
-    border: 1px solid rgb(148 163 184 / 18%);
+    background: var(--skit-control-bg);
+    border: 1px solid var(--skit-border-color);
     border-radius: 11px;
     box-sizing: border-box;
     transition:
@@ -577,14 +571,14 @@ $prefix-cls: #{$namespace}-tags-view;
   }
 
   &__item.is-active {
-    color: var(--el-color-white);
-    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    color: var(--skit-active-text);
+    background: var(--skit-active-gradient);
     border: 1px solid transparent;
-    box-shadow: 0 9px 20px -15px rgb(79 70 229 / 88%);
+    box-shadow: 0 9px 20px -15px var(--skit-shadow-strong);
 
     .#{$prefix-cls}__item--close {
       :deep(span) {
-        color: var(--el-color-white) !important;
+        color: var(--skit-active-text) !important;
       }
     }
   }
@@ -613,47 +607,15 @@ $prefix-cls: #{$namespace}-tags-view;
 
   &__item--immerse:not(.is-active) {
     &:hover {
-      color: var(--el-color-white);
+      color: var(--skit-active-text);
       background-color: var(--el-color-primary);
 
       .#{$prefix-cls}__item--close {
         :deep(span) {
-          color: var(--el-color-white) !important;
+          color: var(--skit-active-text) !important;
         }
       }
     }
   }
-}
-
-:global(.dark .#{$prefix-cls}) {
-  background: rgb(15 23 42 / 70%);
-}
-
-:global(.dark .#{$prefix-cls}__tool--first::after) {
-  display: none;
-}
-
-:global(.dark .#{$prefix-cls}__item) {
-  color: #94a3b8;
-  background: rgb(30 41 59 / 72%);
-  border: 1px solid rgb(148 163 184 / 13%);
-}
-
-:global(.dark .#{$prefix-cls}__item:not(.is-active):hover) {
-  color: var(--el-color-primary);
-}
-
-:global(.dark .#{$prefix-cls}__item.is-active) {
-  color: var(--el-color-white);
-  background: linear-gradient(135deg, #6366f1, #7c3aed);
-  border: 1px solid transparent;
-}
-
-:global(.dark .#{$prefix-cls}__item.is-active .#{$prefix-cls}__item--close span) {
-  color: var(--el-color-white) !important;
-}
-
-:global(.dark .#{$prefix-cls}__item--immerse:not(.is-active):hover) {
-  color: var(--el-color-white);
 }
 </style>

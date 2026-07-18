@@ -1,7 +1,7 @@
 body {
   background:
-    radial-gradient(circle at 82% -12%, rgb(99 102 241 / 10%), transparent 32rem),
-    radial-gradient(circle at 18% 110%, rgb(20 184 166 / 8%), transparent 30rem),
+    radial-gradient(circle at 82% -12%, var(--skit-page-glow-primary), transparent 32rem),
+    radial-gradient(circle at 18% 110%, var(--skit-page-glow-accent), transparent 30rem),
     var(--app-content-bg-color);
   background-attachment: fixed;
 }
@@ -14,12 +14,12 @@ select {
 }
 
 .layout-border__right {
-  border-right-color: rgb(148 163 184 / 12%) !important;
+  border-right-color: var(--skit-border-color) !important;
 }
 
 .layout-border__top,
 .layout-border__bottom {
-  border-color: rgb(148 163 184 / 14%) !important;
+  border-color: var(--skit-border-color) !important;
 }
 
 .custom-hover {
@@ -41,7 +41,7 @@ select {
 
 .el-card {
   background: var(--skit-surface-glass);
-  border-color: rgb(148 163 184 / 18%);
+  border-color: var(--skit-border-color);
   border-radius: 20px;
   box-shadow: 0 18px 48px -38px var(--skit-shadow-color);
   backdrop-filter: blur(18px);
@@ -57,7 +57,7 @@ select {
 .el-message-box {
   border: 1px solid var(--el-border-color-light);
   border-radius: 22px;
-  box-shadow: 0 30px 90px -44px rgb(15 23 42 / 72%);
+  box-shadow: 0 30px 90px -44px var(--skit-shadow-strong);
 }
 
 .el-input__wrapper,
@@ -73,7 +73,7 @@ select {
 .el-select__wrapper.is-focused {
   box-shadow:
     0 0 0 1px var(--el-color-primary) inset,
-    0 0 0 4px rgb(99 102 241 / 13%) !important;
+    0 0 0 4px var(--skit-primary-soft) !important;
 }
 
 .el-button {
@@ -83,14 +83,15 @@ select {
 
 .el-button--primary {
   border-color: transparent;
-  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
-  box-shadow: 0 14px 28px -18px rgb(79 70 229 / 80%);
+  background: var(--skit-active-gradient);
+  box-shadow: 0 14px 28px -18px var(--skit-shadow-strong);
 }
 
 .el-button--primary:hover,
 .el-button--primary:focus {
   border-color: transparent;
-  background: linear-gradient(135deg, #7577f5 0%, #8b5cf6 100%);
+  background: var(--skit-active-gradient);
+  filter: brightness(1.08);
 }
 
 .el-table {
@@ -98,9 +99,9 @@ select {
   border-radius: 16px;
 
   th.el-table__cell {
-    color: #526078;
+    color: var(--skit-text-regular);
     font-weight: 700;
-    background: rgb(241 245 249 / 82%);
+    background: var(--skit-surface-muted);
   }
 }
 
@@ -108,7 +109,7 @@ select {
 .el-select__popper,
 .el-picker__popper {
   border-radius: 12px;
-  box-shadow: 0 18px 46px -28px rgb(31 42 68 / 62%);
+  box-shadow: 0 18px 46px -28px var(--skit-shadow-strong);
 }
 
 .el-dropdown-menu__item,
@@ -125,8 +126,9 @@ select {
 .dark {
   body {
     background:
-      radial-gradient(circle at 82% -12%, rgb(99 102 241 / 14%), transparent 32rem),
-      radial-gradient(circle at 18% 110%, rgb(45 212 191 / 8%), transparent 30rem), #0b1120;
+      radial-gradient(circle at 82% -12%, var(--skit-page-glow-primary), transparent 32rem),
+      radial-gradient(circle at 18% 110%, var(--skit-page-glow-accent), transparent 30rem),
+      var(--app-content-bg-color);
     background-attachment: fixed;
   }
 
@@ -134,13 +136,13 @@ select {
   .el-dialog,
   .el-drawer,
   .el-message-box {
-    border-color: rgb(255 255 255 / 9%);
-    box-shadow: 0 24px 64px -40px rgb(0 0 0 / 88%);
+    border-color: var(--skit-border-color);
+    box-shadow: 0 24px 64px -40px var(--skit-shadow-strong);
   }
 
   .el-table th.el-table__cell {
-    color: #aeb6c4;
-    background: #171e29;
+    color: var(--skit-text-regular);
+    background: var(--skit-surface-muted);
   }
 
   .el-card,
@@ -171,9 +173,9 @@ select {
 
     &:hover,
     &:focus {
-      color: #a5b4fc;
-      background: rgb(99 102 241 / 13%);
-      border-color: rgb(129 140 248 / 40%);
+      color: var(--el-color-primary-light-3);
+      background: var(--skit-primary-soft);
+      border-color: var(--el-color-primary-light-5);
     }
   }
 
@@ -240,19 +242,19 @@ select {
   }
 
   .el-loading-mask {
-    background-color: rgb(11 17 32 / 58%);
+    background-color: var(--skit-overlay);
     backdrop-filter: blur(2px);
   }
 
   .el-dropdown-menu__item:not(.is-disabled):focus,
   .el-dropdown-menu__item:not(.is-disabled):hover,
   .el-select-dropdown__item.is-hovering {
-    color: #a5b4fc;
-    background: rgb(99 102 241 / 13%);
+    color: var(--el-color-primary-light-3);
+    background: var(--skit-primary-soft);
   }
 
   .el-overlay {
-    background: rgb(4 8 14 / 68%);
+    background: var(--skit-overlay);
     backdrop-filter: blur(3px);
   }
 }

@@ -97,11 +97,11 @@ watch(
 <style lang="scss" scoped>
 .app-brand-logo {
   object-fit: cover;
-  border: 1px solid rgb(129 140 248 / 34%);
+  border: 1px solid var(--skit-border-strong);
   border-radius: 12px;
   box-shadow:
-    0 10px 24px -14px rgb(99 102 241 / 72%),
-    0 0 0 4px rgb(99 102 241 / 8%);
+    0 10px 24px -14px var(--skit-shadow-strong),
+    0 0 0 4px var(--skit-primary-soft);
 }
 
 .app-brand-title {
@@ -110,7 +110,7 @@ watch(
   font-weight: 760;
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
-  text-shadow: 0 1px 18px rgb(99 102 241 / 24%);
+  text-shadow: 0 1px 18px var(--skit-primary-soft);
   white-space: nowrap;
 }
 </style>

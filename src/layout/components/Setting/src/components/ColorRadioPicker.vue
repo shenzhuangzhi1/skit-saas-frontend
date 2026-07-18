@@ -51,7 +51,7 @@ watch(
       class="mb-5px h-20px w-20px cursor-pointer border-2px border-gray-300 rounded-2px border-solid text-center leading-20px"
       @click="colorVal = item"
     >
-      <Icon v-if="colorVal === item" :size="16" color="#fff" icon="ep:check" />
+      <Icon v-if="colorVal === item" :size="16" color="var(--skit-active-text)" icon="ep:check" />
     </span>
   </div>
 </template>

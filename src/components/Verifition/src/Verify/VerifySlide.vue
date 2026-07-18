@@ -232,7 +232,7 @@ const start = (e) => {
     text.value = ''
     moveBlockBackgroundColor.value = 'var(--captcha-primary)'
     leftBarBorderColor.value = 'var(--captcha-primary)'
-    iconColor.value = '#fff'
+    iconColor.value = 'var(--skit-active-text)'
     e.stopPropagation()
     status.value = true
   }
@@ -282,9 +282,9 @@ const end = () => {
     }
     reqCheck(data).then((res) => {
       if (res.repCode == '0000') {
-        moveBlockBackgroundColor.value = '#5cb85c'
-        leftBarBorderColor.value = '#5cb85c'
-        iconColor.value = '#fff'
+        moveBlockBackgroundColor.value = 'var(--el-color-success)'
+        leftBarBorderColor.value = 'var(--el-color-success)'
+        iconColor.value = 'var(--skit-active-text)'
         iconClass.value = 'icon-check'
         showRefresh.value = false
         isEnd.value = true
@@ -309,9 +309,9 @@ const end = () => {
           proxy.$parent.$emit('success', { captchaVerification })
         }, 1000)
       } else {
-        moveBlockBackgroundColor.value = '#d9534f'
-        leftBarBorderColor.value = '#d9534f'
-        iconColor.value = '#fff'
+        moveBlockBackgroundColor.value = 'var(--el-color-danger)'
+        leftBarBorderColor.value = 'var(--el-color-danger)'
+        iconColor.value = 'var(--skit-active-text)'
         iconClass.value = 'icon-close'
         passFlag.value = false
         setTimeout(function () {

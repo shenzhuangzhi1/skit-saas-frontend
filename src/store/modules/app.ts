@@ -2,7 +2,7 @@ import { CACHE_KEY, useCache } from '@/hooks/web/useCache'
 import { ElementPlusSize } from '@/types/elementPlus'
 import { LayoutType } from '@/types/layout'
 import { ThemeTypes } from '@/types/theme'
-import { humpToUnderline, setCssVar } from '@/utils'
+import { setCssVar } from '@/utils'
 import { getCssColorVariable, hexToRGB, mix } from '@/utils/color'
 import { normalizeLayout } from '@/utils/layout'
 import { ElMessage } from 'element-plus'
@@ -12,21 +12,24 @@ import { store } from '../index'
 const { wsCache } = useCache()
 
 const defaultTheme: ThemeTypes = {
-  elColorPrimary: '#6366f1',
-  leftMenuBorderColor: '#1e293b',
-  leftMenuBgColor: '#0f172a',
-  leftMenuBgLightColor: '#111c32',
-  leftMenuBgActiveColor: '#25295a',
-  leftMenuCollapseBgActiveColor: '#25295a',
-  leftMenuTextColor: '#94a3b8',
-  leftMenuTextActiveColor: '#ffffff',
-  logoTitleTextColor: '#f8fafc',
-  logoBorderColor: '#1e293b',
-  topHeaderBgColor: '#ffffff',
-  topHeaderTextColor: '#475569',
-  topHeaderHoverColor: '#eef2ff',
-  topToolBorderColor: '#e8ebf2'
+  elColorPrimary: '#6366f1'
 }
+
+const legacySurfaceVariables = [
+  '--left-menu-border-color',
+  '--left-menu-bg-color',
+  '--left-menu-bg-light-color',
+  '--left-menu-bg-active-color',
+  '--left-menu-collapse-bg-active-color',
+  '--left-menu-text-color',
+  '--left-menu-text-active-color',
+  '--logo-title-text-color',
+  '--logo-border-color',
+  '--top-header-bg-color',
+  '--top-header-text-color',
+  '--top-header-hover-color',
+  '--top-tool-border-color'
+]
 
 const getInitialTheme = (): ThemeTypes => {
   const cachedTheme = wsCache.get(CACHE_KEY.THEME) as unknown
@@ -35,11 +38,11 @@ const getInitialTheme = (): ThemeTypes => {
   }
 
   const theme = cachedTheme as Partial<ThemeTypes>
+  const cachedPrimary = theme.elColorPrimary?.toLowerCase()
 
-  // Upgrade the previous default palette while preserving user-defined themes.
-  return theme.elColorPrimary?.toLowerCase() === '#e396b6'
-    ? { ...theme, ...defaultTheme }
-    : { ...defaultTheme, ...theme }
+  return {
+    elColorPrimary: cachedPrimary && cachedPrimary !== '#e396b6' ? cachedPrimary : '#6366f1'
+  }
 }
 
 interface AppState {
@@ -105,36 +108,7 @@ export const useAppStore = defineStore('app', {
       layout: normalizeLayout(wsCache.get(CACHE_KEY.LAYOUT)), // layout布局
       isDark: wsCache.get(CACHE_KEY.IS_DARK) || false, // 是否是暗黑模式
       currentSize: wsCache.get('default') || 'default', // 组件尺寸
-      theme: getInitialTheme() || {
-        // 主题色
-        elColorPrimary: '#6366f1',
-        // 左侧菜单边框颜色
-        leftMenuBorderColor: 'inherit',
-        // 左侧菜单背景颜色
-        leftMenuBgColor: '#0f172a',
-        // 左侧菜单浅色背景颜色
-        leftMenuBgLightColor: '#111c32',
-        // 左侧菜单选中背景颜色
-        leftMenuBgActiveColor: '#25295a',
-        // 左侧菜单收起选中背景颜色
-        leftMenuCollapseBgActiveColor: '#25295a',
-        // 左侧菜单字体颜色
-        leftMenuTextColor: '#94a3b8',
-        // 左侧菜单选中字体颜色
-        leftMenuTextActiveColor: '#ffffff',
-        // logo字体颜色
-        logoTitleTextColor: '#f8fafc',
-        // logo边框颜色
-        logoBorderColor: 'inherit',
-        // 头部背景颜色
-        topHeaderBgColor: '#ffffff',
-        // 头部字体颜色
-        topHeaderTextColor: '#475569',
-        // 头部悬停颜色
-        topHeaderHoverColor: '#eef2ff',
-        // 头部边框颜色
-        topToolBorderColor: '#eee'
-      }
+      theme: getInitialTheme()
     }
   },
   getters: {
@@ -346,9 +320,12 @@ export const useAppStore = defineStore('app', {
       wsCache.set(CACHE_KEY.THEME, this.theme)
     },
     setCssVarTheme() {
-      for (const key in this.theme) {
-        setCssVar(`--${humpToUnderline(key)}`, this.theme[key])
-      }
+      // Surface colors belong to the active light/dark palette in var.css. Remove
+      // legacy inline overrides because inline variables would outrank theme classes.
+      legacySurfaceVariables.forEach((variable) =>
+        document.documentElement.style.removeProperty(variable)
+      )
+      setCssVar('--el-color-primary', this.theme.elColorPrimary || '#6366f1')
       this.setPrimaryLight()
     },
     setFooter(footer: boolean) {

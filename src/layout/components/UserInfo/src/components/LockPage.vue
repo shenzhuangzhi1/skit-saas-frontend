@@ -64,11 +64,11 @@ function handleShowForm(show = false) {
 <template>
   <div
     :class="prefixCls"
-    class="fixed inset-0 flex h-screen w-screen bg-black items-center justify-center"
+    class="fixed inset-0 flex h-screen w-screen items-center justify-center bg-[var(--skit-lock-bg)]"
   >
     <div
       :class="`${prefixCls}__unlock`"
-      class="absolute top-0 left-1/2 flex pt-5 h-16 items-center justify-center sm:text-md xl:text-xl text-white flex-col cursor-pointer transform translate-x-1/2"
+      class="absolute top-0 left-1/2 flex pt-5 h-16 items-center justify-center sm:text-md xl:text-xl text-[var(--skit-lock-text)] flex-col cursor-pointer transform translate-x-1/2"
       @click="handleShowForm(false)"
       v-show="showDate"
     >
@@ -141,7 +141,9 @@ function handleShowForm(show = false) {
       </div>
     </transition>
 
-    <div class="absolute bottom-5 w-full text-gray-300 xl:text-xl 2xl:text-3xl text-center enter-y">
+    <div
+      class="absolute bottom-5 w-full text-[var(--skit-lock-text)] xl:text-xl 2xl:text-3xl text-center enter-y"
+    >
       <div class="text-5xl mb-4 enter-x" v-show="!showDate">
         {{ hour }}:{{ minute }} <span class="text-3xl">{{ meridiem }}</span>
       </div>
@@ -168,8 +170,6 @@ $screen-xl: 1200px;
 // Extra extra large screen / large desktop
 $screen-2xl: 1600px;
 
-$error-color: #ed6f6f;
-
 .#{$prefix-cls} {
   z-index: 3000;
 
@@ -181,8 +181,8 @@ $error-color: #ed6f6f;
   &__minute {
     display: flex;
     font-weight: 700;
-    color: #bababa;
-    background-color: #141313;
+    color: var(--skit-lock-text);
+    background-color: var(--skit-lock-surface);
     border-radius: 30px;
     justify-content: center;
     align-items: center;
@@ -231,7 +231,7 @@ $error-color: #ed6f6f;
     display: flex;
     width: 100%;
     height: 100%;
-    background-color: rgb(0 0 0 / 50%);
+    background-color: var(--skit-lock-overlay);
     backdrop-filter: blur(8px);
     justify-content: center;
     align-items: center;
@@ -252,14 +252,14 @@ $error-color: #ed6f6f;
       &-name {
         margin-top: 5px;
         font-weight: 500;
-        color: #bababa;
+        color: var(--skit-lock-text);
       }
     }
 
     &__err-msg {
       display: inline-block;
       margin-top: 10px;
-      color: $error-color;
+      color: var(--el-color-danger);
     }
 
     &__footer {

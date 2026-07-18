@@ -138,7 +138,7 @@ const handleLogin = async (params: any) => {
     loading.value = ElLoading.service({
       lock: true,
       text: '正在加载系统中...',
-      background: 'rgba(0, 0, 0, 0.7)'
+      background: 'var(--skit-overlay)'
     })
     if (loginDataLoginForm.rememberMe) {
       authUtil.setLoginForm(loginDataLoginForm)
@@ -185,19 +185,19 @@ onMounted(() => {
   :deep(.el-input__wrapper) {
     min-height: 46px;
     padding: 0 14px;
-    background: rgb(255 255 255 / 74%);
+    background: var(--login-control);
     border-radius: 14px;
     box-shadow: 0 0 0 1px var(--login-border) inset;
 
     &:hover {
-      box-shadow: 0 0 0 1px rgb(99 102 241 / 58%) inset;
+      box-shadow: 0 0 0 1px var(--el-color-primary-light-3) inset;
     }
 
     &.is-focus {
       background: var(--login-panel);
       box-shadow:
-        0 0 0 1px #6366f1 inset,
-        0 0 0 4px rgb(99 102 241 / 13%) !important;
+        0 0 0 1px var(--el-color-primary) inset,
+        0 0 0 4px var(--skit-primary-soft) !important;
     }
   }
 
@@ -208,13 +208,13 @@ onMounted(() => {
   }
 
   :deep(.el-input__inner::placeholder) {
-    color: #9aa2af;
-    -webkit-text-fill-color: #9aa2af;
+    color: var(--skit-text-placeholder);
+    -webkit-text-fill-color: var(--skit-text-placeholder);
   }
 
   :deep(.el-input-group__prepend),
   :deep(.el-input__prefix) {
-    color: #8a93a2;
+    color: var(--skit-text-secondary);
   }
 }
 
@@ -240,19 +240,16 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 750;
   letter-spacing: 0.12em;
-  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+  background: var(--skit-active-gradient);
   border: 0;
   border-radius: 14px;
-  box-shadow: 0 16px 30px -18px rgb(79 70 229 / 82%);
+  box-shadow: 0 16px 30px -18px var(--skit-shadow-strong);
 
   &:hover,
   &:focus {
-    background: linear-gradient(135deg, #7577f5 0%, #8b5cf6 100%);
+    background: var(--skit-active-gradient);
+    filter: brightness(1.08);
     transform: translateY(-1px);
   }
-}
-
-:global(.is-dark .skit-login-form .el-input__wrapper) {
-  background: rgb(15 23 42 / 72%);
 }
 </style>

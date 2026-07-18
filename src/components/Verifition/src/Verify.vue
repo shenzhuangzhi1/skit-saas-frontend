@@ -154,11 +154,11 @@ export default {
   position: relative;
   top: 50%;
   left: 50%;
-  background-color: #fff;
-  border: 1px solid #e4e7eb;
+  background-color: var(--captcha-panel);
+  border: 1px solid var(--captcha-border);
   border-radius: 5px;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 10px rgb(0 0 0 / 30%);
+  box-shadow: 0 0 10px var(--captcha-shadow);
   box-sizing: border-box;
 }
 
@@ -167,9 +167,9 @@ export default {
   padding: 0 15px;
   font-size: 16px;
   line-height: 40px;
-  color: #45494c;
+  color: var(--captcha-text);
   text-align: left;
-  border-bottom: 1px solid #e4e7eb;
+  border-bottom: 1px solid var(--captcha-border);
   box-sizing: border-box;
 }
 
@@ -195,7 +195,7 @@ export default {
   z-index: 1001;
   width: 100%;
   height: 100vh;
-  background: rgb(0 0 0 / 30%);
+  background: var(--captcha-mask);
 
   /* display: none; */
   transition: all 0.5s;
@@ -208,18 +208,16 @@ export default {
   width: 100%;
   height: 30px;
   line-height: 30px;
-  color: #fff;
+  color: var(--skit-active-text);
   text-indent: 10px;
 }
 
 .suc-bg {
-  background-color: rgb(92 184 92 / 50%);
-  filter: progid:DXImageTransform.Microsoft.gradient(startcolorstr=#7f5CB85C, endcolorstr=#7f5CB85C);
+  background-color: color-mix(in srgb, var(--el-color-success) 50%, transparent);
 }
 
 .err-bg {
-  background-color: rgb(217 83 79 / 50%);
-  filter: progid:DXImageTransform.Microsoft.gradient(startcolorstr=#7fD9534F, endcolorstr=#7fD9534F);
+  background-color: color-mix(in srgb, var(--el-color-danger) 50%, transparent);
 }
 
 .tips-enter,
@@ -240,7 +238,7 @@ export default {
   font-size: 20px;
   text-align: center;
   cursor: pointer;
-  border: 1px solid #ddd;
+  border: 1px solid var(--captcha-border);
 }
 
 .cerify-code-panel {
@@ -270,7 +268,7 @@ export default {
 }
 
 .verify-change-code {
-  color: #337ab7;
+  color: var(--captcha-primary);
   cursor: pointer;
 }
 
@@ -278,8 +276,8 @@ export default {
   width: 200px;
   height: 30px;
   margin-top: 10px;
-  color: #fff;
-  background-color: #337ab7;
+  color: var(--skit-active-text);
+  background-color: var(--captcha-primary);
   border: none;
   border-radius: 8px;
 }
@@ -288,8 +286,8 @@ export default {
 .verify-bar-area {
   position: relative;
   text-align: center;
-  background: #fff;
-  border: 1px solid #ddd;
+  background: var(--captcha-panel-soft);
+  border: 1px solid var(--captcha-border);
   border-radius: 8px;
   box-sizing: content-box;
 }
@@ -299,15 +297,15 @@ export default {
   top: 0;
   left: 0;
   cursor: pointer;
-  background: #fff;
+  background: var(--captcha-handle-bg);
   border-radius: 8px;
-  box-shadow: 0 0 2px #888;
+  box-shadow: 0 0 2px var(--captcha-handle-shadow);
   box-sizing: content-box;
 }
 
 .verify-bar-area .verify-move-block:hover {
-  color: #fff;
-  background-color: #337ab7;
+  color: var(--skit-active-text);
+  background-color: var(--captcha-primary);
 }
 
 .verify-bar-area .verify-left-bar {
@@ -315,8 +313,8 @@ export default {
   top: -1px;
   left: -1px;
   cursor: pointer;
-  background: #f0fff0;
-  border: 1px solid #ddd;
+  background: var(--skit-primary-soft);
+  border: 1px solid var(--captcha-border);
   border-radius: 8px;
   box-sizing: content-box;
 }
@@ -324,8 +322,8 @@ export default {
 .verify-img-panel {
   position: relative;
   margin: 0;
-  border-top: 1px solid #ddd;
-  border-bottom: 1px solid #ddd;
+  border-top: 1px solid var(--captcha-border);
+  border-bottom: 1px solid var(--captcha-border);
   border-radius: 3px;
   box-sizing: content-box;
 }
@@ -344,22 +342,20 @@ export default {
 
 .verify-img-panel .icon-refresh {
   font-size: 20px;
-  color: #fff;
+  color: var(--skit-active-text);
 }
 
 .verify-img-panel .verify-gap {
   position: relative;
   z-index: 2;
-  background-color: #fff;
-  border: 1px solid #fff;
+  background-color: var(--captcha-handle-bg);
+  border: 1px solid var(--captcha-gap-border);
 }
 
 .verify-bar-area .verify-move-block .verify-sub-block {
   position: absolute;
   z-index: 3;
   text-align: center;
-
-  /* border: 1px solid #fff; */
 }
 
 .verify-bar-area .verify-move-block .verify-icon {
@@ -449,35 +445,13 @@ export default {
 
 <style>
 .verifybox {
-  --captcha-panel: rgb(255 255 255 / 97%);
-  --captcha-panel-soft: #f7f8fb;
-  --captcha-handle-bg: #fff;
-  --captcha-text: #252a36;
-  --captcha-text-secondary: #707887;
-  --captcha-border: #dfe4ec;
-  --captcha-icon: #697181;
-  --captcha-primary: #6366f1;
-
   overflow: hidden;
   color: var(--captcha-text);
   background: var(--captcha-panel);
   border: 1px solid var(--captcha-border);
   border-radius: 20px;
-  box-shadow: 0 28px 80px -40px rgb(15 23 42 / 72%);
+  box-shadow: 0 28px 80px -40px var(--captcha-shadow);
   backdrop-filter: blur(20px);
-}
-
-.dark .verifybox {
-  --captcha-panel: rgb(15 23 42 / 97%);
-  --captcha-panel-soft: #1b2639;
-  --captcha-handle-bg: #243047;
-  --captcha-text: #f1f5f9;
-  --captcha-text-secondary: #94a3b8;
-  --captcha-border: #334155;
-  --captcha-icon: #dbe4f0;
-  --captcha-primary: #818cf8;
-
-  box-shadow: 0 28px 86px -36px rgb(0 0 0 / 94%);
 }
 
 .verifybox-top {
@@ -510,7 +484,7 @@ export default {
 }
 
 .mask {
-  background: rgb(7 12 20 / 58%);
+  background: var(--captcha-mask);
   backdrop-filter: blur(5px);
 }
 
@@ -527,16 +501,16 @@ export default {
   background: var(--captcha-handle-bg);
   border-right: 1px solid var(--captcha-border);
   border-radius: 11px;
-  box-shadow: 0 8px 18px -12px rgb(15 23 42 / 54%);
+  box-shadow: 0 8px 18px -12px var(--captcha-handle-shadow);
 }
 
 .verify-bar-area .verify-move-block:hover {
-  color: #fff;
+  color: var(--skit-active-text);
   background: var(--captcha-primary);
 }
 
 .verify-bar-area .verify-left-bar {
-  background: rgb(99 102 241 / 13%);
+  background: var(--skit-primary-soft);
   border-color: var(--captcha-border);
   border-radius: 11px;
 }
@@ -554,14 +528,14 @@ export default {
   width: 34px;
   height: 34px;
   padding: 8px;
-  background: rgb(15 23 42 / 58%);
+  background: var(--captcha-image-control);
   border-radius: 10px;
   backdrop-filter: blur(6px);
 }
 
 .verify-img-panel .verify-gap {
   background-color: var(--captcha-handle-bg);
-  border-color: rgb(255 255 255 / 72%);
+  border-color: var(--captcha-gap-border);
 }
 
 .verify-code,
@@ -577,7 +551,7 @@ export default {
 }
 
 .verify-btn {
-  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  background: var(--skit-active-gradient);
   border-radius: 11px;
 }
 

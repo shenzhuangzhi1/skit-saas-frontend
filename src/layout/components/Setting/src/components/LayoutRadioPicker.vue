@@ -69,7 +69,7 @@ const layouts: { className: string; label: string; type: VbenLayoutType }[] = [
       >
         <div
           v-if="item.type === 'sidebar-mixed-nav' || item.type === 'header-mixed-nav'"
-          class="absolute left-[10%] top-0 h-full w-[33%] bg-gray-200"
+          class="absolute left-[10%] top-0 h-full w-[33%] bg-[var(--skit-surface-muted)]"
         ></div>
       </div>
       <span class="max-w-76px truncate text-12px text-[var(--el-text-color-regular)]">
@@ -84,7 +84,7 @@ $prefix-cls: #{$namespace}-layout-radio-picker;
 
 .#{$prefix-cls} {
   &__sidebar-nav {
-    border: 2px solid #e5e7eb;
+    border: 2px solid var(--skit-border-color);
     border-radius: 4px;
 
     &::before {
@@ -94,7 +94,7 @@ $prefix-cls: #{$namespace}-layout-radio-picker;
       z-index: 1;
       width: 33%;
       height: 100%;
-      background-color: #273352;
+      background-color: var(--left-menu-bg-color);
       border-radius: 4px 0 0 4px;
       content: '';
     }
@@ -105,7 +105,7 @@ $prefix-cls: #{$namespace}-layout-radio-picker;
       left: 0;
       width: 100%;
       height: 25%;
-      background-color: #fff;
+      background-color: var(--skit-surface-elevated);
       border-radius: 4px 4px 0;
       content: '';
     }
@@ -113,7 +113,7 @@ $prefix-cls: #{$namespace}-layout-radio-picker;
 
   &__header-sidebar-nav,
   &__mixed-nav {
-    border: 2px solid #e5e7eb;
+    border: 2px solid var(--skit-border-color);
     border-radius: 4px;
 
     &::before {
@@ -123,7 +123,7 @@ $prefix-cls: #{$namespace}-layout-radio-picker;
       z-index: 1;
       width: 100%;
       height: 33%;
-      background-color: #273352;
+      background-color: var(--top-header-bg-color);
       border-radius: 4px 4px 0 0;
       content: '';
     }
@@ -134,14 +134,14 @@ $prefix-cls: #{$namespace}-layout-radio-picker;
       left: 0;
       width: 33%;
       height: 100%;
-      background-color: #fff;
+      background-color: var(--skit-surface-elevated);
       border-radius: 4px 0 0 4px;
       content: '';
     }
   }
 
   &__header-nav {
-    border: 2px solid #e5e7eb;
+    border: 2px solid var(--skit-border-color);
     border-radius: 4px;
 
     &::before {
@@ -151,7 +151,7 @@ $prefix-cls: #{$namespace}-layout-radio-picker;
       z-index: 1;
       width: 100%;
       height: 33%;
-      background-color: #273352;
+      background-color: var(--top-header-bg-color);
       border-radius: 4px 4px 0 0;
       content: '';
     }
@@ -159,7 +159,7 @@ $prefix-cls: #{$namespace}-layout-radio-picker;
 
   &__header-mixed-nav,
   &__sidebar-mixed-nav {
-    border: 2px solid #e5e7eb;
+    border: 2px solid var(--skit-border-color);
     border-radius: 4px;
 
     &::before {
@@ -169,7 +169,7 @@ $prefix-cls: #{$namespace}-layout-radio-picker;
       z-index: 1;
       width: 100%;
       height: 33%;
-      background-color: #273352;
+      background-color: var(--top-header-bg-color);
       border-radius: 4px 4px 0 0;
       content: '';
     }
@@ -180,7 +180,7 @@ $prefix-cls: #{$namespace}-layout-radio-picker;
       left: 0;
       width: 10%;
       height: 100%;
-      background-color: #fff;
+      background-color: var(--skit-surface-elevated);
       border-radius: 4px 0 0 4px;
       content: '';
     }
@@ -192,13 +192,13 @@ $prefix-cls: #{$namespace}-layout-radio-picker;
     left: 0;
     width: 33%;
     height: 67%;
-    background-color: #fff;
+    background-color: var(--skit-surface-elevated);
     border-radius: 0 0 0 4px;
     content: '';
   }
 
   &__header-mixed-nav::after {
-    background-color: #273352;
+    background-color: var(--left-menu-bg-color);
   }
 
   &__sidebar-mixed-nav::before {

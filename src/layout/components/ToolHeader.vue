@@ -78,8 +78,7 @@ export default defineComponent({
         id={`${variables.namespace}-tool-header`}
         class={[
           prefixCls,
-          'h-[var(--top-tool-height)] relative px-[var(--top-tool-p-x)] flex items-center justify-between',
-          'dark:bg-[var(--el-bg-color)]'
+          'h-[var(--top-tool-height)] relative px-[var(--top-tool-p-x)] flex items-center justify-between'
         ]}
       >
         {showSidebarControl.value || showBreadcrumb.value ? (
@@ -153,17 +152,12 @@ $prefix-cls: #{$namespace}-tool-header;
 .#{$prefix-cls} {
   gap: 14px;
   padding: 0 18px;
-  background: rgb(255 255 255 / 76%);
-  border-bottom: 1px solid rgb(148 163 184 / 15%);
-  box-shadow: 0 12px 36px -32px rgb(15 23 42 / 44%);
+  color: var(--top-header-text-color);
+  background: var(--top-header-bg-color);
+  border-bottom: 1px solid var(--skit-border-color);
+  box-shadow: 0 12px 36px -32px var(--skit-shadow-strong);
   backdrop-filter: blur(22px) saturate(135%);
   transition: left var(--transition-time-02);
-}
-
-:global(.dark) .#{$prefix-cls} {
-  background: rgb(15 23 42 / 78%);
-  border-bottom-color: rgb(148 163 184 / 12%);
-  box-shadow: 0 14px 40px -32px rgb(0 0 0 / 72%);
 }
 
 .header-theme-toggle {
@@ -173,12 +167,12 @@ $prefix-cls: #{$namespace}-tool-header;
   margin-right: 5px;
   font-size: 13px;
   font-weight: 700;
-  color: #4f46e5;
+  color: var(--el-color-primary);
   cursor: pointer;
-  background: linear-gradient(135deg, rgb(238 242 255 / 96%), rgb(240 253 250 / 86%));
-  border: 1px solid rgb(99 102 241 / 20%);
+  background: var(--skit-primary-soft);
+  border: 1px solid var(--skit-border-strong);
   border-radius: 12px;
-  box-shadow: 0 9px 22px -18px rgb(79 70 229 / 72%);
+  box-shadow: 0 9px 22px -18px var(--skit-shadow-strong);
   transition:
     color 0.18s ease,
     border-color 0.18s ease,
@@ -189,17 +183,11 @@ $prefix-cls: #{$namespace}-tool-header;
   gap: 6px;
 
   &:hover {
-    color: #4338ca;
-    background: #eef2ff;
-    border-color: rgb(99 102 241 / 38%);
+    color: var(--el-color-primary-dark-2);
+    background: var(--top-header-hover-color);
+    border-color: var(--el-color-primary-light-5);
     transform: translateY(-1px);
   }
-}
-
-:global(.dark) .header-theme-toggle {
-  color: #c7d2fe;
-  background: linear-gradient(135deg, rgb(99 102 241 / 18%), rgb(20 184 166 / 8%));
-  border-color: rgb(129 140 248 / 25%);
 }
 
 @media (width <= 1120px) {

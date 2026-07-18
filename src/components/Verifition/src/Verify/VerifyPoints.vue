@@ -25,8 +25,8 @@
           v-for="(tempPoint, index) in tempPoints"
           :key="index"
           :style="{
-            'background-color': '#1abd6c',
-            color: '#fff',
+            'background-color': 'var(--el-color-success)',
+            color: 'var(--skit-active-text)',
             'z-index': 9999,
             width: '20px',
             height: '20px',
@@ -172,8 +172,8 @@ const canvasClick = (e) => {
       }
       reqCheck(data).then((res) => {
         if (res.repCode == '0000') {
-          barAreaColor.value = '#4cae4c'
-          barAreaBorderColor.value = '#5cb85c'
+          barAreaColor.value = 'var(--el-color-success)'
+          barAreaBorderColor.value = 'var(--el-color-success)'
           text.value = t('captcha.success')
           bindingClick.value = false
           if (mode.value == 'pop') {
@@ -185,8 +185,8 @@ const canvasClick = (e) => {
           proxy.$parent.$emit('success', { captchaVerification })
         } else {
           proxy.$parent.$emit('error', proxy)
-          barAreaColor.value = '#d9534f'
-          barAreaBorderColor.value = '#d9534f'
+          barAreaColor.value = 'var(--el-color-danger)'
+          barAreaBorderColor.value = 'var(--el-color-danger)'
           text.value = t('captcha.fail')
           setTimeout(() => {
             refresh()

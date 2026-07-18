@@ -696,7 +696,7 @@ $prefix-cls: #{$namespace}-menu;
       > .#{$elNamespace}-sub-menu > .#{$elNamespace}-sub-menu__title {
         height: 38px;
         padding: 0 15px;
-        color: #526078;
+        color: var(--top-header-text-color);
         border: 0 !important;
         border-radius: 12px;
       }
@@ -704,8 +704,8 @@ $prefix-cls: #{$namespace}-menu;
       > .#{$elNamespace}-menu-item.is-active,
       > .#{$elNamespace}-sub-menu.is-active > .#{$elNamespace}-sub-menu__title {
         font-weight: 700;
-        color: #4f46e5 !important;
-        background: #eef2ff !important;
+        color: var(--el-color-primary) !important;
+        background: var(--top-header-hover-color) !important;
       }
     }
   }
@@ -747,7 +747,7 @@ $prefix-cls: #{$namespace}-menu;
 
 .#{$prefix-cls}__vertical {
   background:
-    radial-gradient(circle at 18% 4%, rgb(99 102 241 / 18%), transparent 13rem),
+    radial-gradient(circle at 18% 4%, var(--skit-sidebar-decoration), transparent 13rem),
     var(--left-menu-bg-color);
 
   :deep(.#{$elNamespace}-menu) {
@@ -767,31 +767,16 @@ $prefix-cls: #{$namespace}-menu;
       transform 0.18s ease;
 
     &:hover {
-      color: #e2e8f0 !important;
-      background: rgb(148 163 184 / 9%) !important;
+      color: var(--left-menu-text-active-color) !important;
+      background: var(--skit-hover-bg) !important;
       transform: translateX(2px);
     }
   }
 
   :deep(.#{$elNamespace}-menu-item.is-active) {
-    color: #fff !important;
-    background: linear-gradient(135deg, rgb(99 102 241 / 30%), rgb(20 184 166 / 16%)) !important;
-    box-shadow: inset 3px 0 #818cf8;
-  }
-}
-
-:global(.dark) .#{$prefix-cls}--root-switch.#{$prefix-cls}__horizontal {
-  :deep(.#{$elNamespace}-menu--horizontal) {
-    > .#{$elNamespace}-menu-item,
-    > .#{$elNamespace}-sub-menu > .#{$elNamespace}-sub-menu__title {
-      color: #abb3c1;
-    }
-
-    > .#{$elNamespace}-menu-item.is-active,
-    > .#{$elNamespace}-sub-menu.is-active > .#{$elNamespace}-sub-menu__title {
-      color: #c7d2fe !important;
-      background: rgb(99 102 241 / 15%) !important;
-    }
+    color: var(--skit-active-text) !important;
+    background: var(--skit-active-gradient) !important;
+    box-shadow: inset 3px 0 var(--el-color-primary-light-3);
   }
 }
 

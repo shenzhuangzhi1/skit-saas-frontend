@@ -45,8 +45,8 @@ const switchWorkspace = (path: string) => {
   gap: 4px;
   padding: 4px;
   margin-left: 10px;
-  background: rgb(241 245 249 / 82%);
-  border: 1px solid rgb(148 163 184 / 17%);
+  background: var(--skit-surface-muted);
+  border: 1px solid var(--skit-border-color);
   border-radius: 14px;
 
   button {
@@ -55,7 +55,7 @@ const switchWorkspace = (path: string) => {
     justify-content: center;
     min-height: 32px;
     padding: 0 11px;
-    color: #64748b;
+    color: var(--skit-text-secondary);
     cursor: pointer;
     background: transparent;
     border: 0;
@@ -72,23 +72,9 @@ const switchWorkspace = (path: string) => {
 
     &.is-active {
       font-weight: 700;
-      color: #4f46e5;
-      background: #fff;
-      box-shadow: 0 7px 18px -12px rgb(30 41 59 / 48%);
-    }
-  }
-}
-
-:global(.dark) .workspace-switch {
-  background: #0b1120;
-  border-color: rgb(255 255 255 / 8%);
-
-  button {
-    color: #aab2c0;
-
-    &.is-active {
-      color: #c7d2fe;
-      background: #1e293b;
+      color: var(--el-color-primary);
+      background: var(--skit-surface-elevated);
+      box-shadow: 0 7px 18px -12px var(--skit-shadow-strong);
     }
   }
 }

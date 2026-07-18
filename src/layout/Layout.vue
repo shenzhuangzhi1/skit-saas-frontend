@@ -58,7 +58,7 @@ export default defineComponent({
       >
         {mobile.value && !collapse.value ? (
           <div
-            class="absolute left-0 top-0 z-99 h-full w-full bg-[var(--el-color-black)] opacity-30"
+            class="absolute left-0 top-0 z-99 h-full w-full bg-[var(--skit-overlay)]"
             onClick={handleClickOutside}
           ></div>
         ) : undefined}
