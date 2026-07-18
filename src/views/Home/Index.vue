@@ -144,8 +144,7 @@ const scopeManager = (() => {
   try {
     return useTenantScope()
   } catch (cause) {
-    error.value =
-      cause instanceof Error && cause.message ? cause.message : '无法确定当前租户范围'
+    error.value = cause instanceof Error && cause.message ? cause.message : '无法确定当前租户范围'
     return undefined
   }
 })()
