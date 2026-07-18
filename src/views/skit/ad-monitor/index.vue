@@ -652,9 +652,14 @@ const formatRate = (value: string) => {
 const healthStatusLabel = (status: string) =>
   ({ HEALTHY: '健康', DEGRADED: '降级', CRITICAL: '严重异常', NO_DATA: '暂无数据' })[status] ||
   status
-const healthTagType = (status: string) =>
-  ({ HEALTHY: 'success', DEGRADED: 'warning', CRITICAL: 'danger', NO_DATA: 'info' })[status] ||
-  'info'
+type HealthTagType = 'success' | 'warning' | 'danger' | 'info'
+const healthTagTypes: Record<string, HealthTagType> = {
+  HEALTHY: 'success',
+  DEGRADED: 'warning',
+  CRITICAL: 'danger',
+  NO_DATA: 'info'
+}
+const healthTagType = (status: string): HealthTagType => healthTagTypes[status] || 'info'
 watch(
   () =>
     `${scopeModel.value.kind}:${scopeModel.value.kind === 'single' ? scopeModel.value.targetTenantId : ''}`,
