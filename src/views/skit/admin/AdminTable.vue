@@ -1310,7 +1310,7 @@ const openEditor = (mode: 'add' | 'edit' | 'view', row?: TableRow) => {
   editingKey.value = String(target.__rowKey || '')
   Object.keys(editorModel).forEach((key) => delete editorModel[key])
   editableColumns.value.slice(0, 18).forEach((column) => {
-    editorModel[column.prop] = target[column.prop] || ''
+    editorModel[column.prop] = target[column.prop] ?? ''
   })
   editorVisible.value = true
 }
