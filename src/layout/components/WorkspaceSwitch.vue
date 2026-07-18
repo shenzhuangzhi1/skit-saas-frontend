@@ -45,9 +45,9 @@ const switchWorkspace = (path: string) => {
   gap: 4px;
   padding: 4px;
   margin-left: 10px;
-  background: #f5f6f8;
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 13px;
+  background: rgb(241 245 249 / 82%);
+  border: 1px solid rgb(148 163 184 / 17%);
+  border-radius: 14px;
 
   button {
     display: inline-flex;
@@ -55,7 +55,7 @@ const switchWorkspace = (path: string) => {
     justify-content: center;
     min-height: 32px;
     padding: 0 11px;
-    color: #697181;
+    color: #64748b;
     cursor: pointer;
     background: transparent;
     border: 0;
@@ -72,23 +72,23 @@ const switchWorkspace = (path: string) => {
 
     &.is-active {
       font-weight: 700;
-      color: #b85580;
+      color: #4f46e5;
       background: #fff;
-      box-shadow: 0 5px 14px -8px rgb(31 42 68 / 42%);
+      box-shadow: 0 7px 18px -12px rgb(30 41 59 / 48%);
     }
   }
 }
 
-.dark .workspace-switch {
-  background: #0f141d;
+:global(.dark) .workspace-switch {
+  background: #0b1120;
   border-color: rgb(255 255 255 / 8%);
 
   button {
     color: #aab2c0;
 
     &.is-active {
-      color: #f0a9c7;
-      background: #202936;
+      color: #c7d2fe;
+      background: #1e293b;
     }
   }
 }

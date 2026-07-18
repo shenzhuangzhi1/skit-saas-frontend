@@ -192,17 +192,19 @@ onMounted(load)
 .skit-home {
   display: grid;
   min-height: calc(100vh - 84px);
-  color: #202531;
+  color: #1e293b;
   background: transparent;
-  gap: 4px;
+  gap: 6px;
 }
 
 .skit-home__hero {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at 90% 10%, rgb(126 154 224 / 14%), transparent 34%),
-    radial-gradient(circle at 8% 110%, rgb(227 150 182 / 19%), transparent 38%), #fff;
+    linear-gradient(125deg, rgb(99 102 241 / 10%), transparent 42%),
+    radial-gradient(circle at 94% 16%, rgb(20 184 166 / 13%), transparent 32%),
+    rgb(255 255 255 / 82%);
+  border-color: rgb(99 102 241 / 15%);
 
   :deep(.el-card__body) {
     display: flex;
@@ -214,15 +216,16 @@ onMounted(load)
 
   h1 {
     margin: 0;
-    font-size: 28px;
-    letter-spacing: -0.025em;
+    font-size: clamp(26px, 3vw, 34px);
+    line-height: 1.15;
+    letter-spacing: -0.035em;
   }
 
   p {
     max-width: 820px;
     margin: 10px 0 0;
     line-height: 1.7;
-    color: #5f6878;
+    color: #64748b;
   }
 }
 
@@ -240,16 +243,16 @@ onMounted(load)
   margin-bottom: 8px;
   font-size: 13px;
   font-weight: 700;
-  color: #b85580;
+  color: #0f766e;
   gap: 8px;
 }
 
 .skit-home__status-dot {
   width: 8px;
   height: 8px;
-  background: #e396b6;
+  background: #14b8a6;
   border-radius: 50%;
-  box-shadow: 0 0 0 4px rgb(227 150 182 / 15%);
+  box-shadow: 0 0 0 4px rgb(20 184 166 / 14%);
 }
 
 .skit-home__scope {
@@ -271,7 +274,8 @@ onMounted(load)
 
   h2 {
     margin: 0;
-    font-size: 18px;
+    font-size: 19px;
+    letter-spacing: -0.015em;
   }
 
   p {
@@ -295,19 +299,34 @@ onMounted(load)
 .count-grid article,
 .health-grid article,
 .money-grid article {
-  background: #fff;
-  border: 1px solid #e6e9ef;
-  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+  background: rgb(255 255 255 / 76%);
+  border: 1px solid rgb(148 163 184 / 17%);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease,
     transform 0.18s ease;
 
   &:hover {
-    border-color: rgb(227 150 182 / 44%);
+    border-color: rgb(99 102 241 / 34%);
     transform: translateY(-2px);
-    box-shadow: 0 16px 32px -26px rgb(31 42 68 / 52%);
+    box-shadow: 0 18px 36px -28px rgb(79 70 229 / 44%);
   }
+}
+
+.count-grid article::before,
+.health-grid article::before {
+  position: absolute;
+  top: 0;
+  left: 18px;
+  width: 40px;
+  height: 3px;
+  background: linear-gradient(90deg, #6366f1, #14b8a6);
+  border-radius: 0 0 8px 8px;
+  content: '';
 }
 
 .count-grid article,
@@ -324,7 +343,8 @@ onMounted(load)
     display: block;
     margin: 8px 0;
     font-size: 26px;
-    color: #242936;
+    letter-spacing: -0.025em;
+    color: #1e293b;
   }
 }
 
@@ -382,8 +402,8 @@ onMounted(load)
   span {
     padding: 5px 8px;
     font-size: 12px;
-    color: #b85580;
-    background: #fdf1f6;
+    color: #4f46e5;
+    background: #eef2ff;
     border-radius: 8px;
   }
 }
@@ -397,13 +417,14 @@ onMounted(load)
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.dark .skit-home {
+:global(.dark) .skit-home {
   color: #edf0f5;
 
   .skit-home__hero {
     background:
-      radial-gradient(circle at 90% 10%, rgb(126 154 224 / 12%), transparent 34%),
-      radial-gradient(circle at 8% 110%, rgb(227 150 182 / 14%), transparent 38%), #141a24;
+      linear-gradient(125deg, rgb(99 102 241 / 17%), transparent 43%),
+      radial-gradient(circle at 94% 16%, rgb(45 212 191 / 10%), transparent 34%),
+      rgb(15 23 42 / 86%);
   }
 
   .skit-home__hero p,
@@ -421,8 +442,8 @@ onMounted(load)
   .count-grid article,
   .health-grid article,
   .money-grid article {
-    background: #171e29;
-    border-color: rgb(255 255 255 / 8%);
+    background: rgb(23 32 51 / 80%);
+    border-color: rgb(148 163 184 / 12%);
   }
 
   .count-grid article strong,
@@ -435,8 +456,8 @@ onMounted(load)
   }
 
   .level-shares span {
-    color: #f0a9c7;
-    background: rgb(227 150 182 / 13%);
+    color: #c7d2fe;
+    background: rgb(99 102 241 / 14%);
   }
 }
 

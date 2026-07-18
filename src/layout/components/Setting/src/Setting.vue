@@ -69,11 +69,11 @@ const setMenuTheme = (color: string) => {
     // 左侧菜单选中背景颜色
     leftMenuBgActiveColor: isDarkColor
       ? 'var(--el-color-primary)'
-      : hexToRGB(unref(primaryColor) || '#409eff', 0.1),
+      : hexToRGB(unref(primaryColor) || '#6366f1', 0.1),
     // 左侧菜单收起选中背景颜色
     leftMenuCollapseBgActiveColor: isDarkColor
       ? 'var(--el-color-primary)'
-      : hexToRGB(unref(primaryColor) || '#409eff', 0.1),
+      : hexToRGB(unref(primaryColor) || '#6366f1', 0.1),
     // 左侧菜单字体颜色
     leftMenuTextColor: isDarkColor ? '#bfcbd9' : '#333',
     // 左侧菜单选中字体颜色
@@ -220,14 +220,14 @@ const clear = () => {
       <ColorRadioPicker
         v-model="systemTheme"
         :schema="[
-          '#409eff',
-          '#009688',
-          '#536dfe',
-          '#ff5c93',
-          '#ee4f12',
-          '#0096c7',
-          '#9c27b0',
-          '#ff9800'
+          '#6366f1',
+          '#14b8a6',
+          '#0ea5e9',
+          '#8b5cf6',
+          '#f43f5e',
+          '#f59e0b',
+          '#22c55e',
+          '#475569'
         ]"
         @change="setSystemTheme"
       />
@@ -238,13 +238,13 @@ const clear = () => {
         v-model="headerTheme"
         :schema="[
           '#fff',
-          '#151515',
-          '#5172dc',
-          '#e74c3c',
-          '#24292e',
-          '#394664',
-          '#009688',
-          '#383f45'
+          '#0f172a',
+          '#312e81',
+          '#134e4a',
+          '#1e293b',
+          '#172554',
+          '#1e1b4b',
+          '#111827'
         ]"
         @change="setHeaderTheme"
       />
@@ -255,14 +255,14 @@ const clear = () => {
         <ColorRadioPicker
           v-model="menuTheme"
           :schema="[
-            '#fff',
-            '#001529',
-            '#212121',
-            '#273352',
-            '#191b24',
-            '#383f45',
-            '#001628',
-            '#344058'
+            '#0f172a',
+            '#111c32',
+            '#1e1b4b',
+            '#172554',
+            '#134e4a',
+            '#1e293b',
+            '#111827',
+            '#312e81'
           ]"
           @change="setMenuTheme"
         />

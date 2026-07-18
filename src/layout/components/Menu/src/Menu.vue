@@ -696,16 +696,16 @@ $prefix-cls: #{$namespace}-menu;
       > .#{$elNamespace}-sub-menu > .#{$elNamespace}-sub-menu__title {
         height: 38px;
         padding: 0 15px;
-        color: #626b7a;
+        color: #526078;
         border: 0 !important;
-        border-radius: 11px;
+        border-radius: 12px;
       }
 
       > .#{$elNamespace}-menu-item.is-active,
       > .#{$elNamespace}-sub-menu.is-active > .#{$elNamespace}-sub-menu__title {
         font-weight: 700;
-        color: #b85580 !important;
-        background: #fdf1f6 !important;
+        color: #4f46e5 !important;
+        background: #eef2ff !important;
       }
     }
   }
@@ -745,7 +745,42 @@ $prefix-cls: #{$namespace}-menu;
   }
 }
 
-.dark .#{$prefix-cls}--root-switch.#{$prefix-cls}__horizontal {
+.#{$prefix-cls}__vertical {
+  background:
+    radial-gradient(circle at 18% 4%, rgb(99 102 241 / 18%), transparent 13rem),
+    var(--left-menu-bg-color);
+
+  :deep(.#{$elNamespace}-menu) {
+    padding: 7px;
+    background: transparent;
+    border-right: 0;
+  }
+
+  :deep(.#{$elNamespace}-menu-item),
+  :deep(.#{$elNamespace}-sub-menu__title) {
+    height: 44px;
+    margin: 3px 0;
+    border-radius: 12px;
+    transition:
+      color 0.18s ease,
+      background-color 0.18s ease,
+      transform 0.18s ease;
+
+    &:hover {
+      color: #e2e8f0 !important;
+      background: rgb(148 163 184 / 9%) !important;
+      transform: translateX(2px);
+    }
+  }
+
+  :deep(.#{$elNamespace}-menu-item.is-active) {
+    color: #fff !important;
+    background: linear-gradient(135deg, rgb(99 102 241 / 30%), rgb(20 184 166 / 16%)) !important;
+    box-shadow: inset 3px 0 #818cf8;
+  }
+}
+
+:global(.dark) .#{$prefix-cls}--root-switch.#{$prefix-cls}__horizontal {
   :deep(.#{$elNamespace}-menu--horizontal) {
     > .#{$elNamespace}-menu-item,
     > .#{$elNamespace}-sub-menu > .#{$elNamespace}-sub-menu__title {
@@ -754,8 +789,8 @@ $prefix-cls: #{$namespace}-menu;
 
     > .#{$elNamespace}-menu-item.is-active,
     > .#{$elNamespace}-sub-menu.is-active > .#{$elNamespace}-sub-menu__title {
-      color: #f0a9c7 !important;
-      background: rgb(227 150 182 / 14%) !important;
+      color: #c7d2fe !important;
+      background: rgb(99 102 241 / 15%) !important;
     }
   }
 }

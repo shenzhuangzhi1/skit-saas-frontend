@@ -120,8 +120,8 @@ let secretKey = ref(''), //后端返回的ase加密秘钥
   }),
   tempPoints = reactive([]),
   text = ref(''),
-  barAreaColor = ref(undefined),
-  barAreaBorderColor = ref(undefined),
+  barAreaColor = ref('var(--captcha-text)'),
+  barAreaBorderColor = ref('var(--captcha-border)'),
   showRefresh = ref(true),
   bindingClick = ref(true)
 
@@ -212,8 +212,8 @@ const createPoint = function (pos) {
 }
 const refresh = async function () {
   tempPoints.splice(0, tempPoints.length)
-  barAreaColor.value = '#000'
-  barAreaBorderColor.value = '#ddd'
+  barAreaColor.value = 'var(--captcha-text)'
+  barAreaBorderColor.value = 'var(--captcha-border)'
   bindingClick.value = true
   fontPos.splice(0, fontPos.length)
   checkPosArr.splice(0, checkPosArr.length)

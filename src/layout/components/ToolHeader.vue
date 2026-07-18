@@ -49,6 +49,12 @@ const message = computed(() => appStore.getMessage)
 // IM即时通讯图标
 const im = computed(() => appStore.getIm)
 
+const isDarkTheme = computed(() => appStore.getIsDark)
+
+const toggleTheme = () => {
+  appStore.setIsDark(!appStore.getIsDark)
+}
+
 // 顶部聊天入口：用路由 name resolve 出完整 URL，在新标签页打开 IM 主页
 // 场景考虑：IM 是全屏沉浸式壳，如果在当前页 push 会把原来在用的后台管理界面挤掉；开新 Tab 更符合用户预期
 const goToChat = () => {
@@ -88,6 +94,20 @@ export default defineComponent({
           </div>
         ) : undefined}
         <div class="h-full flex items-center">
+          <button
+            type="button"
+            class="header-theme-toggle"
+            title={isDarkTheme.value ? '切换到浅色模式' : '切换到深色模式'}
+            aria-label={isDarkTheme.value ? '切换到浅色模式' : '切换到深色模式'}
+            onClick={toggleTheme}
+          >
+            <Icon
+              color="currentColor"
+              size={17}
+              icon={isDarkTheme.value ? 'ep:sunny' : 'ep:moon'}
+            />
+            <span>{isDarkTheme.value ? '浅色' : '深色'}</span>
+          </button>
           <div
             class="v-setting custom-hover"
             title={t('setting.projectSetting')}
@@ -132,13 +152,64 @@ $prefix-cls: #{$namespace}-tool-header;
 
 .#{$prefix-cls} {
   gap: 14px;
-  padding-right: 14px;
-  background: rgb(255 255 255 / 88%);
-  backdrop-filter: blur(18px);
+  padding: 0 18px;
+  background: rgb(255 255 255 / 76%);
+  border-bottom: 1px solid rgb(148 163 184 / 15%);
+  box-shadow: 0 12px 36px -32px rgb(15 23 42 / 44%);
+  backdrop-filter: blur(22px) saturate(135%);
   transition: left var(--transition-time-02);
 }
 
-.dark .#{$prefix-cls} {
-  background: rgb(20 26 36 / 90%);
+:global(.dark) .#{$prefix-cls} {
+  background: rgb(15 23 42 / 78%);
+  border-bottom-color: rgb(148 163 184 / 12%);
+  box-shadow: 0 14px 40px -32px rgb(0 0 0 / 72%);
+}
+
+.header-theme-toggle {
+  display: inline-flex;
+  height: 34px;
+  padding: 0 11px;
+  margin-right: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4f46e5;
+  cursor: pointer;
+  background: linear-gradient(135deg, rgb(238 242 255 / 96%), rgb(240 253 250 / 86%));
+  border: 1px solid rgb(99 102 241 / 20%);
+  border-radius: 12px;
+  box-shadow: 0 9px 22px -18px rgb(79 70 229 / 72%);
+  transition:
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.18s ease;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  &:hover {
+    color: #4338ca;
+    background: #eef2ff;
+    border-color: rgb(99 102 241 / 38%);
+    transform: translateY(-1px);
+  }
+}
+
+:global(.dark) .header-theme-toggle {
+  color: #c7d2fe;
+  background: linear-gradient(135deg, rgb(99 102 241 / 18%), rgb(20 184 166 / 8%));
+  border-color: rgb(129 140 248 / 25%);
+}
+
+@media (width <= 1120px) {
+  .header-theme-toggle span {
+    display: none;
+  }
+
+  .header-theme-toggle {
+    width: 34px;
+    padding: 0;
+  }
 }
 </style>

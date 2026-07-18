@@ -190,14 +190,14 @@ onMounted(() => {
     box-shadow: 0 0 0 1px var(--login-border) inset;
 
     &:hover {
-      box-shadow: 0 0 0 1px rgb(227 150 182 / 75%) inset;
+      box-shadow: 0 0 0 1px rgb(99 102 241 / 58%) inset;
     }
 
     &.is-focus {
       background: var(--login-panel);
       box-shadow:
-        0 0 0 1px #e396b6 inset,
-        0 0 0 4px rgb(227 150 182 / 13%) !important;
+        0 0 0 1px #6366f1 inset,
+        0 0 0 4px rgb(99 102 241 / 13%) !important;
     }
   }
 
@@ -240,19 +240,19 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 750;
   letter-spacing: 0.12em;
-  background: linear-gradient(135deg, #e99abb 0%, #d8749f 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
   border: 0;
   border-radius: 14px;
-  box-shadow: 0 16px 28px -18px rgb(216 111 154 / 76%);
+  box-shadow: 0 16px 30px -18px rgb(79 70 229 / 82%);
 
   &:hover,
   &:focus {
-    background: linear-gradient(135deg, #eda8c4 0%, #cf698f 100%);
+    background: linear-gradient(135deg, #7577f5 0%, #8b5cf6 100%);
     transform: translateY(-1px);
   }
 }
 
-.is-dark .skit-login-form :deep(.el-input__wrapper) {
+:global(.is-dark .skit-login-form .el-input__wrapper) {
   background: rgb(15 23 42 / 72%);
 }
 </style>

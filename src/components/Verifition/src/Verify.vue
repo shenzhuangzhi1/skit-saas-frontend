@@ -1,35 +1,37 @@
 <template>
-  <div v-show="showBox" :class="mode == 'pop' ? 'mask' : ''">
-    <div
-      :class="mode == 'pop' ? 'verifybox' : ''"
-      :style="{ 'max-width': parseInt(imgSize.width) + 20 + 'px' }"
-    >
-      <div v-if="mode == 'pop'" class="verifybox-top">
-        {{ t('captcha.verification') }}
-        <span class="verifybox-close" @click="closeBox">
-          <i class="iconfont icon-close"></i>
-        </span>
-      </div>
-      <div :style="{ padding: mode == 'pop' ? '10px' : '0' }" class="verifybox-bottom">
-        <!-- 验证码容器 -->
-        <component
-          :is="componentType"
-          v-if="componentType"
-          ref="instance"
-          :arith="arith"
-          :barSize="barSize"
-          :blockSize="blockSize"
-          :captchaType="captchaType"
-          :explain="explain"
-          :figure="figure"
-          :imgSize="imgSize"
-          :mode="mode"
-          :type="verifyType"
-          :vSpace="vSpace"
-        />
+  <Teleport to="body">
+    <div v-show="showBox" :class="mode == 'pop' ? 'mask' : ''">
+      <div
+        :class="mode == 'pop' ? 'verifybox' : ''"
+        :style="{ 'max-width': parseInt(imgSize.width) + 20 + 'px' }"
+      >
+        <div v-if="mode == 'pop'" class="verifybox-top">
+          {{ t('captcha.verification') }}
+          <span class="verifybox-close" @click="closeBox">
+            <i class="iconfont icon-close"></i>
+          </span>
+        </div>
+        <div :style="{ padding: mode == 'pop' ? '10px' : '0' }" class="verifybox-bottom">
+          <!-- 验证码容器 -->
+          <component
+            :is="componentType"
+            v-if="componentType"
+            ref="instance"
+            :arith="arith"
+            :barSize="barSize"
+            :blockSize="blockSize"
+            :captchaType="captchaType"
+            :explain="explain"
+            :figure="figure"
+            :imgSize="imgSize"
+            :mode="mode"
+            :type="verifyType"
+            :vSpace="vSpace"
+          />
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 <script type="text/babel">
 /**
@@ -442,5 +444,150 @@ export default {
   background-size: contain;
   content: ' ';
   inset: 0;
+}
+</style>
+
+<style>
+.verifybox {
+  --captcha-panel: rgb(255 255 255 / 97%);
+  --captcha-panel-soft: #f7f8fb;
+  --captcha-handle-bg: #fff;
+  --captcha-text: #252a36;
+  --captcha-text-secondary: #707887;
+  --captcha-border: #dfe4ec;
+  --captcha-icon: #697181;
+  --captcha-primary: #6366f1;
+
+  overflow: hidden;
+  color: var(--captcha-text);
+  background: var(--captcha-panel);
+  border: 1px solid var(--captcha-border);
+  border-radius: 20px;
+  box-shadow: 0 28px 80px -40px rgb(15 23 42 / 72%);
+  backdrop-filter: blur(20px);
+}
+
+.dark .verifybox {
+  --captcha-panel: rgb(15 23 42 / 97%);
+  --captcha-panel-soft: #1b2639;
+  --captcha-handle-bg: #243047;
+  --captcha-text: #f1f5f9;
+  --captcha-text-secondary: #94a3b8;
+  --captcha-border: #334155;
+  --captcha-icon: #dbe4f0;
+  --captcha-primary: #818cf8;
+
+  box-shadow: 0 28px 86px -36px rgb(0 0 0 / 94%);
+}
+
+.verifybox-top {
+  height: 52px;
+  padding: 0 18px;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 52px;
+  color: var(--captcha-text);
+  background: var(--captcha-panel);
+  border-bottom: 1px solid var(--captcha-border);
+}
+
+.verifybox-bottom {
+  padding: 14px !important;
+  color: var(--captcha-text-secondary);
+  background: var(--captcha-panel);
+}
+
+.verifybox-close {
+  top: 14px;
+  right: 13px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  color: var(--captcha-text-secondary);
+  background: var(--captcha-panel-soft);
+  border-radius: 9px;
+  place-items: center;
+}
+
+.mask {
+  background: rgb(7 12 20 / 58%);
+  backdrop-filter: blur(5px);
+}
+
+.verify-bar-area {
+  overflow: hidden;
+  color: var(--captcha-text-secondary);
+  background: var(--captcha-panel-soft);
+  border-color: var(--captcha-border);
+  border-radius: 13px;
+}
+
+.verify-bar-area .verify-move-block {
+  color: var(--captcha-icon);
+  background: var(--captcha-handle-bg);
+  border-right: 1px solid var(--captcha-border);
+  border-radius: 11px;
+  box-shadow: 0 8px 18px -12px rgb(15 23 42 / 54%);
+}
+
+.verify-bar-area .verify-move-block:hover {
+  color: #fff;
+  background: var(--captcha-primary);
+}
+
+.verify-bar-area .verify-left-bar {
+  background: rgb(99 102 241 / 13%);
+  border-color: var(--captcha-border);
+  border-radius: 11px;
+}
+
+.verify-img-panel {
+  overflow: hidden;
+  background: var(--captcha-panel-soft);
+  border-color: var(--captcha-border);
+  border-radius: 13px;
+}
+
+.verify-img-panel .verify-refresh {
+  top: 8px;
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  padding: 8px;
+  background: rgb(15 23 42 / 58%);
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+}
+
+.verify-img-panel .verify-gap {
+  background-color: var(--captcha-handle-bg);
+  border-color: rgb(255 255 255 / 72%);
+}
+
+.verify-code,
+.varify-input-code {
+  color: var(--captcha-text);
+  background: var(--captcha-panel-soft);
+  border-color: var(--captcha-border);
+  border-radius: 10px;
+}
+
+.verify-change-code {
+  color: var(--captcha-primary);
+}
+
+.verify-btn {
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  border-radius: 11px;
+}
+
+@media (width <= 520px) {
+  .verifybox {
+    max-width: calc(100vw - 28px) !important;
+  }
+
+  .verifybox-bottom {
+    overflow-x: auto;
+  }
 }
 </style>

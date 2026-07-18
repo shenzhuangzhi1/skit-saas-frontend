@@ -37,7 +37,8 @@ const setLang = (lang: LocaleType) => {
         :title="isDark ? '切换到浅色模式' : '切换到深色模式'"
         @click="toggleTheme"
       >
-        <Icon :icon="isDark ? 'ep:moon' : 'ep:sunny'" :size="17" />
+        <Icon :icon="isDark ? 'ep:sunny' : 'ep:moon'" :size="17" />
+        <span>{{ isDark ? '浅色模式' : '深色模式' }}</span>
       </button>
 
       <ElDropdown trigger="click" @command="setLang">
@@ -83,9 +84,9 @@ const setLang = (lang: LocaleType) => {
 <style lang="scss" scoped>
 .skit-login-page {
   --login-bg:
-    radial-gradient(circle at 18% 14%, rgb(227 150 182 / 21%) 0 180px, transparent 350px),
-    radial-gradient(circle at 84% 18%, rgb(72 130 204 / 15%) 0 170px, transparent 340px),
-    linear-gradient(145deg, #f8f9fb 0%, #eef1f6 48%, #f9f2f5 100%);
+    radial-gradient(circle at 16% 12%, rgb(99 102 241 / 20%) 0 190px, transparent 370px),
+    radial-gradient(circle at 88% 22%, rgb(20 184 166 / 13%) 0 180px, transparent 360px),
+    linear-gradient(145deg, #f8fafc 0%, #eef2ff 47%, #f0fdfa 100%);
   --login-panel: rgb(255 255 255 / 94%);
   --login-control: rgb(255 255 255 / 80%);
   --login-border: rgb(216 222 233 / 92%);
@@ -116,7 +117,7 @@ const setLang = (lang: LocaleType) => {
   left: 8%;
   width: 330px;
   height: 330px;
-  background: rgb(240 169 199 / 16%);
+  background: rgb(99 102 241 / 15%);
 }
 
 .login-orb--blue {
@@ -124,7 +125,7 @@ const setLang = (lang: LocaleType) => {
   right: 8%;
   width: 220px;
   height: 220px;
-  background: rgb(126 154 224 / 11%);
+  background: rgb(20 184 166 / 11%);
 }
 
 .login-actions {
@@ -159,16 +160,19 @@ const setLang = (lang: LocaleType) => {
   gap: 6px;
 
   &:hover {
-    color: #c7628d;
-    border-color: rgb(227 150 182 / 45%);
+    color: #4f46e5;
+    border-color: rgb(99 102 241 / 40%);
     transform: translateY(-1px);
   }
 }
 
 .login-action-button--icon {
-  width: 36px;
-  padding: 0;
+  padding: 0 12px;
+  color: #4f46e5;
+  background: linear-gradient(135deg, rgb(238 242 255 / 96%), rgb(240 253 250 / 92%));
+  border-color: rgb(99 102 241 / 28%);
   border-radius: 12px;
+  box-shadow: 0 10px 24px -18px rgb(79 70 229 / 72%);
 }
 
 .login-container {
@@ -199,7 +203,9 @@ const setLang = (lang: LocaleType) => {
   object-fit: cover;
   border: 1px solid rgb(255 255 255 / 68%);
   border-radius: 13px;
-  box-shadow: 0 12px 24px -15px rgb(31 42 68 / 54%);
+  box-shadow:
+    0 14px 28px -16px rgb(79 70 229 / 58%),
+    0 0 0 5px rgb(99 102 241 / 8%);
 }
 
 .login-card {
@@ -207,9 +213,9 @@ const setLang = (lang: LocaleType) => {
   padding: 38px 36px 34px;
   background: var(--login-panel);
   border: 1px solid var(--login-border);
-  border-radius: 24px;
-  box-shadow: 0 28px 80px -46px rgb(31 42 68 / 62%);
-  backdrop-filter: blur(20px);
+  border-radius: 26px;
+  box-shadow: 0 32px 90px -50px rgb(30 41 59 / 68%);
+  backdrop-filter: blur(24px) saturate(130%);
 }
 
 .login-card__heading {
@@ -235,7 +241,7 @@ const setLang = (lang: LocaleType) => {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.13em;
-  color: #c7628d;
+  color: #0f766e;
 }
 
 .security-note,
@@ -255,17 +261,23 @@ const setLang = (lang: LocaleType) => {
 
 .skit-login-page.is-dark {
   --login-bg:
-    radial-gradient(circle at 18% 14%, rgb(227 150 182 / 16%) 0 180px, transparent 350px),
-    radial-gradient(circle at 86% 18%, rgb(72 130 204 / 18%) 0 180px, transparent 350px),
-    linear-gradient(145deg, #111827 0%, #0f172a 48%, #171923 100%);
-  --login-panel: rgb(17 24 39 / 94%);
-  --login-control: rgb(17 24 39 / 84%);
+    radial-gradient(circle at 16% 12%, rgb(99 102 241 / 22%) 0 190px, transparent 380px),
+    radial-gradient(circle at 88% 22%, rgb(45 212 191 / 14%) 0 180px, transparent 370px),
+    linear-gradient(145deg, #080f1f 0%, #0b1120 48%, #111827 100%);
+  --login-panel: rgb(15 23 42 / 90%);
+  --login-control: rgb(15 23 42 / 82%);
   --login-border: rgb(255 255 255 / 11%);
   --login-text: #f8fafc;
   --login-text-secondary: #a7b0c0;
 
   .login-action-button {
     border-color: rgb(255 255 255 / 11%);
+  }
+
+  .login-action-button--icon {
+    color: #c7d2fe;
+    background: linear-gradient(135deg, rgb(99 102 241 / 22%), rgb(20 184 166 / 10%));
+    border-color: rgb(129 140 248 / 32%);
   }
 }
 

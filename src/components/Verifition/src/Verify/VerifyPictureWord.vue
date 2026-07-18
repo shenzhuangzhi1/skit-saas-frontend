@@ -103,8 +103,8 @@ let secretKey = ref(''), // 后端返回的ase加密秘钥
     barWidth: 0
   }),
   text = ref(''),
-  barAreaColor = ref('#000'),
-  barAreaBorderColor = ref('#ddd'),
+  barAreaColor = ref('var(--captcha-text)'),
+  barAreaBorderColor = ref('var(--captcha-border)'),
   showRefresh = ref(true),
   // bindingClick = ref(true)
   checking = ref(false)
@@ -168,8 +168,8 @@ const submit = () => {
 }
 
 const refresh = async function () {
-  barAreaColor.value = '#000'
-  barAreaBorderColor.value = '#ddd'
+  barAreaColor.value = 'var(--captcha-text)'
+  barAreaBorderColor.value = 'var(--captcha-border)'
   checking.value = false
 
   userCode.value = ''

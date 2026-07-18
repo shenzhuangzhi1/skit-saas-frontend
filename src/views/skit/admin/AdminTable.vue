@@ -1905,3 +1905,294 @@ textarea.form-control {
   }
 }
 </style>
+
+<style scoped lang="scss">
+.skit-fastadmin-page {
+  --admin-page-bg: transparent;
+  --admin-surface: rgb(255 255 255 / 82%);
+  --admin-surface-soft: rgb(241 245 249 / 78%);
+  --admin-surface-hover: #eef2ff;
+  --admin-text: #1e293b;
+  --admin-text-secondary: #64748b;
+  --admin-muted: #94a3b8;
+  --admin-border: rgb(148 163 184 / 18%);
+  --admin-border-strong: rgb(148 163 184 / 28%);
+  --admin-primary: #4f46e5;
+  --admin-primary-soft: rgb(99 102 241 / 12%);
+  --admin-overlay: rgb(255 255 255 / 86%);
+  --admin-shadow: 0 20px 54px -40px rgb(30 41 59 / 44%);
+
+  min-height: calc(100vh - 100px);
+  padding: 0;
+  color: var(--admin-text);
+  background: var(--admin-page-bg);
+}
+
+:global(.dark) .skit-fastadmin-page {
+  --admin-page-bg: transparent;
+  --admin-surface: rgb(15 23 42 / 84%);
+  --admin-surface-soft: rgb(23 32 51 / 82%);
+  --admin-surface-hover: rgb(99 102 241 / 13%);
+  --admin-text: #f1f5f9;
+  --admin-text-secondary: #cbd5e1;
+  --admin-muted: #7f8fa8;
+  --admin-border: rgb(148 163 184 / 13%);
+  --admin-border-strong: rgb(148 163 184 / 22%);
+  --admin-primary: #a5b4fc;
+  --admin-primary-soft: rgb(99 102 241 / 15%);
+  --admin-overlay: rgb(15 23 42 / 90%);
+  --admin-shadow: 0 20px 54px -38px rgb(0 0 0 / 92%);
+}
+
+.skit-panel {
+  min-height: 172px;
+  padding: 20px;
+  color: var(--admin-text);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 20px;
+  box-shadow: var(--admin-shadow);
+  backdrop-filter: blur(18px);
+}
+
+.commonsearch-table {
+  padding: 16px;
+  margin-bottom: 16px;
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: 13px;
+}
+
+.commonsearch-item span,
+.profile-section h3,
+.fixed-table-pagination,
+.column-menu label,
+.export-menu button,
+.page-size-dropdown button {
+  color: var(--admin-text);
+}
+
+.form-control,
+.page-size,
+.pagination-jump {
+  color: var(--admin-text);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 10px;
+  box-shadow: none;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+
+  &::placeholder {
+    color: var(--admin-muted);
+  }
+
+  &:hover {
+    border-color: rgb(99 102 241 / 52%);
+  }
+
+  &:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgb(99 102 241 / 13%);
+  }
+}
+
+.date-range span,
+.no-record {
+  color: var(--admin-text-secondary);
+}
+
+.config-tabs {
+  gap: 5px;
+  padding: 5px;
+  margin-bottom: 12px;
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+}
+
+.config-tab {
+  color: var(--admin-text-secondary);
+  border: 0;
+  border-radius: 9px;
+
+  &.active {
+    color: var(--admin-primary);
+    background: var(--admin-surface);
+    border: 0;
+    box-shadow: 0 8px 18px -14px rgb(31 42 68 / 48%);
+  }
+
+  &:not(.active):hover {
+    color: var(--admin-primary);
+    background: var(--admin-surface-hover);
+  }
+}
+
+.profile-section,
+.profile-section--tab {
+  padding: 16px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 13px;
+}
+
+.fixed-table-toolbar {
+  padding: 4px 0 8px;
+}
+
+.btn {
+  height: 36px;
+  color: var(--admin-text);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 10px;
+  transition:
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.18s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+}
+
+.btn-default {
+  color: var(--admin-text-secondary);
+  background: var(--admin-surface);
+  border-color: var(--admin-border-strong);
+
+  &:hover {
+    color: var(--admin-primary);
+    background: var(--admin-primary-soft);
+    border-color: rgb(99 102 241 / 40%);
+  }
+}
+
+.btn-primary {
+  color: #fff;
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  border-color: transparent;
+  box-shadow: 0 12px 24px -17px rgb(79 70 229 / 82%);
+}
+
+.btn-success {
+  color: #fff;
+  background: #2f9e70;
+  border-color: #2f9e70;
+}
+
+.btn-danger {
+  color: #fff;
+  background: #d95d68;
+  border-color: #d95d68;
+}
+
+.btn-warning-light {
+  color: #9a6518;
+  background: rgb(245 179 66 / 13%);
+  border-color: rgb(245 179 66 / 46%);
+}
+
+.dropdown-menu {
+  padding: 6px;
+  color: var(--admin-text);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  box-shadow: 0 18px 46px -28px rgb(10 18 30 / 58%);
+}
+
+.column-menu label,
+.export-menu button,
+.page-size-dropdown button {
+  border-radius: 8px;
+
+  &:hover {
+    color: var(--admin-primary);
+    background: var(--admin-surface-hover);
+  }
+}
+
+.fixed-table-container {
+  overflow: hidden auto;
+  border: 1px solid var(--admin-border);
+  border-radius: 13px;
+}
+
+.fixed-table-loading {
+  color: var(--admin-text);
+  background: var(--admin-overlay);
+  backdrop-filter: blur(3px);
+}
+
+.table {
+  color: var(--admin-text);
+  background: var(--admin-surface);
+
+  th,
+  td {
+    padding: 11px 12px;
+    color: var(--admin-text);
+    border-color: var(--admin-border);
+  }
+
+  th {
+    color: var(--admin-text-secondary);
+    background: var(--admin-surface-soft);
+  }
+
+  tbody tr:nth-of-type(odd) {
+    background: color-mix(in srgb, var(--admin-surface-soft) 58%, transparent);
+  }
+
+  tbody tr:hover {
+    background: var(--admin-surface-hover);
+  }
+}
+
+.sortable::after {
+  color: var(--admin-muted);
+}
+
+.btn-operate {
+  color: var(--admin-primary);
+  border-radius: 7px;
+
+  &:hover {
+    background: var(--admin-primary-soft);
+  }
+}
+
+.page-btn {
+  color: var(--admin-text-secondary);
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+  border-radius: 9px;
+
+  &:hover:not(:disabled),
+  &.active {
+    color: #fff;
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    border-color: transparent;
+  }
+}
+
+input[type='checkbox'] {
+  accent-color: #6366f1;
+}
+
+@media (width <= 768px) {
+  .skit-fastadmin-page {
+    padding: 0;
+  }
+
+  .skit-panel {
+    padding: 14px;
+    border-radius: 13px;
+  }
+}
+</style>

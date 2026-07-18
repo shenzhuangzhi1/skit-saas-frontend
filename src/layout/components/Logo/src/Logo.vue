@@ -97,15 +97,20 @@ watch(
 <style lang="scss" scoped>
 .app-brand-logo {
   object-fit: cover;
+  border: 1px solid rgb(129 140 248 / 34%);
   border-radius: 12px;
-  box-shadow: 0 8px 18px -10px rgb(31 42 68 / 52%);
+  box-shadow:
+    0 10px 24px -14px rgb(99 102 241 / 72%),
+    0 0 0 4px rgb(99 102 241 / 8%);
 }
 
 .app-brand-title {
   max-width: 190px;
   overflow: hidden;
+  font-weight: 760;
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 18px rgb(99 102 241 / 24%);
   white-space: nowrap;
 }
 </style>

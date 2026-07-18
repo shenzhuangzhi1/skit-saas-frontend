@@ -11,6 +11,33 @@ import { store } from '../index'
 
 const { wsCache } = useCache()
 
+const defaultTheme: ThemeTypes = {
+  elColorPrimary: '#6366f1',
+  leftMenuBorderColor: 'rgba(148, 163, 184, 0.12)',
+  leftMenuBgColor: '#0f172a',
+  leftMenuBgLightColor: '#111c32',
+  leftMenuBgActiveColor: 'rgba(99, 102, 241, 0.22)',
+  leftMenuCollapseBgActiveColor: 'rgba(99, 102, 241, 0.24)',
+  leftMenuTextColor: '#94a3b8',
+  leftMenuTextActiveColor: '#ffffff',
+  logoTitleTextColor: '#f8fafc',
+  logoBorderColor: 'rgba(148, 163, 184, 0.12)',
+  topHeaderBgColor: 'rgba(255, 255, 255, 0.82)',
+  topHeaderTextColor: '#475569',
+  topHeaderHoverColor: '#eef2ff',
+  topToolBorderColor: 'rgba(148, 163, 184, 0.14)'
+}
+
+const getInitialTheme = (): ThemeTypes => {
+  const cachedTheme = wsCache.get(CACHE_KEY.THEME) as ThemeTypes | undefined
+  if (!cachedTheme) return { ...defaultTheme }
+
+  // Upgrade the previous default palette while preserving user-defined themes.
+  return cachedTheme.elColorPrimary?.toLowerCase() === '#e396b6'
+    ? { ...cachedTheme, ...defaultTheme }
+    : cachedTheme
+}
+
 interface AppState {
   breadcrumb: boolean
   breadcrumbIcon: boolean
@@ -74,33 +101,33 @@ export const useAppStore = defineStore('app', {
       layout: normalizeLayout(wsCache.get(CACHE_KEY.LAYOUT)), // layout布局
       isDark: wsCache.get(CACHE_KEY.IS_DARK) || false, // 是否是暗黑模式
       currentSize: wsCache.get('default') || 'default', // 组件尺寸
-      theme: wsCache.get(CACHE_KEY.THEME) || {
+      theme: getInitialTheme() || {
         // 主题色
-        elColorPrimary: '#e396b6',
+        elColorPrimary: '#6366f1',
         // 左侧菜单边框颜色
         leftMenuBorderColor: 'inherit',
         // 左侧菜单背景颜色
-        leftMenuBgColor: '#ffffff',
+        leftMenuBgColor: '#0f172a',
         // 左侧菜单浅色背景颜色
-        leftMenuBgLightColor: '#fafbfc',
+        leftMenuBgLightColor: '#111c32',
         // 左侧菜单选中背景颜色
-        leftMenuBgActiveColor: '#fdf1f6',
+        leftMenuBgActiveColor: 'rgba(99, 102, 241, 0.22)',
         // 左侧菜单收起选中背景颜色
-        leftMenuCollapseBgActiveColor: '#fdf1f6',
+        leftMenuCollapseBgActiveColor: 'rgba(99, 102, 241, 0.24)',
         // 左侧菜单字体颜色
-        leftMenuTextColor: '#5f6878',
+        leftMenuTextColor: '#94a3b8',
         // 左侧菜单选中字体颜色
-        leftMenuTextActiveColor: '#c7628d',
+        leftMenuTextActiveColor: '#ffffff',
         // logo字体颜色
-        logoTitleTextColor: '#202531',
+        logoTitleTextColor: '#f8fafc',
         // logo边框颜色
         logoBorderColor: 'inherit',
         // 头部背景颜色
-        topHeaderBgColor: '#fff',
+        topHeaderBgColor: 'rgba(255, 255, 255, 0.82)',
         // 头部字体颜色
-        topHeaderTextColor: '#505867',
+        topHeaderTextColor: '#475569',
         // 头部悬停颜色
-        topHeaderHoverColor: '#fdf1f6',
+        topHeaderHoverColor: '#eef2ff',
         // 头部边框颜色
         topToolBorderColor: '#eee'
       }

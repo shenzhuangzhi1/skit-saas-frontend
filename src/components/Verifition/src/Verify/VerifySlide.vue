@@ -152,9 +152,9 @@ let secretKey = ref(''), //后端返回的ase加密秘钥
   moveBlockLeft = ref(undefined),
   leftBarWidth = ref(undefined),
   // 移动中样式
-  moveBlockBackgroundColor = ref(undefined),
-  leftBarBorderColor = ref('#ddd'),
-  iconColor = ref(undefined),
+  moveBlockBackgroundColor = ref('var(--captcha-handle-bg)'),
+  leftBarBorderColor = ref('var(--captcha-border)'),
+  iconColor = ref('var(--captcha-icon)'),
   iconClass = ref('icon-right'),
   status = ref(false), //鼠标状态
   isEnd = ref(false), //是够验证完成
@@ -230,8 +230,8 @@ const start = (e) => {
   startMoveTime.value = +new Date() //开始滑动的时间
   if (isEnd.value == false) {
     text.value = ''
-    moveBlockBackgroundColor.value = '#337ab7'
-    leftBarBorderColor.value = '#337AB7'
+    moveBlockBackgroundColor.value = 'var(--captcha-primary)'
+    leftBarBorderColor.value = 'var(--captcha-primary)'
     iconColor.value = '#fff'
     e.stopPropagation()
     status.value = true
@@ -338,9 +338,9 @@ const refresh = async () => {
   leftBarWidth.value = undefined
   transitionWidth.value = 'width .3s'
 
-  leftBarBorderColor.value = '#ddd'
-  moveBlockBackgroundColor.value = '#fff'
-  iconColor.value = '#000'
+  leftBarBorderColor.value = 'var(--captcha-border)'
+  moveBlockBackgroundColor.value = 'var(--captcha-handle-bg)'
+  iconColor.value = 'var(--captcha-icon)'
   iconClass.value = 'icon-right'
   isEnd.value = false
 

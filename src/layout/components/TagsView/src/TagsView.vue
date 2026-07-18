@@ -498,8 +498,12 @@ watch(
 $prefix-cls: #{$namespace}-tags-view;
 
 .#{$prefix-cls} {
+  background: rgb(255 255 255 / 68%);
+  backdrop-filter: blur(18px);
+
   :deep(.#{$elNamespace}-scrollbar__view) {
     height: 100%;
+    padding: 0 7px;
   }
 
   &__tool {
@@ -511,7 +515,7 @@ $prefix-cls: #{$namespace}-tags-view;
       left: 0;
       width: 100%;
       height: 100%;
-      border-left: 1px solid var(--el-border-color);
+      border-left: 0;
       content: '';
     }
 
@@ -522,7 +526,7 @@ $prefix-cls: #{$namespace}-tags-view;
         left: 0;
         width: 100%;
         height: 100%;
-        border-right: 1px solid var(--el-border-color);
+        border-right: 0;
         border-left: none;
         content: '';
       }
@@ -533,13 +537,19 @@ $prefix-cls: #{$namespace}-tags-view;
     position: relative;
     top: 3px;
     height: calc(100% - 6px);
-    padding-right: 15px;
+    padding-right: 16px;
     margin-left: 4px;
     font-size: 12px;
+    color: #64748b;
     cursor: pointer;
-    border: 1px solid #d9d9d9;
-    border-radius: 2px;
+    background: rgb(248 250 252 / 76%);
+    border: 1px solid rgb(148 163 184 / 18%);
+    border-radius: 11px;
     box-sizing: border-box;
+    transition:
+      color 0.18s ease,
+      background-color 0.18s ease,
+      border-color 0.18s ease;
 
     &--close {
       position: absolute;
@@ -568,8 +578,9 @@ $prefix-cls: #{$namespace}-tags-view;
 
   &__item.is-active {
     color: var(--el-color-white);
-    background-color: var(--el-color-primary);
-    border: 1px solid var(--el-color-primary);
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    border: 1px solid transparent;
+    box-shadow: 0 9px 20px -15px rgb(79 70 229 / 88%);
 
     .#{$prefix-cls}__item--close {
       :deep(span) {
@@ -614,8 +625,10 @@ $prefix-cls: #{$namespace}-tags-view;
   }
 }
 
-.dark {
+:global(.dark) {
   .#{$prefix-cls} {
+    background: rgb(15 23 42 / 70%);
+
     &__tool {
       &--first {
         &::after {
@@ -625,7 +638,9 @@ $prefix-cls: #{$namespace}-tags-view;
     }
 
     &__item {
-      border: 1px solid var(--el-border-color);
+      color: #94a3b8;
+      background: rgb(30 41 59 / 72%);
+      border: 1px solid rgb(148 163 184 / 13%);
     }
 
     &__item:not(.is-active) {
@@ -636,8 +651,8 @@ $prefix-cls: #{$namespace}-tags-view;
 
     &__item.is-active {
       color: var(--el-color-white);
-      background-color: var(--el-color-primary);
-      border: 1px solid var(--el-color-primary);
+      background: linear-gradient(135deg, #6366f1, #7c3aed);
+      border: 1px solid transparent;
 
       .#{$prefix-cls}__item--close {
         :deep(span) {
