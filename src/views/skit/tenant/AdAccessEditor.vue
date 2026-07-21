@@ -241,6 +241,12 @@
         <el-form-item label="展示模板已核验">
           <el-switch v-model="capabilityForm.impressionCallbackTemplateVerified" />
         </el-form-item>
+        <el-form-item label="奖励解锁广告源">
+          <RewardNetworkSelector
+            v-model="capabilityForm.unlockNetworkFirmIds"
+            :capabilities="readiness.availableNetworkCapabilities || []"
+          />
+        </el-form-item>
         <el-form-item label="灰度会员 ID（当前租户）">
           <el-input
             v-model="capabilityForm.shadowTestMemberIds"
@@ -392,11 +398,11 @@ import { InputPassword } from '@/components/InputPassword'
 import AsyncState from '@/views/skit/shared/AsyncState.vue'
 import * as TenantApi from '@/api/skit/tenant'
 import AdReadinessChecklist from './AdReadinessChecklist.vue'
+import RewardNetworkSelector from './RewardNetworkSelector.vue'
 import {
   buildAdAccountWritePayload,
   CURRENT_PROTOCOL_VERSION,
   parseShadowMemberIds,
-  TAKU_ADX_UNLOCK_NETWORK_FIRM_IDS,
   resolveTenantAdAccountId,
   sanitizeAdAccountResponse,
   sanitizeReportingConfiguration,
@@ -429,6 +435,7 @@ interface CapabilityForm {
   dedicatedPlacementVerified: boolean
   rewardCallbackTemplateVerified: boolean
   impressionCallbackTemplateVerified: boolean
+  unlockNetworkFirmIds: number[]
   shadowTestMemberIds: string
   minNativeVersion: string
   reason: string
@@ -494,6 +501,7 @@ const loadReadiness = async (currentRequestId: number) => {
       dedicatedPlacementVerified: Boolean(response.dedicatedPlacementVerified),
       rewardCallbackTemplateVerified: Boolean(response.rewardCallbackTemplateVerified),
       impressionCallbackTemplateVerified: Boolean(response.impressionCallbackTemplateVerified),
+      unlockNetworkFirmIds: [...(response.unlockNetworkFirmIds || [])],
       shadowTestMemberIds: (response.shadowTestMemberIds || []).join(', '),
       minNativeVersion: response.minNativeVersion || '',
       reason: ''
@@ -577,6 +585,10 @@ const saveCapability = async () => {
     ElMessage.warning('未读取到当前租户已启用的 Taku 广告账号')
     return
   }
+  if (form.unlockNetworkFirmIds.length === 0) {
+    ElMessage.warning('至少选择一个已验证的奖励解锁广告源')
+    return
+  }
   const reason = auditedReason(form.reason, '配置变更原因')
   if (!reason) return
   capabilitySaving.value = true
@@ -587,7 +599,7 @@ const saveCapability = async () => {
       dedicatedPlacementVerified: form.dedicatedPlacementVerified,
       rewardCallbackTemplateVerified: form.rewardCallbackTemplateVerified,
       impressionCallbackTemplateVerified: form.impressionCallbackTemplateVerified,
-      unlockNetworkFirmIds: [...TAKU_ADX_UNLOCK_NETWORK_FIRM_IDS],
+      unlockNetworkFirmIds: [...form.unlockNetworkFirmIds],
       shadowTestMemberIds: parseShadowMemberIds(form.shadowTestMemberIds),
       minNativeVersion: form.minNativeVersion.trim(),
       minProtocolVersion: CURRENT_PROTOCOL_VERSION,

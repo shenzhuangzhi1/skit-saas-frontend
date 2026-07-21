@@ -50,6 +50,89 @@ describe('tenant advertising access API client', () => {
     })
   })
 
+  it('normalizes a missing selection to empty and allow-lists dynamic network metadata', async () => {
+    get.mockResolvedValue({
+      tenantId: 17,
+      adAccountId: 9,
+      rolloutState: 'OFF',
+      readinessVersion: 0,
+      availableNetworkCapabilities: [
+        {
+          networkFirmId: 112,
+          displayName: '动态来源甲',
+          rewardAuthority: 'SIGNED_REWARD',
+          enabled: true,
+          verified: false,
+          verifiedAt: '2026-07-22T07:30:00',
+          selectable: false,
+          blockers: ['CAPABILITY_NOT_VERIFIED'],
+          supportsUserId: true,
+          supportsCustomData: true,
+          supportsStableTransaction: true,
+          supportsImpressionRevenue: true,
+          supportsReporting: true,
+          adsourceId: 'must-not-reach-the-view',
+          callbackError: 'must-not-reach-the-view'
+        }
+      ],
+      networkReadiness: [
+        {
+          networkFirmId: 112,
+          rewardAuthority: 'SIGNED_REWARD',
+          enabled: true,
+          verified: true,
+          supportsUserId: true,
+          supportsCustomData: true,
+          supportsStableTransaction: true,
+          supportsImpressionRevenue: true,
+          supportsReporting: true,
+          authoritative: true,
+          signedRewardObserved: true,
+          impressionObserved: true,
+          lastSignedRewardCallbackAt: '2026-07-22T07:31:00',
+          lastImpressionCallbackAt: '2026-07-22T07:32:00',
+          blockers: [],
+          showId: 'must-not-reach-the-view'
+        }
+      ],
+      callbackError: 'must-not-reach-the-view',
+      rewardSecret: 'must-not-reach-the-view'
+    })
+
+    const response = await getTenantAdReadiness({ kind: 'own', tenantId: 17 })
+
+    expect(response.unlockNetworkFirmIds).toEqual([])
+    expect(response.availableNetworkCapabilities).toEqual([
+      {
+        networkFirmId: 112,
+        displayName: '动态来源甲',
+        rewardAuthority: 'SIGNED_REWARD',
+        enabled: true,
+        verified: false,
+        verifiedAt: '2026-07-22T07:30:00',
+        selectable: false,
+        blockers: ['CAPABILITY_NOT_VERIFIED'],
+        supportsUserId: true,
+        supportsCustomData: true,
+        supportsStableTransaction: true,
+        supportsImpressionRevenue: true,
+        supportsReporting: true
+      }
+    ])
+    expect(response.availableNetworkCapabilities?.[0]).not.toHaveProperty('adsourceId')
+    expect(response.availableNetworkCapabilities?.[0]).not.toHaveProperty('callbackError')
+    expect(response.networkReadiness?.[0]).toEqual(
+      expect.objectContaining({
+        networkFirmId: 112,
+        lastSignedRewardCallbackAt: '2026-07-22T07:31:00',
+        lastImpressionCallbackAt: '2026-07-22T07:32:00'
+      })
+    )
+    expect(response.networkReadiness?.[0]).not.toHaveProperty('showId')
+    expect(response).not.toHaveProperty('callbackError')
+    expect(response).not.toHaveProperty('rewardSecret')
+  })
+
   it('uses write-only account and optimistic readiness mutation contracts', async () => {
     put.mockResolvedValue({})
     const target = { kind: 'platform', tenantId: 23 } as const
@@ -72,7 +155,7 @@ describe('tenant advertising access API client', () => {
       dedicatedPlacementVerified: true,
       rewardCallbackTemplateVerified: true,
       impressionCallbackTemplateVerified: true,
-      unlockNetworkFirmIds: [35, 66, 67],
+      unlockNetworkFirmIds: [112, 987],
       shadowTestMemberIds: [7],
       minNativeVersion: '2026.7.15',
       minProtocolVersion: 1,
@@ -100,6 +183,7 @@ describe('tenant advertising access API client', () => {
       url: '/skit/tenant/ad-readiness/configuration',
       data: expect.objectContaining({
         tenantId: 23,
+        unlockNetworkFirmIds: [112, 987],
         expectedReadinessVersion: 4,
         reason: '核验广告回调模板和灰度配置'
       }),

@@ -18,6 +18,52 @@
     <div v-if="readiness.blockers.length" class="mt-12px text-[var(--el-color-danger)]">
       阻断项：{{ readiness.blockers.join('、') }}
     </div>
+    <div v-if="hasPerNetworkEvidence" class="mt-16px" data-testid="network-readiness-list">
+      <div class="mb-8px font-600">逐广告源验奖证据</div>
+      <div v-if="networkRows.length === 0" class="text-[var(--el-color-danger)]">
+        尚未选择奖励解锁广告源
+      </div>
+      <div v-else class="grid gap-10px">
+        <div
+          v-for="network in networkRows"
+          :key="network.networkFirmId"
+          class="rounded border border-[var(--el-border-color)] p-10px"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-8px">
+            <span>{{ networkLabel(network) }}</span>
+            <div class="flex flex-wrap gap-6px">
+              <el-tag :type="network.authoritative ? 'success' : 'danger'" size="small">
+                {{ network.authoritative ? '签名能力可信' : '签名能力未通过' }}
+              </el-tag>
+              <el-tag :type="network.signedRewardObserved ? 'success' : 'danger'" size="small">
+                {{ network.signedRewardObserved ? '奖励已观测' : '奖励未观测' }}
+              </el-tag>
+              <el-tag :type="network.impressionObserved ? 'success' : 'danger'" size="small">
+                {{ network.impressionObserved ? '展示已观测' : '展示未观测' }}
+              </el-tag>
+            </div>
+          </div>
+          <div
+            v-if="network.blockers.length"
+            class="mt-6px text-12px text-[var(--el-color-danger)]"
+          >
+            阻断项：{{ network.blockers.join('、') }}
+          </div>
+        </div>
+      </div>
+      <div
+        v-if="readiness.productionReady && !perNetworkReady"
+        class="mt-8px text-[var(--el-color-danger)]"
+      >
+        逐广告源证据未全部通过，聚合状态不作为生产放行依据。
+      </div>
+    </div>
+    <div
+      v-if="!hasPerNetworkEvidence && selectedNetworkIds.length > 1"
+      class="mt-12px text-[var(--el-color-danger)]"
+    >
+      后端未返回逐广告源证据，多来源聚合状态不能用于生产放行。
+    </div>
     <div class="mt-16px flex flex-wrap gap-8px">
       <el-button
         :disabled="!readiness.shadowReady"
@@ -27,7 +73,7 @@
         开启灰度验证
       </el-button>
       <el-button
-        :disabled="!readiness.productionReady"
+        :disabled="!productionRolloutReady"
         data-testid="enforce-rollout"
         type="primary"
         @click="$emit('rollout', 'ENFORCED')"
@@ -44,12 +90,70 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import type {
+  TenantAdNetworkReadinessVO,
   TenantAdReadinessVO as TenantAdReadiness,
   TenantAdRolloutState as AdRolloutState
 } from '@/api/skit/tenant'
 
 const props = defineProps<{ readiness: TenantAdReadiness }>()
 defineEmits<{ rollout: [state: AdRolloutState] }>()
+
+interface NetworkReadinessDisplay {
+  networkFirmId: number
+  displayName?: string
+  authoritative: boolean
+  signedRewardObserved: boolean
+  impressionObserved: boolean
+  blockers: string[]
+}
+
+const selectedNetworkIds = computed(() => props.readiness.unlockNetworkFirmIds || [])
+const hasPerNetworkEvidence = computed(() => Array.isArray(props.readiness.networkReadiness))
+
+const networkRows = computed<NetworkReadinessDisplay[]>(() => {
+  if (!hasPerNetworkEvidence.value) return []
+  const byNetwork = new Map<number, NetworkReadinessDisplay>()
+  const returnedNetworks = props.readiness.networkReadiness || []
+  returnedNetworks.forEach((network) => {
+    byNetwork.set(network.networkFirmId, network)
+  })
+  selectedNetworkIds.value.forEach((networkFirmId) => {
+    if (!byNetwork.has(networkFirmId)) {
+      byNetwork.set(networkFirmId, {
+        networkFirmId,
+        authoritative: false,
+        signedRewardObserved: false,
+        impressionObserved: false,
+        blockers: ['NETWORK_READINESS_MISSING']
+      })
+    }
+  })
+  return [...byNetwork.values()].sort((left, right) => left.networkFirmId - right.networkFirmId)
+})
+
+const perNetworkReady = computed(() => {
+  if (!hasPerNetworkEvidence.value) return selectedNetworkIds.value.length === 1
+  if (selectedNetworkIds.value.length === 0) return false
+  const byNetwork = new Map(
+    (props.readiness.networkReadiness || []).map((network) => [network.networkFirmId, network])
+  )
+  return selectedNetworkIds.value.every((networkFirmId) => {
+    const network = byNetwork.get(networkFirmId)
+    return Boolean(
+      network?.authoritative &&
+      network.signedRewardObserved &&
+      network.impressionObserved &&
+      network.blockers.length === 0
+    )
+  })
+})
+
+const productionRolloutReady = computed(
+  () => props.readiness.productionReady && perNetworkReady.value
+)
+
+const networkLabel = (network: Pick<TenantAdNetworkReadinessVO, 'networkFirmId' | 'displayName'>) =>
+  network.displayName || `networkFirmId ${network.networkFirmId}`
 
 const gates = computed(() => [
   { key: 'tenant', label: '代理商状态', ready: props.readiness.tenantActive },

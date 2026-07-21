@@ -110,6 +110,33 @@ export interface TenantAdAccountVO {
 }
 
 export type TenantAdRolloutState = 'OFF' | 'SHADOW_TEST_USERS' | 'ENFORCED'
+export type TenantAdTimestamp = number | string | null
+
+export interface TenantAdNetworkCapabilityVO {
+  networkFirmId: number
+  /** Optional administrator-facing metadata. Falls back to networkFirmId when absent. */
+  displayName?: string
+  rewardAuthority: string
+  enabled: boolean
+  verified: boolean
+  verifiedAt?: TenantAdTimestamp
+  selectable?: boolean
+  blockers: string[]
+  supportsUserId: boolean
+  supportsCustomData: boolean
+  supportsStableTransaction: boolean
+  supportsImpressionRevenue: boolean
+  supportsReporting: boolean
+}
+
+export interface TenantAdNetworkReadinessVO extends TenantAdNetworkCapabilityVO {
+  authoritative: boolean
+  signedRewardObserved: boolean
+  impressionObserved: boolean
+  lastSignedRewardCallbackAt?: TenantAdTimestamp
+  lastImpressionCallbackAt?: TenantAdTimestamp
+  blockers: string[]
+}
 
 export interface TenantAdReadinessVO {
   tenantId: number
@@ -119,14 +146,16 @@ export interface TenantAdReadinessVO {
   expectedReadinessVersion?: number
   dedicatedUnlockPlacementId?: string | null
   dedicatedPlacementVerified?: boolean
-  unlockNetworkFirmIds?: number[]
+  unlockNetworkFirmIds: number[]
+  availableNetworkCapabilities?: TenantAdNetworkCapabilityVO[]
+  networkReadiness?: TenantAdNetworkReadinessVO[]
   shadowTestMemberIds?: number[]
   minNativeVersion?: string | null
   minProtocolVersion?: number | null
   callbackKeyVersion?: number | null
-  callbackKeyIssuedAt?: number | null
+  callbackKeyIssuedAt?: TenantAdTimestamp
   rewardSecretVersion?: number | null
-  rewardSecretIssuedAt?: number | null
+  rewardSecretIssuedAt?: TenantAdTimestamp
   callbackPublicUrlHttps?: boolean
   tenantActive: boolean
   accountReady: boolean
@@ -147,9 +176,162 @@ export interface TenantAdReadinessVO {
   shadowReady: boolean
   productionReady: boolean
   blockers: string[]
-  lastSignedRewardCallbackAt?: number | null
-  lastImpressionCallbackAt?: number | null
-  lastReportSuccessAt?: number | null
+  lastSignedRewardCallbackAt?: TenantAdTimestamp
+  lastImpressionCallbackAt?: TenantAdTimestamp
+  lastReportSuccessAt?: TenantAdTimestamp
+}
+
+type UnknownRecord = Record<string, unknown>
+
+const isRecord = (value: unknown): value is UnknownRecord =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+const positiveInteger = (value: unknown): number | undefined =>
+  Number.isSafeInteger(value) && Number(value) > 0 ? Number(value) : undefined
+
+const nonNegativeInteger = (value: unknown): number | undefined =>
+  Number.isSafeInteger(value) && Number(value) >= 0 ? Number(value) : undefined
+
+const positiveIntegerList = (value: unknown): number[] => {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.flatMap((item) => positiveInteger(item) ?? []))].sort(
+    (left, right) => left - right
+  )
+}
+
+const safeAdminLabel = (source: UnknownRecord): string | undefined => {
+  const label = [source.displayName, source.networkName, source.name].find(
+    (value) => typeof value === 'string' && value.trim().length > 0
+  )
+  return typeof label === 'string' ? label.trim().slice(0, 128) : undefined
+}
+
+const safeText = (value: unknown, maximum: number): string | undefined =>
+  typeof value === 'string' ? value.slice(0, maximum) : undefined
+
+const blockerList = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.filter(
+        (item): item is string => typeof item === 'string' && /^[A-Z][A-Z0-9_:-]{0,127}$/.test(item)
+      )
+    : []
+
+const safeTimestamp = (value: unknown): TenantAdTimestamp | undefined => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (
+    typeof value === 'string' &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})?$/.test(value)
+  ) {
+    return value
+  }
+  return value === null ? null : undefined
+}
+
+const sanitizeNetworkCapability = (value: unknown): TenantAdNetworkCapabilityVO | undefined => {
+  if (!isRecord(value)) return undefined
+  const networkFirmId = positiveInteger(value.networkFirmId)
+  if (!networkFirmId) return undefined
+  const displayName = safeAdminLabel(value)
+  const verifiedAt = safeTimestamp(value.verifiedAt)
+  return {
+    networkFirmId,
+    ...(displayName ? { displayName } : {}),
+    rewardAuthority: typeof value.rewardAuthority === 'string' ? value.rewardAuthority : '',
+    enabled: value.enabled === true,
+    verified: value.verified === true,
+    ...(verifiedAt !== undefined ? { verifiedAt } : {}),
+    ...(typeof value.selectable === 'boolean' ? { selectable: value.selectable } : {}),
+    blockers: blockerList(value.blockers),
+    supportsUserId: value.supportsUserId === true,
+    supportsCustomData: value.supportsCustomData === true,
+    supportsStableTransaction: value.supportsStableTransaction === true,
+    supportsImpressionRevenue: value.supportsImpressionRevenue === true,
+    supportsReporting: value.supportsReporting === true
+  }
+}
+
+const sanitizeNetworkCapabilities = (value: unknown): TenantAdNetworkCapabilityVO[] => {
+  if (!Array.isArray(value)) return []
+  const byNetwork = new Map<number, TenantAdNetworkCapabilityVO>()
+  value.forEach((item) => {
+    const capability = sanitizeNetworkCapability(item)
+    if (capability) byNetwork.set(capability.networkFirmId, capability)
+  })
+  return [...byNetwork.values()].sort((left, right) => left.networkFirmId - right.networkFirmId)
+}
+
+const sanitizeNetworkReadiness = (value: unknown): TenantAdNetworkReadinessVO[] | undefined => {
+  if (!Array.isArray(value)) return undefined
+  const byNetwork = new Map<number, TenantAdNetworkReadinessVO>()
+  value.forEach((item) => {
+    const capability = sanitizeNetworkCapability(item)
+    if (!capability || !isRecord(item)) return
+    byNetwork.set(capability.networkFirmId, {
+      ...capability,
+      authoritative: item.authoritative === true,
+      signedRewardObserved: item.signedRewardObserved === true,
+      impressionObserved: item.impressionObserved === true,
+      lastSignedRewardCallbackAt: safeTimestamp(item.lastSignedRewardCallbackAt),
+      lastImpressionCallbackAt: safeTimestamp(item.lastImpressionCallbackAt),
+      blockers: blockerList(item.blockers)
+    })
+  })
+  return [...byNetwork.values()].sort((left, right) => left.networkFirmId - right.networkFirmId)
+}
+
+/**
+ * Compatibility boundary for both the legacy aggregate response and the dynamic per-network DTO.
+ * Network rows are rebuilt from an allow-list so callback/session/source identifiers never reach views.
+ */
+export const normalizeTenantAdReadiness = (value: unknown): TenantAdReadinessVO => {
+  const source = isRecord(value) ? value : {}
+  const rolloutState = ['OFF', 'SHADOW_TEST_USERS', 'ENFORCED'].includes(
+    String(source.rolloutState)
+  )
+    ? (source.rolloutState as TenantAdRolloutState)
+    : 'OFF'
+  return {
+    tenantId: positiveInteger(source.tenantId) ?? 0,
+    adAccountId: positiveInteger(source.adAccountId) ?? null,
+    rolloutState,
+    readinessVersion: nonNegativeInteger(source.readinessVersion) ?? 0,
+    expectedReadinessVersion: nonNegativeInteger(source.expectedReadinessVersion),
+    dedicatedUnlockPlacementId: safeText(source.dedicatedUnlockPlacementId, 128) ?? null,
+    dedicatedPlacementVerified: source.dedicatedPlacementVerified === true,
+    unlockNetworkFirmIds: positiveIntegerList(source.unlockNetworkFirmIds),
+    availableNetworkCapabilities: sanitizeNetworkCapabilities(source.availableNetworkCapabilities),
+    networkReadiness: sanitizeNetworkReadiness(source.networkReadiness),
+    shadowTestMemberIds: positiveIntegerList(source.shadowTestMemberIds),
+    minNativeVersion: safeText(source.minNativeVersion, 64) ?? null,
+    minProtocolVersion: positiveInteger(source.minProtocolVersion) ?? null,
+    callbackKeyVersion: positiveInteger(source.callbackKeyVersion) ?? null,
+    callbackKeyIssuedAt: safeTimestamp(source.callbackKeyIssuedAt),
+    rewardSecretVersion: positiveInteger(source.rewardSecretVersion) ?? null,
+    rewardSecretIssuedAt: safeTimestamp(source.rewardSecretIssuedAt),
+    callbackPublicUrlHttps: source.callbackPublicUrlHttps === true,
+    tenantActive: source.tenantActive === true,
+    accountReady: source.accountReady === true,
+    callbackKeyConfigured: source.callbackKeyConfigured === true,
+    rewardSecretConfigured: source.rewardSecretConfigured === true,
+    dedicatedUnlockPlacement: source.dedicatedUnlockPlacement === true,
+    rewardCallbackTemplateVerified: source.rewardCallbackTemplateVerified === true,
+    impressionCallbackTemplateVerified: source.impressionCallbackTemplateVerified === true,
+    unlockNetworksAuthoritative: source.unlockNetworksAuthoritative === true,
+    reportingCredentialConfigured: source.reportingCredentialConfigured === true,
+    reportingPermissionVerified: source.reportingPermissionVerified === true,
+    reportFresh: source.reportFresh === true,
+    signedRewardCallbackObserved: source.signedRewardCallbackObserved === true,
+    impressionCallbackObserved: source.impressionCallbackObserved === true,
+    nativeReleaseReady: source.nativeReleaseReady === true,
+    protocolReady: source.protocolReady === true,
+    shadowMembersValid: source.shadowMembersValid === true,
+    shadowReady: source.shadowReady === true,
+    productionReady: source.productionReady === true,
+    blockers: blockerList(source.blockers),
+    lastSignedRewardCallbackAt: safeTimestamp(source.lastSignedRewardCallbackAt),
+    lastImpressionCallbackAt: safeTimestamp(source.lastImpressionCallbackAt),
+    lastReportSuccessAt: safeTimestamp(source.lastReportSuccessAt)
+  }
 }
 
 export interface TenantAdCapabilityVO {
@@ -665,11 +847,13 @@ export const saveManagedTenantAdAccount = (
 }
 
 export const getTenantAdReadiness = (target: ManagementTenantTarget) =>
-  request.get<TenantAdReadinessVO>({
-    url: '/skit/tenant/ad-readiness',
-    params: managementTenantQuery(target),
-    skipErrorMessage: true
-  })
+  request
+    .get<unknown>({
+      url: '/skit/tenant/ad-readiness',
+      params: managementTenantQuery(target),
+      skipErrorMessage: true
+    })
+    .then(normalizeTenantAdReadiness)
 
 export const configureTenantAdCapability = (
   target: ManagementTenantTarget,

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AdAccessEditor from '@/views/skit/tenant/AdAccessEditor.vue'
 import adAccessEditorSource from '@/views/skit/tenant/AdAccessEditor.vue?raw'
 import agentFormSource from '@/views/skit/tenant/AgentForm.vue?raw'
+import workspaceModelSource from '@/views/skit/tenant/workspaceModel.ts?raw'
 import AdReadinessChecklist from '@/views/skit/tenant/AdReadinessChecklist.vue'
 import CommissionPreview from '@/views/skit/tenant/CommissionPreview.vue'
 import LedgerSummary from '@/views/skit/tenant/LedgerSummary.vue'
@@ -43,6 +44,12 @@ describe('tenant revenue workspace components', () => {
     expect(adAccessEditorSource).toContain('Pangle Server Key')
   })
 
+  it('does not encode a default rewarded network in the tenant workspace', () => {
+    expect(workspaceModelSource).not.toContain('TAKU_ADX_UNLOCK_NETWORK_FIRM_IDS')
+    expect(workspaceModelSource).not.toMatch(/\[\s*66\s*\]/)
+    expect(adAccessEditorSource).not.toContain('TAKU_ADX_UNLOCK_NETWORK_FIRM_IDS')
+  })
+
   it('shows every readiness gate and prevents an unsafe production rollout', () => {
     const wrapper = mount(AdReadinessChecklist, {
       props: { readiness },
@@ -60,6 +67,91 @@ describe('tenant revenue workspace components', () => {
     expect(wrapper.text()).toContain('最近官方报表')
     expect(wrapper.text()).toContain('未通过')
     expect(wrapper.text()).toContain('REPORT_STALE')
+    expect(wrapper.get('[data-testid="enforce-rollout"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('renders every selected network blocker and distrusts a healthy aggregate', () => {
+    const wrapper = mount(AdReadinessChecklist, {
+      props: {
+        readiness: {
+          ...readiness,
+          productionReady: true,
+          blockers: [],
+          unlockNetworkFirmIds: [112, 987],
+          networkReadiness: [
+            {
+              networkFirmId: 112,
+              displayName: '动态来源甲',
+              rewardAuthority: 'SIGNED_REWARD',
+              enabled: true,
+              verified: true,
+              supportsUserId: true,
+              supportsCustomData: true,
+              supportsStableTransaction: true,
+              supportsImpressionRevenue: true,
+              supportsReporting: true,
+              authoritative: true,
+              signedRewardObserved: true,
+              impressionObserved: true,
+              blockers: []
+            },
+            {
+              networkFirmId: 987,
+              rewardAuthority: 'SIGNED_REWARD',
+              enabled: false,
+              verified: true,
+              supportsUserId: true,
+              supportsCustomData: true,
+              supportsStableTransaction: true,
+              supportsImpressionRevenue: true,
+              supportsReporting: true,
+              authoritative: false,
+              signedRewardObserved: false,
+              impressionObserved: false,
+              blockers: ['CAPABILITY_DISABLED', 'SIGNED_REWARD_NOT_OBSERVED']
+            }
+          ]
+        }
+      },
+      global: {
+        stubs: {
+          'el-tag': { template: '<span><slot /></span>' },
+          'el-button': {
+            props: ['disabled'],
+            template: '<button :disabled="disabled"><slot /></button>'
+          }
+        }
+      }
+    })
+
+    expect(wrapper.text()).toContain('动态来源甲')
+    expect(wrapper.text()).toContain('networkFirmId 987')
+    expect(wrapper.text()).toContain('CAPABILITY_DISABLED')
+    expect(wrapper.text()).toContain('SIGNED_REWARD_NOT_OBSERVED')
+    expect(wrapper.get('[data-testid="enforce-rollout"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('fails closed for a legacy aggregate that selects multiple networks without per-network evidence', () => {
+    const wrapper = mount(AdReadinessChecklist, {
+      props: {
+        readiness: {
+          ...readiness,
+          productionReady: true,
+          blockers: [],
+          unlockNetworkFirmIds: [112, 987]
+        }
+      },
+      global: {
+        stubs: {
+          'el-tag': { template: '<span><slot /></span>' },
+          'el-button': {
+            props: ['disabled'],
+            template: '<button :disabled="disabled"><slot /></button>'
+          }
+        }
+      }
+    })
+
     expect(wrapper.get('[data-testid="enforce-rollout"]').attributes('disabled')).toBeDefined()
   })
 
@@ -165,14 +257,20 @@ describe('tenant revenue workspace components', () => {
   })
 })
 
-const { getManagedTenantAdAccount, getTenantAdReadiness, getTenantReportingConfiguration } =
-  vi.hoisted(() => ({
-    getManagedTenantAdAccount: vi.fn(),
-    getTenantAdReadiness: vi.fn(),
-    getTenantReportingConfiguration: vi.fn()
-  }))
+const {
+  configureTenantAdCapability,
+  getManagedTenantAdAccount,
+  getTenantAdReadiness,
+  getTenantReportingConfiguration
+} = vi.hoisted(() => ({
+  configureTenantAdCapability: vi.fn(),
+  getManagedTenantAdAccount: vi.fn(),
+  getTenantAdReadiness: vi.fn(),
+  getTenantReportingConfiguration: vi.fn()
+}))
 
 vi.mock('@/api/skit/tenant', () => ({
+  configureTenantAdCapability,
   getManagedTenantAdAccount,
   getTenantAdReadiness,
   getTenantReportingConfiguration,
@@ -183,9 +281,145 @@ vi.mock('@/api/skit/tenant', () => ({
 
 describe('AdAccessEditor', () => {
   beforeEach(() => {
+    configureTenantAdCapability.mockReset()
     getManagedTenantAdAccount.mockReset()
     getTenantAdReadiness.mockReset()
     getTenantReportingConfiguration.mockReset()
+  })
+
+  it('preserves unavailable selections and persists the exact arbitrary network set', async () => {
+    getManagedTenantAdAccount.mockResolvedValue({
+      takuEnabled: true,
+      takuPlacementId: 'reward-placement'
+    })
+    getTenantAdReadiness.mockResolvedValue({
+      ...readiness,
+      adAccountId: 9,
+      dedicatedUnlockPlacementId: 'reward-placement',
+      unlockNetworkFirmIds: [112, 987],
+      availableNetworkCapabilities: [
+        {
+          networkFirmId: 112,
+          displayName: '动态来源甲',
+          rewardAuthority: 'SIGNED_REWARD',
+          enabled: true,
+          verified: true,
+          supportsUserId: true,
+          supportsCustomData: true,
+          supportsStableTransaction: true,
+          supportsImpressionRevenue: true,
+          supportsReporting: true
+        },
+        {
+          networkFirmId: 987,
+          rewardAuthority: 'SIGNED_REWARD',
+          enabled: false,
+          verified: true,
+          supportsUserId: true,
+          supportsCustomData: true,
+          supportsStableTransaction: true,
+          supportsImpressionRevenue: true,
+          supportsReporting: true
+        },
+        {
+          networkFirmId: 654,
+          rewardAuthority: 'OBSERVATION_ONLY',
+          enabled: true,
+          verified: true,
+          supportsUserId: true,
+          supportsCustomData: true,
+          supportsStableTransaction: true,
+          supportsImpressionRevenue: true,
+          supportsReporting: true
+        },
+        {
+          networkFirmId: 777,
+          rewardAuthority: 'SIGNED_REWARD',
+          enabled: true,
+          verified: true,
+          selectable: false,
+          blockers: ['ACCOUNT_SCOPE_MISMATCH'],
+          supportsUserId: true,
+          supportsCustomData: true,
+          supportsStableTransaction: true,
+          supportsImpressionRevenue: true,
+          supportsReporting: true
+        }
+      ]
+    })
+    getTenantReportingConfiguration.mockResolvedValue({
+      adAccountId: 9,
+      appId: 'taku-app',
+      placementId: 'reward-placement',
+      reportTimezone: 'UTC+8',
+      currency: 'USD',
+      amountScale: 8,
+      adFormat: 'rewarded_video',
+      credentialConfigured: true,
+      credentialVersion: 2
+    })
+    configureTenantAdCapability.mockResolvedValue({ readinessVersion: 5 })
+
+    const wrapper = mount(AdAccessEditor, {
+      props: { target: { kind: 'platform', tenantId: 23 } },
+      global: {
+        stubs: {
+          AsyncState: { template: '<div><slot /></div>' },
+          AdReadinessChecklist: { template: '<div>readiness</div>' },
+          InputPassword: true,
+          'el-form': { template: '<form><slot /></form>' },
+          'el-form-item': { template: '<label><slot /></label>' },
+          'el-input': { props: ['modelValue'], template: '<input :value="modelValue" />' },
+          'el-input-number': true,
+          'el-switch': true,
+          'el-button': { template: '<button><slot /></button>' },
+          'el-tag': { template: '<span><slot /></span>' },
+          'el-checkbox': { template: '<span><slot /></span>' },
+          'el-alert': true,
+          'el-divider': true,
+          'el-select': { template: '<div><slot /></div>' },
+          'el-option': true,
+          ContentWrap: { template: '<section><slot /></section>' },
+          Dialog: true
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('动态来源甲')
+    expect(wrapper.text()).toContain('networkFirmId 987')
+    expect(wrapper.text()).toContain('已选但当前不可用')
+    expect(wrapper.text()).toContain('不支持签名奖励')
+    expect(wrapper.text()).toContain('ACCOUNT_SCOPE_MISMATCH')
+
+    const vm = wrapper.vm as unknown as {
+      capabilityForm: { reason: string; unlockNetworkFirmIds: number[] }
+    }
+    vm.capabilityForm.reason = '保存当前租户任意广告来源选择集合'
+    expect(vm.capabilityForm.unlockNetworkFirmIds).toEqual([112, 987])
+    await wrapper.vm.$nextTick()
+    const saveButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('保存验奖配置'))
+    expect(saveButton).toBeDefined()
+    await saveButton?.trigger('click')
+    await flushPromises()
+
+    expect(configureTenantAdCapability).toHaveBeenCalledWith(
+      { kind: 'platform', tenantId: 23 },
+      expect.objectContaining({
+        unlockNetworkFirmIds: [112, 987],
+        expectedReadinessVersion: 4
+      })
+    )
+
+    configureTenantAdCapability.mockClear()
+    vm.capabilityForm.unlockNetworkFirmIds = []
+    vm.capabilityForm.reason = '不能静默提交空的奖励广告来源集合'
+    await wrapper.vm.$nextTick()
+    await saveButton?.trigger('click')
+    await flushPromises()
+    expect(configureTenantAdCapability).not.toHaveBeenCalled()
   })
 
   it('never renders credentials returned by a malformed server response', async () => {
