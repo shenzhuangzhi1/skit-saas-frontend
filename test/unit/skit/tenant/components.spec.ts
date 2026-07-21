@@ -1,6 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AdAccessEditor from '@/views/skit/tenant/AdAccessEditor.vue'
+import adAccessEditorSource from '@/views/skit/tenant/AdAccessEditor.vue?raw'
+import agentFormSource from '@/views/skit/tenant/AgentForm.vue?raw'
 import AdReadinessChecklist from '@/views/skit/tenant/AdReadinessChecklist.vue'
 import CommissionPreview from '@/views/skit/tenant/CommissionPreview.vue'
 import LedgerSummary from '@/views/skit/tenant/LedgerSummary.vue'
@@ -35,6 +37,12 @@ const readiness = {
 }
 
 describe('tenant revenue workspace components', () => {
+  it('identifies the Pangle server credential required for dynamic drama sync', () => {
+    expect(agentFormSource).toContain('Server Key')
+    expect(agentFormSource).not.toContain('label="App Secret" prop="pangleAppSecret"')
+    expect(adAccessEditorSource).toContain('Pangle Server Key')
+  })
+
   it('shows every readiness gate and prevents an unsafe production rollout', () => {
     const wrapper = mount(AdReadinessChecklist, {
       props: { readiness },

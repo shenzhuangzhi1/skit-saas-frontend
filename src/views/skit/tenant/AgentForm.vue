@@ -105,7 +105,7 @@
             class="mb-18px"
             :closable="false"
             show-icon
-            title="启用后必须完整填写账号、App ID、App Secret 和广告位；密钥不会从服务端回显。"
+            title="启用后必须完整填写账号、App ID、内容接口 Server Key 和广告位；Server Key 不会从服务端回显。"
             type="info"
           />
           <div class="mb-16px flex items-center justify-between gap-12px">
@@ -116,9 +116,9 @@
                 @change="handleProviderToggle('PANGLE')"
               />
               <el-tag v-if="formData.pangleSecretConfigured" size="small" type="success">
-                密钥已配置
+                密钥已配置（Server Key）
               </el-tag>
-              <el-tag v-else size="small" type="info">密钥未配置</el-tag>
+              <el-tag v-else size="small" type="info">密钥未配置（Server Key）</el-tag>
             </div>
             <el-button
               v-if="canClearPangle"
@@ -127,7 +127,7 @@
               type="danger"
               @click="clearProviderCredentials('PANGLE')"
             >
-              清除穿山甲密钥
+              清除穿山甲 Server Key
             </el-button>
           </div>
           <template v-if="formData.pangleEnabled">
@@ -147,7 +147,7 @@
                 show-word-limit
               />
             </el-form-item>
-            <el-form-item label="App Secret" prop="pangleAppSecret">
+            <el-form-item label="Server Key" prop="pangleAppSecret">
               <InputPassword
                 v-model="formData.pangleAppSecret"
                 autocomplete="new-password"
@@ -160,7 +160,7 @@
                 size="small"
                 type="success"
               >
-                已配置；留空保存会保留原密钥
+                已配置；留空保存会保留原 Server Key
               </el-text>
             </el-form-item>
             <el-form-item label="广告位 ID" prop="panglePlacementId">
@@ -457,7 +457,7 @@ const formRules = reactive<FormRules<AgentFormData>>({
   pangleAppId: [{ validator: requiredWhenEnabled('PANGLE', 'App ID'), trigger: 'blur' }],
   pangleAppSecret: [
     {
-      validator: requiredSecretWhenEnabled('PANGLE', 'pangleSecretConfigured', 'App Secret'),
+      validator: requiredSecretWhenEnabled('PANGLE', 'pangleSecretConfigured', 'Server Key'),
       trigger: 'blur'
     }
   ],

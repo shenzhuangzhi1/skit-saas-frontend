@@ -22,7 +22,11 @@
           <div class="mb-8px flex items-center gap-8px font-600">
             穿山甲
             <el-tag :type="accountForm.pangleSecretConfigured ? 'success' : 'info'" size="small">
-              {{ accountForm.pangleSecretConfigured ? '密钥已配置' : '密钥未配置' }}
+              {{
+                accountForm.pangleSecretConfigured
+                  ? '密钥已配置（Server Key）'
+                  : '密钥未配置（Server Key）'
+              }}
             </el-tag>
           </div>
           <el-form-item label="启用">
@@ -37,13 +41,15 @@
           <el-form-item label="解锁广告位">
             <el-input v-model="accountForm.panglePlacementId" maxlength="128" />
           </el-form-item>
-          <el-form-item label="App Secret">
+          <el-form-item label="Pangle Server Key">
             <InputPassword
               v-model="accountForm.pangleAppSecret"
               autocomplete="new-password"
               maxlength="2048"
               :placeholder="
-                accountForm.pangleSecretConfigured ? '留空保留已配置密钥' : '输入新密钥'
+                accountForm.pangleSecretConfigured
+                  ? '留空保留已配置 Server Key'
+                  : '输入内容接口 Server Key'
               "
             />
           </el-form-item>
