@@ -74,7 +74,7 @@ const remainingRouter: AppRouteRecordRaw[] = [
   {
     path: '/skit',
     component: Layout,
-    redirect: '/skit/user',
+    redirect: '/skit/user-center/agents',
     name: 'SkitSaas',
     meta: {
       title: '管理后台',
@@ -188,15 +188,46 @@ const remainingRouter: AppRouteRecordRaw[] = [
         meta: { title: '设备日志', icon: 'ep:monitor', noCache: false }
       },
       {
-        path: 'user',
-        component: () => import('@/views/skit/tenant/index.vue'),
-        name: 'SkitUser',
+        path: 'user-center',
+        component: getParentLayout(),
+        redirect: '/skit/user-center/agents',
+        name: 'SkitUserCenter',
         meta: {
           title: '用户管理',
           icon: 'ep:user',
-          noCache: true,
+          alwaysShow: true,
           roles: ['super_admin', 'tenant_admin']
-        }
+        },
+        children: [
+          {
+            path: 'agents',
+            component: () => import('@/views/skit/tenant/index.vue'),
+            name: 'SkitAgentManagement',
+            meta: {
+              title: '代理商管理',
+              icon: 'ep:office-building',
+              noCache: true,
+              roles: ['super_admin', 'tenant_admin']
+            }
+          },
+          {
+            path: 'users',
+            component: () => import('@/views/skit/user/index.vue'),
+            name: 'SkitAppUserManagement',
+            meta: {
+              title: '用户管理',
+              icon: 'ep:user-filled',
+              noCache: true,
+              roles: ['super_admin', 'tenant_admin']
+            }
+          }
+        ]
+      },
+      {
+        path: 'user',
+        redirect: '/skit/user-center/agents',
+        name: 'SkitUserLegacyRedirect',
+        meta: { hidden: true, noTagsView: true }
       },
       {
         path: 'announcement',

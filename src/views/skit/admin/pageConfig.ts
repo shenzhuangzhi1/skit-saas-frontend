@@ -675,7 +675,7 @@ export const skitMenuGroups: SkitMenuGroup[] = [
       { key: 'scoreLog', title: '积分记录', routeName: 'SkitScoreLog', totalRows: 1936 },
       { key: 'loginRecord', title: '登录记录', routeName: 'SkitLoginRecord', totalRows: 1342 },
       { key: 'deviceLog', title: '设备日志', routeName: 'SkitDeviceLog', totalRows: 153 },
-      { key: 'user', title: '用户管理', routeName: 'SkitUser', totalRows: 1258 },
+      { key: 'user', title: '代理商管理', routeName: 'SkitAgentManagement' },
       { key: 'announcement', title: '公告管理', routeName: 'SkitAnnouncement', totalRows: 2 }
     ]
   }
