@@ -157,7 +157,7 @@ const countCards = computed(() => {
   const counts = snapshot.value?.counts
   return [
     { label: '广告请求', value: counts?.requestCount || 0, hint: '客户端请求遥测' },
-    { label: '广告展示', value: counts?.displayCount || 0, hint: '平台展示事实' },
+    { label: '客户端展示', value: counts?.displayCount || 0, hint: '客户端 SHOWN 遥测' },
     { label: '签名奖励', value: counts?.verifiedRewardCount || 0, hint: '收益与解锁依据' },
     { label: '主动跳过', value: counts?.skipCount || 0, hint: '不授予奖励' },
     { label: '加载失败', value: counts?.failureCount || 0, hint: '需要排查' }

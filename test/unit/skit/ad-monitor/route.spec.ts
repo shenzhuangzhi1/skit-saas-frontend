@@ -7,7 +7,7 @@ const readSource = (path: string) => readFileSync(resolve(process.cwd(), path), 
 describe('advertising monitoring route', () => {
   it('replaces the editable sample ad record page with the dedicated read-only monitor', () => {
     const source = readSource('src/router/modules/remaining.ts')
-    const routeStart = source.indexOf("path: 'ad-record'")
+    const routeStart = source.indexOf("path: '/skit/ad-record'")
     const nextRouteStart = source.indexOf("path: 'withdraw'", routeStart)
 
     expect(routeStart).toBeGreaterThan(-1)
@@ -16,6 +16,7 @@ describe('advertising monitoring route', () => {
     const route = source.slice(routeStart, nextRouteStart)
     expect(route).toMatch(/import\('@\/views\/skit\/ad-monitor\/index\.vue'\)/)
     expect(route).toMatch(/title:\s*'广告监控'/)
+    expect(route).toMatch(/roles:\s*\['super_admin',\s*'tenant_admin'\]/)
     expect(route).not.toMatch(/AdminTable|pageKey|编辑|删除/)
   })
 

@@ -274,6 +274,10 @@
       </div>
 
       <div v-if="hasTable" class="fixed-table-container">
+        <div v-if="pageLoadError" class="table-load-error" role="alert">
+          <span>{{ pageLoadError }}</span>
+          <button class="btn btn-default" type="button" @click="loadPageRows">重试</button>
+        </div>
         <div v-if="loading" class="fixed-table-loading">正在努力地加载数据中，请稍候……</div>
         <div class="fixed-table-body">
           <table class="table table-striped table-bordered table-hover table-nowrap">
@@ -481,6 +485,7 @@ const tableRows = ref<TableRow[]>([])
 const tenantOptions = ref<Array<{ tenantId: number; name: string }>>([])
 const tenantOptionsError = ref('')
 const dramaPageError = ref('')
+const pageLoadError = ref('')
 const selectedKeys = ref(new Set<string>())
 const visibleColumnKeys = ref(new Set<string>())
 const advancedModel = reactive<Record<string, string>>({})
@@ -520,7 +525,7 @@ const scopeModel = computed<TenantScope>({
     scopeManager.select(selection)
     currentPage.value = 1
     selectedKeys.value = new Set()
-    void loadPageRows(false)
+    void loadPageRows()
   }
 })
 
@@ -570,11 +575,6 @@ const filteredRows = computed(() => {
     return page.value.searchFields.every((field) => fieldMatched(row, field))
   })
 })
-const hasActiveFilters = computed(
-  () =>
-    Boolean(keyword.value.trim()) ||
-    Object.values(advancedModel).some((value) => String(value || '').trim())
-)
 const hasLocalFilters = computed(() =>
   Object.values(advancedModel).some((value) => String(value || '').trim())
 )
@@ -587,21 +587,11 @@ const rowOperateActions = computed<OperateAction[]>(() => {
     { mode: 'edit', label: '编辑', text: '', icon: 'ep:edit' }
   ]
 })
-const displayTotalRows = computed(() => {
-  if (isDramaPage.value) {
-    return backendAvailable.value && !hasLocalFilters.value
-      ? backendTotalRows.value
-      : filteredRows.value.length
-  }
-  return backendAvailable.value && !hasLocalFilters.value
-    ? Math.max(
-        backendTotalRows.value,
-        !hasActiveFilters.value && page.value.totalRows !== undefined ? page.value.totalRows : 0
-      )
-    : !hasActiveFilters.value && page.value.totalRows !== undefined
-      ? page.value.totalRows
-      : filteredRows.value.length
-})
+const displayTotalRows = computed(() =>
+  backendAvailable.value && !hasLocalFilters.value
+    ? backendTotalRows.value
+    : filteredRows.value.length
+)
 const totalPages = computed(() => Math.max(1, Math.ceil(displayTotalRows.value / pageSize.value)))
 const pagedRows = computed(() => {
   if (backendAvailable.value) return filteredRows.value
@@ -649,6 +639,12 @@ watch(filteredRows, () => {
 })
 
 const hasAction = (action: string) => page.value.toolbar.some((item) => item.includes(action))
+
+const ensureBackendAvailable = () => {
+  if (backendAvailable.value) return true
+  ElMessage.error(pageLoadError.value || dramaPageError.value || '真实数据服务当前不可用，请重试')
+  return false
+}
 
 const isPositiveInteger = (value: unknown) => {
   const numeric = Number(value)
@@ -759,25 +755,7 @@ const fieldMatched = (row: TableRow, field: SkitSearchField) => {
   return true
 }
 
-const buildRows = () => {
-  if (page.value.status === 'empty' || isDramaPage.value) return []
-  const count = Math.min(page.value.totalRows || 12, 2000)
-  return Array.from({ length: count }, (_, index) => {
-    const row = buildRow(index + 1)
-    row.__rowKey = `${page.value.key}-${index + 1}`
-    return row
-  })
-}
-
-const buildRow = (index: number) => {
-  const row: TableRow = {}
-  page.value.columns.forEach((column) => {
-    row[column.prop] = valueFor(page.value.key, column.prop, index)
-  })
-  return row
-}
-
-const loadPageRows = async (fallback = true) => {
+const loadPageRows = async () => {
   const seq = backendLoadSeq.value + 1
   backendLoadSeq.value = seq
   if (!hasTable.value) {
@@ -788,6 +766,7 @@ const loadPageRows = async (fallback = true) => {
     return
   }
   dramaPageError.value = ''
+  pageLoadError.value = ''
   loading.value = true
   try {
     const result = await fetchBackendRows(page.value.key)
@@ -797,7 +776,7 @@ const loadPageRows = async (fallback = true) => {
     tableRows.value = (result.list || []).map((record) => mapBackendRecord(record))
   } catch (cause) {
     if (seq !== backendLoadSeq.value) return
-    backendAvailable.value = isDramaPage.value
+    backendAvailable.value = false
     backendTotalRows.value = 0
     tableRows.value = []
     if (isDramaPage.value) {
@@ -805,8 +784,8 @@ const loadPageRows = async (fallback = true) => {
         cause instanceof Error && cause.message.includes('select one tenant')
           ? '请先选择代理商'
           : '真实剧单加载失败'
-    } else if (fallback) {
-      tableRows.value = buildRows()
+    } else {
+      pageLoadError.value = '真实数据加载失败，请重试'
     }
   } finally {
     if (seq === backendLoadSeq.value) {
@@ -866,8 +845,8 @@ const buildRecordData = (source: Record<string, unknown>) => {
 
 const deriveBackendStatus = (data: Record<string, unknown>) => {
   const text = String(data.status || data.payment_status_text || data.ban_status_text || '')
-  if (text.includes('待') || text.includes('审核')) return 1
   if (text.includes('禁') || text.includes('拒')) return 2
+  if (text.includes('待') || text === '审核中') return 1
   return 0
 }
 
@@ -876,166 +855,13 @@ const backendId = (row: TableRow) => {
   return Number.isFinite(id) && id > 0 ? id : undefined
 }
 
-const valueFor = (targetPageKey: string, prop: string, index: number): string | number => {
-  const id = 1000 + index
-  if (prop === 'id') return sampleId(index)
-  if (prop === 'trans_id')
-    return `${index % 2 ? '9626eb0ab960ccb72d' : 'bcb045b828a19f135c'}${index}`
-  if (prop === 'network_firm_id') return [28, 15, 8][index % 3]
-  if (prop === 'reward_points') return index * 10
-  if (prop === 'publisher_revenue') return (index * 0.021).toFixed(3)
-  if (prop.endsWith('_id') || prop === 'user_id' || prop === 'uid')
-    return [14, 149, 22, 1032][index % 4]
-  if (prop.includes('time') || prop === 'createtime' || prop === 'updatetime') {
-    const hour = String((9 + index) % 24).padStart(2, '0')
-    return `2026-07-${String((index % 6) + 1).padStart(2, '0')} ${hour}:24:53`
+const selectedBackendRows = () => {
+  const rows = selectedRows.value.map((row) => ({ row, id: backendId(row) }))
+  if (rows.some(({ id }) => !id)) {
+    ElMessage.error('记录缺少服务端编号，已取消操作')
+    return null
   }
-  if (prop === 'log_date') return `2026-07-${String((index % 6) + 1).padStart(2, '0')}`
-  if (prop === 'ad_network') return ['kuaishou', 'kuaishou', 'csj', 'gdt'][index % 4]
-  if (prop === 'user_text') return `模拟用户${index} (#${id})`
-  if (prop === 'inviter_text') return index % 3 === 0 ? '无' : `上级用户${index}`
-  if (prop === 'mini_program_text') return `精准短剧 (#${(index % 3) + 1})`
-  if (prop === 'nickname') return `模拟昵称${index}`
-  if (prop === 'username') return `admin${index}`
-  if (prop === 'email') return `user${index}@example.com`
-  if (prop === 'mobile') return `138****${String(1000 + index).slice(-4)}`
-  if (prop === 'appid') return `tt8f3ff98211592ad30${index}`
-  if (prop === 'appsecret') return '******'
-  if (prop.includes('ip')) return `192.0.2.${index}`
-  if (prop === 'browser') return 'Mozilla/5.0'
-  if (prop === 'payment_status_text') return index % 4 === 0 ? '已打款' : '未打款'
-  if (prop === 'ban_status_text') return '未封禁'
-  if (prop === 'status' || prop.includes('status')) return index % 3 === 0 ? '待处理' : '正常'
-  if (prop.startsWith('is_')) return index % 2 === 0 ? '否' : '是'
-  if (prop === 'fee') return (index * 0.03).toFixed(2)
-  if (prop === 'real_money') return (index * 3.24).toFixed(2)
-  if (prop.includes('money') || prop === 'fee') return (index * 3.27).toFixed(2)
-  if (prop.includes('score') || prop === 'before' || prop === 'after') return index * 100
-  if (prop.includes('ratio') || prop.includes('rate')) return `${10 + index}%`
-  if (prop === 'operate' || prop === 'state' || prop === '0') return ''
-  return dictionaryValue(targetPageKey, prop, index)
-}
-
-const sampleId = (index: number) => {
-  const ids = [23267, 21566, 21565, 20178, 20176, 17665, 17663, 17661, 16582, 16581]
-  return ids[index - 1] || 16000 - index
-}
-
-const titleFor = (targetPageKey: string, index: number) => {
-  if (targetPageKey === 'drama') {
-    const names = ['重生后我逆袭成王', '闪婚后傅总追妻忙', '保洁妈妈是首富', '离婚后前夫后悔了']
-    return `${names[(index - 1) % names.length]} ${index}`
-  }
-  if (targetPageKey === 'operationLog') return `后台访问 ${index}`
-  if (targetPageKey === 'announcement') return `公告标题 ${index}`
-  return `记录标题 ${index}`
-}
-
-const dictionaryValue = (targetPageKey: string, prop: string, index: number) => {
-  const dictionary: Record<string, string | number> = {
-    title: titleFor(targetPageKey, index),
-    category: ['都市', '逆袭', '甜宠', '悬疑'][index % 4],
-    episodes: 80 + (index % 20),
-    content: `公告正文摘要 ${index}`,
-    url: `/manystore/${targetPageKey}?page=${index}`,
-    cover: `/uploads/20260708/drama-cover-${index}.jpg`,
-    avatar: `/uploads/20260708/avatar-${index}.png`,
-    filename: `upload-${index}.png`,
-    preview: '预览',
-    filesize: `${300 + index * 12} KB`,
-    imagewidth: '1254',
-    imageheight: '1254',
-    imagetype: 'png',
-    storage: 'local',
-    mimetype: 'image/png',
-    withdraw_type: '积分提现',
-    account_type: '微信',
-    account: `mock-account-${index}`,
-    review_mode: '人工审核',
-    payment_status_text: '未打款',
-    reject_reason: '-',
-    memo: '广告奖励',
-    agent_ratio: 20 + index,
-    member_self_ratio: 100,
-    member_parent_ratio: 10,
-    member_grandparent_ratio: 5,
-    descendant_count: index % 7,
-    today_agent_points: index * 12,
-    total_agent_points: index * 320,
-    remark: '默认分佣规则',
-    login_type: '手机号',
-    device_id: `device-${String(index).padStart(4, '0')}`,
-    idf: `idf-${String(index).padStart(4, '0')}`,
-    idfa: `idfa-${String(index).padStart(4, '0')}`,
-    idfv: `idfv-${String(index).padStart(4, '0')}`,
-    oaid: `oaid-${String(index).padStart(4, '0')}`,
-    imei: `860000000000${String(index).padStart(3, '0')}`,
-    android_id: `android-${String(index).padStart(4, '0')}`,
-    device_platform: index % 2 === 0 ? 'android' : 'ios',
-    device_brand: index % 2 === 0 ? 'Redmi' : 'iPhone',
-    device_model: index % 2 === 0 ? 'K70' : 'iPhone 15',
-    os_name: index % 2 === 0 ? 'Android' : 'iOS',
-    os_version: index % 2 === 0 ? 'Android 13' : 'iOS 17',
-    android_version: index % 2 === 0 ? '13' : '-',
-    app_version: `1.0.${index % 9}`,
-    app_build: `100${index}`,
-    package_name: 'com.skit.duanju',
-    network_type: 'wifi',
-    sim_state: 'ready',
-    sim_operator: index % 2 === 0 ? '中国移动' : '中国联通',
-    sim_count: index % 2 === 0 ? 2 : 1,
-    province: '示例省',
-    city: '示例市',
-    district: '示例区',
-    country: '中国',
-    address: `示例市短剧产业园 ${index} 号`,
-    location: '示例位置',
-    latitude: '23.1291',
-    longitude: '113.2644',
-    screen_size: index % 2 === 0 ? '1080x2400' : '1179x2556',
-    language: 'zh-CN',
-    timezone: 'Asia/Shanghai',
-    user_agent: `Mozilla/5.0 SkitApp/${index}`,
-    info_hash: `infohash-${index}`,
-    install_time: `2026-07-${String((index % 6) + 1).padStart(2, '0')} 08:00:00`,
-    invite_code: `SKIT${1000 + index}`,
-    ban_status_text: '未封禁',
-    ban_reason: '-',
-    direct_user_count: index % 8,
-    ad_reward_ratio: 100,
-    logintime: `2026-07-${String((index % 6) + 1).padStart(2, '0')} ${String((8 + index) % 24).padStart(2, '0')}:18:00`,
-    loginip: `192.0.2.${index}`,
-    jointime: `2026-06-${String((index % 20) + 1).padStart(2, '0')} ${String((8 + index) % 24).padStart(2, '0')}:18:00`,
-    name: `精准短剧 ${index}`,
-    ad_base_score: 10,
-    self_commission_rate: 100,
-    max_ad_score: 1000,
-    withdraw_min_amount: '1.00',
-    withdraw_fee_rate: '0',
-    withdraw_fixed_fee: '0',
-    access_token_expiretime: `2026-07-${String((index % 6) + 1).padStart(2, '0')} 23:59:59`,
-    mini_program_id: (index % 3) + 1,
-    third_id: `third-${index}`,
-    openid: `openid-${index}`,
-    unionid: `unionid-${index}`,
-    anonymous_openid: `anonymous-${index}`,
-    scene: '登录',
-    ad_slot: 'rewarded',
-    rewarded_count: index % 4,
-    host_app_name: 'Douyin',
-    host_app_version: '30.8.0',
-    type: targetPageKey === 'douyinTrafficRecord' ? 'active' : '广告奖励',
-    callback_url: 'https://callback.example.com/skit',
-    model: 'V2047A',
-    request_time: `2026-07-${String((index % 6) + 1).padStart(2, '0')} ${String((9 + index) % 24).padStart(2, '0')}:10:00`,
-    request_ip: `198.51.100.${index}`,
-    param_ip: `203.0.113.${index}`,
-    os: index % 2 === 0 ? 'android' : 'ios',
-    csite: 'site',
-    sl: 'sl',
-    dedupe_hash: `dedupe-${index}`
-  }
-  return dictionary[prop] || `${prop}-${index}`
+  return rows as Array<{ row: TableRow; id: number }>
 }
 
 const columnStyle = (column: SkitColumn) => ({
@@ -1131,6 +957,7 @@ const deleteSelected = async () => {
     ElMessage.warning('请先选择记录')
     return
   }
+  if (!ensureBackendAvailable()) return
   const managementScope = dramaMutationScope('删除目标租户短剧目录记录')
   if (!managementScope) return
   try {
@@ -1140,20 +967,17 @@ const deleteSelected = async () => {
   } catch {
     return
   }
-  if (backendAvailable.value) {
-    const ids = selectedRows.value.map((row) => backendId(row)).filter(Boolean) as number[]
-    if (ids.length > 1) {
-      await deleteSkitAdminRecordList(ids, managementScope)
-    } else if (ids.length === 1) {
-      await deleteSkitAdminRecord(ids[0], managementScope)
-    }
-    await loadPageRows(false)
-    clearSelection()
-    ElMessage.success('删除成功')
+  const ids = selectedRows.value.map((row) => backendId(row)).filter(Boolean) as number[]
+  if (ids.length !== selectedRows.value.length) {
+    ElMessage.error('记录缺少服务端编号，已取消删除')
     return
   }
-  const removing = new Set(selectedRows.value.map((row) => String(row.__rowKey)))
-  tableRows.value = tableRows.value.filter((row) => !removing.has(String(row.__rowKey)))
+  if (ids.length > 1) {
+    await deleteSkitAdminRecordList(ids, managementScope)
+  } else if (ids.length === 1) {
+    await deleteSkitAdminRecord(ids[0], managementScope)
+  }
+  await loadPageRows()
   clearSelection()
   ElMessage.success('删除成功')
 }
@@ -1163,29 +987,29 @@ const batchSetStatus = async (status: string) => {
     ElMessage.warning('请先选择记录')
     return
   }
-  selectedRows.value.forEach((row) => {
-    if ('status' in row) row.status = status
-    if ('payment_status_text' in row && status === '审核通过') row.payment_status_text = '待打款'
-  })
-  if (backendAvailable.value) {
-    await Promise.all(
-      selectedRows.value
-        .map((row) => {
-          const id = backendId(row)
-          if (!id) return undefined
-          const data = buildRecordData(row)
-          return updateSkitAdminRecord({
-            id,
-            pageKey: page.value.key,
-            rowKey: String(row.__rowKey || ''),
-            recordData: data,
-            status: deriveBackendStatus(data),
-            sort: Number(row.__backendSort || 0)
-          })
-        })
-        .filter((request): request is Promise<boolean> => Boolean(request))
-    )
-  }
+  if (!ensureBackendAvailable()) return
+  const rows = selectedBackendRows()
+  if (!rows) return
+  await Promise.all(
+    rows.map(({ row, id }) => {
+      const data = buildRecordData({
+        ...row,
+        ...('status' in row ? { status } : {}),
+        ...('payment_status_text' in row && status === '审核通过'
+          ? { payment_status_text: '待打款' }
+          : {})
+      })
+      return updateSkitAdminRecord({
+        id,
+        pageKey: page.value.key,
+        rowKey: String(row.__rowKey || ''),
+        recordData: data,
+        status: deriveBackendStatus(data),
+        sort: Number(row.__backendSort || 0)
+      })
+    })
+  )
+  await loadPageRows()
   ElMessage.success(status)
 }
 
@@ -1194,41 +1018,38 @@ const batchSetPublishStatus = async (status: '上架' | '下架') => {
     ElMessage.warning('请先选择短剧')
     return
   }
+  if (!ensureBackendAvailable()) return
   const managementScope = dramaMutationScope('更新穿山甲短剧目录上架状态')
   if (!managementScope) return
-  selectedRows.value.forEach((row) => {
-    row.publishStatus = status
-  })
-  if (backendAvailable.value) {
-    await Promise.all(
-      selectedRows.value
-        .map((row) => {
-          const id = backendId(row)
-          if (!id) return undefined
-          return updateSkitAdminRecord({
-            id,
-            ...managementScope,
-            pageKey: page.value.key,
-            rowKey: String(row.__rowKey || ''),
-            recordData: buildRecordData(row),
-            status: deriveBackendStatus(row),
-            sort: Number(row.__backendSort || 0)
-          })
-        })
-        .filter((request): request is Promise<boolean> => Boolean(request))
-    )
-    await loadPageRows(false)
-  }
+  const rows = selectedBackendRows()
+  if (!rows) return
+  await Promise.all(
+    rows.map(({ row, id }) => {
+      const data = buildRecordData({ ...row, publishStatus: status })
+      return updateSkitAdminRecord({
+        id,
+        ...managementScope,
+        pageKey: page.value.key,
+        rowKey: String(row.__rowKey || ''),
+        recordData: data,
+        status: deriveBackendStatus(data),
+        sort: Number(row.__backendSort || 0)
+      })
+    })
+  )
+  await loadPageRows()
   ElMessage.success(`${status}成功`)
 }
 
 const openDramaImport = () => {
+  if (!ensureBackendAvailable()) return
   if (!dramaMutationScope('同步穿山甲 SDK 真实剧单')) return
   dramaImportText.value = ''
   dramaImportVisible.value = true
 }
 
 const importDramaCatalog = async () => {
+  if (!ensureBackendAvailable()) return
   const managementScope = dramaMutationScope('同步穿山甲 SDK 真实剧单')
   if (!managementScope) return
   let payload: unknown
@@ -1243,63 +1064,56 @@ const importDramaCatalog = async () => {
     ElMessage.error('未找到可用的 SDK 剧目')
     return
   }
-  const existingResult = backendAvailable.value
-    ? await getSkitAdminRecordPage({
-        pageNo: 1,
-        pageSize: 100,
-        pageKey: page.value.key,
-        ...buildDramaQueryScope(scopeModel.value)
-      })
-    : undefined
-  const existingRows = existingResult
-    ? existingResult.list.map((record) => mapBackendRecord(record))
-    : tableRows.value
+  const existingResult = await getSkitAdminRecordPage({
+    pageNo: 1,
+    pageSize: 100,
+    pageKey: page.value.key,
+    ...buildDramaQueryScope(scopeModel.value)
+  })
+  const existingRows = existingResult.list.map((record) => mapBackendRecord(record))
   const existing = new Map(
     existingRows
       .filter((row) => isPositiveInteger(row.pangleDramaId))
       .map((row) => [String(row.pangleDramaId), row])
   )
-  if (backendAvailable.value) {
-    const persistDrama = (drama: TableRow) => {
-      const current = existing.get(String(drama.pangleDramaId))
-      const recordData = buildRecordData({
-        ...(current || {}),
-        ...drama,
-        publishStatus: current?.publishStatus || drama.publishStatus
-      })
-      const id = current ? backendId(current) : undefined
-      if (id) {
-        return updateSkitAdminRecord({
-          id,
-          ...managementScope,
-          pageKey: page.value.key,
-          rowKey: String(current?.__rowKey || `drama-${drama.pangleDramaId}`),
-          recordData,
-          status: deriveBackendStatus(recordData),
-          sort: Number(current?.__backendSort || 0)
-        })
-      }
-      return createSkitAdminRecord({
+  const persistDrama = (drama: TableRow) => {
+    const current = existing.get(String(drama.pangleDramaId))
+    const recordData = buildRecordData({
+      ...(current || {}),
+      ...drama,
+      publishStatus: current?.publishStatus || drama.publishStatus
+    })
+    const id = current ? backendId(current) : undefined
+    if (id) {
+      return updateSkitAdminRecord({
+        id,
         ...managementScope,
         pageKey: page.value.key,
-        rowKey: `drama-${drama.pangleDramaId}`,
+        rowKey: String(current?.__rowKey || `drama-${drama.pangleDramaId}`),
         recordData,
-        status: 0,
-        sort: 0
+        status: deriveBackendStatus(recordData),
+        sort: Number(current?.__backendSort || 0)
       })
     }
-    for (let start = 0; start < dramas.length; start += 5) {
-      await Promise.all(dramas.slice(start, start + 5).map(persistDrama))
-    }
-    await loadPageRows(false)
-  } else {
-    tableRows.value = dramas
+    return createSkitAdminRecord({
+      ...managementScope,
+      pageKey: page.value.key,
+      rowKey: `drama-${drama.pangleDramaId}`,
+      recordData,
+      status: 0,
+      sort: 0
+    })
   }
+  for (let start = 0; start < dramas.length; start += 5) {
+    await Promise.all(dramas.slice(start, start + 5).map(persistDrama))
+  }
+  await loadPageRows()
   dramaImportVisible.value = false
   ElMessage.success(`已导入 ${dramas.length} 部短剧`)
 }
 
 const openEditor = (mode: 'add' | 'edit' | 'view', row?: TableRow) => {
+  if (mode !== 'view' && !ensureBackendAvailable()) return
   if (mode !== 'view' && !dramaMutationScope('维护穿山甲短剧目录元数据')) return
   if (mode === 'edit' && !row && selectedRows.value.length !== 1) {
     ElMessage.warning('请选择一条记录')
@@ -1316,54 +1130,40 @@ const openEditor = (mode: 'add' | 'edit' | 'view', row?: TableRow) => {
 }
 
 const saveEditor = async () => {
+  if (!ensureBackendAvailable()) return
   const managementScope = dramaMutationScope('维护穿山甲短剧目录元数据')
   if (!managementScope) return
   if (editorMode.value === 'add') {
-    if (backendAvailable.value) {
-      const rowKey = `${page.value.key}-custom-${Date.now()}`
-      const data = buildRecordData(editorModel)
-      await createSkitAdminRecord({
-        ...managementScope,
-        pageKey: page.value.key,
-        rowKey,
-        recordData: data,
-        status: deriveBackendStatus(data),
-        sort: 0
-      })
-      await loadPageRows(false)
-      editorVisible.value = false
-      ElMessage.success('保存成功')
-      return
-    }
-    const row: TableRow = { __rowKey: `${page.value.key}-custom-${Date.now()}` }
-    page.value.columns.forEach((column) => {
-      row[column.prop] =
-        editorModel[column.prop] ||
-        (column.prop === 'id'
-          ? tableRows.value.length + 1
-          : valueFor(page.value.key, column.prop, 1))
+    const rowKey = `${page.value.key}-custom-${Date.now()}`
+    const data = buildRecordData(editorModel)
+    await createSkitAdminRecord({
+      ...managementScope,
+      pageKey: page.value.key,
+      rowKey,
+      recordData: data,
+      status: deriveBackendStatus(data),
+      sort: 0
     })
-    tableRows.value.unshift(row)
+    await loadPageRows()
   } else {
     const row = tableRows.value.find((item) => String(item.__rowKey) === editingKey.value)
     if (row) {
-      Object.assign(row, editorModel)
-      if (backendAvailable.value) {
-        const id = backendId(row)
-        if (id) {
-          const data = buildRecordData(row)
-          await updateSkitAdminRecord({
-            id,
-            ...managementScope,
-            pageKey: page.value.key,
-            rowKey: String(row.__rowKey || ''),
-            recordData: data,
-            status: deriveBackendStatus(data),
-            sort: Number(row.__backendSort || 0)
-          })
-          await loadPageRows(false)
-        }
+      const id = backendId(row)
+      if (!id) {
+        ElMessage.error('记录缺少服务端编号，已取消保存')
+        return
       }
+      const data = buildRecordData({ ...row, ...editorModel })
+      await updateSkitAdminRecord({
+        id,
+        ...managementScope,
+        pageKey: page.value.key,
+        rowKey: String(row.__rowKey || ''),
+        recordData: data,
+        status: deriveBackendStatus(data),
+        sort: Number(row.__backendSort || 0)
+      })
+      await loadPageRows()
     }
   }
   editorVisible.value = false
@@ -1500,6 +1300,7 @@ watch(
     exportMenuOpen.value = false
     tenantOptionsError.value = ''
     dramaPageError.value = ''
+    pageLoadError.value = ''
     if (isDramaPage.value) {
       await loadTenantOptions()
     }
@@ -1838,6 +1639,17 @@ textarea.form-control {
   position: relative;
   overflow-x: auto;
   border-radius: 4px;
+}
+
+.table-load-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  color: var(--el-color-danger);
+  background: var(--el-color-danger-light-9);
+  border-bottom: 1px solid var(--el-color-danger-light-7);
 }
 
 .fixed-table-loading {

@@ -83,11 +83,3 @@ export const deleteSkitAdminRecordList = (
     ...silent
   })
 }
-
-export const seedSkitAdminRecordPage = (pageKey: string) => {
-  return request.post<number>({
-    url: '/skit/admin-record/seed',
-    params: { pageKey },
-    ...silent
-  })
-}

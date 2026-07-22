@@ -5,9 +5,14 @@
       <el-select
         data-testid="tenant-scope-select"
         :model-value="selection"
+        :filterable="remote"
+        :loading="loading"
+        :remote="remote"
+        :remote-method="remote ? searchTenants : undefined"
         placeholder="选择代理商"
         class="!w-240px"
         @change="changeSelection"
+        @visible-change="handleVisibleChange"
       >
         <el-option label="全部代理商" value="all" />
         <el-option
@@ -35,10 +40,13 @@ export interface TenantScopeOption {
 const props = defineProps<{
   modelValue: TenantScope
   tenants: readonly TenantScopeOption[]
+  remote?: boolean
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: TenantScope): void
+  (event: 'search', keyword: string): void
 }>()
 
 const selection = computed<TenantScopeSelection>(() =>
@@ -53,5 +61,10 @@ const ownTenantName = computed(
 
 const changeSelection = (value: TenantScopeSelection) => {
   emit('update:modelValue', selectTenantScope(props.modelValue, value))
+}
+
+const searchTenants = (keyword: string) => emit('search', keyword.trim())
+const handleVisibleChange = (visible: boolean) => {
+  if (visible && props.remote) emit('search', '')
 }
 </script>

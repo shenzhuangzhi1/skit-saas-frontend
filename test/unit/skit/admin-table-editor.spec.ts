@@ -9,4 +9,29 @@ describe('admin table editor', () => {
     expect(source).toContain("editorModel[column.prop] = target[column.prop] ?? ''")
     expect(source).not.toContain("editorModel[column.prop] = target[column.prop] || ''")
   })
+
+  it('never replaces a failed management query with fabricated rows', () => {
+    expect(source).toContain('真实数据加载失败，请重试')
+    expect(source).not.toContain('tableRows.value = buildRows()')
+  })
+
+  it('does not optimistically mutate batch status before the server accepts it', () => {
+    expect(source).toContain("...('status' in row ? { status } : {})")
+    expect(source).toContain('buildRecordData({ ...row, publishStatus: status })')
+    expect(source).not.toContain('row.status = status')
+    expect(source).not.toContain('row.payment_status_text =')
+    expect(source).not.toContain('row.publishStatus = status')
+  })
+
+  it('does not optimistically mutate an edited row before the server accepts it', () => {
+    expect(source).toContain('buildRecordData({ ...row, ...editorModel })')
+    expect(source).not.toContain('Object.assign(row, editorModel)')
+  })
+
+  it('maps rejected reviews before generic pending review text', () => {
+    const rejected = source.indexOf("if (text.includes('禁') || text.includes('拒')) return 2")
+    const pending = source.indexOf("if (text.includes('待') || text === '审核中') return 1")
+    expect(rejected).toBeGreaterThan(-1)
+    expect(pending).toBeGreaterThan(rejected)
+  })
 })

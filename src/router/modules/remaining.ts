@@ -124,10 +124,40 @@ const remainingRouter: AppRouteRecordRaw[] = [
         meta: { title: '短剧管理', icon: 'ep:video-camera', noCache: false }
       },
       {
-        path: 'ad-record',
-        component: () => import('@/views/skit/ad-monitor/index.vue'),
-        name: PRODUCT_AD_MONITOR_ROUTE_NAME,
-        meta: { title: '广告监控', icon: 'ep:histogram', noCache: false }
+        path: 'ad-center',
+        component: getParentLayout(),
+        redirect: '/skit/ad-consumption',
+        name: 'SkitAdCenter',
+        meta: {
+          title: '广告中心',
+          icon: 'ep:histogram',
+          alwaysShow: true,
+          roles: ['super_admin', 'tenant_admin']
+        },
+        children: [
+          {
+            path: '/skit/ad-consumption',
+            component: () => import('@/views/skit/ad-consumption/index.vue'),
+            name: 'SkitAdConsumption',
+            meta: {
+              title: '消费明细',
+              icon: 'ep:list',
+              noCache: false,
+              roles: ['super_admin', 'tenant_admin']
+            }
+          },
+          {
+            path: '/skit/ad-record',
+            component: () => import('@/views/skit/ad-monitor/index.vue'),
+            name: PRODUCT_AD_MONITOR_ROUTE_NAME,
+            meta: {
+              title: '广告监控',
+              icon: 'ep:data-analysis',
+              noCache: false,
+              roles: ['super_admin', 'tenant_admin']
+            }
+          }
+        ]
       },
       {
         path: 'withdraw',
