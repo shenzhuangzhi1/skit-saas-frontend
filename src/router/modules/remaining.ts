@@ -102,6 +102,17 @@ const remainingRouter: AppRouteRecordRaw[] = [
             name: 'SkitOperationLog',
             props: { pageKey: 'operationLog' },
             meta: { title: '操作日志', icon: 'ep:document', noCache: false }
+          },
+          {
+            path: 'api-error-log',
+            component: () => import('@/views/infra/apiErrorLog/index.vue'),
+            name: 'SkitApiErrorLog',
+            meta: {
+              title: '错误日志',
+              icon: 'ep:warning',
+              noCache: true,
+              roles: ['super_admin']
+            }
           }
         ]
       },

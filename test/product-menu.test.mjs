@@ -40,6 +40,26 @@ test('Skit SaaS user management renders the agent management component', () => {
   assert.match(userRoute, /roles:\s*\['super_admin',\s*'tenant_admin'\]/)
 })
 
+test('Skit general management exposes API error logs only to super administrators', () => {
+  const source = readFileSync(
+    new URL('../src/router/modules/remaining.ts', import.meta.url),
+    'utf8'
+  )
+  const routeStart = source.indexOf("path: 'api-error-log'")
+  const generalEnd = source.indexOf("path: 'drama'", routeStart)
+
+  assert.notEqual(routeStart, -1)
+  assert.notEqual(generalEnd, -1)
+
+  const route = source.slice(routeStart, generalEnd)
+  assert.match(
+    route,
+    /component:\s*\(\)\s*=>\s*import\('@\/views\/infra\/apiErrorLog\/index\.vue'\)/
+  )
+  assert.match(route, /roles:\s*\['super_admin'\]/)
+  assert.doesNotMatch(route, /tenant_admin/)
+})
+
 test('permission store never registers backend framework menus', () => {
   const source = readFileSync(
     new URL('../src/store/modules/permission.ts', import.meta.url),
