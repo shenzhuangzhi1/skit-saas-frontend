@@ -50,7 +50,9 @@ describe('tenant revenue workspace model', () => {
       productionReady: true,
       unlockNetworkFirmIds: [112],
       missingSignedRewardNetworkFirmIds: [],
-      missingImpressionNetworkFirmIds: []
+      missingImpressionNetworkFirmIds: [],
+      pairedSourceEvidenceObserved: true,
+      missingPairedSourceNetworkFirmIds: []
     }
 
     expect(isTenantAdProductionReady(aggregateReady)).toBe(false)
@@ -66,6 +68,7 @@ describe('tenant revenue workspace model', () => {
             authoritative: true,
             signedRewardObserved: true,
             impressionObserved: true,
+            pairedSourceObserved: true,
             blockers: []
           }
         ]
@@ -84,6 +87,46 @@ describe('tenant revenue workspace model', () => {
             authoritative: true,
             signedRewardObserved: true,
             impressionObserved: true,
+            pairedSourceObserved: true,
+            blockers: []
+          }
+        ]
+      })
+    ).toBe(false)
+    expect(
+      isTenantAdProductionReady({
+        ...aggregateReady,
+        pairedSourceEvidenceObserved: false,
+        missingPairedSourceNetworkFirmIds: [112],
+        networkReadiness: [
+          {
+            networkFirmId: 112,
+            rewardAuthority: 'SIGNED_REWARD',
+            enabled: true,
+            verified: true,
+            authoritative: true,
+            signedRewardObserved: true,
+            impressionObserved: true,
+            pairedSourceObserved: false,
+            blockers: ['PAIRED_SOURCE_EVIDENCE_MISSING']
+          }
+        ]
+      })
+    ).toBe(false)
+    expect(
+      isTenantAdProductionReady({
+        ...aggregateReady,
+        pairedSourceEvidenceObserved: true,
+        networkReadiness: [
+          {
+            networkFirmId: 112,
+            rewardAuthority: 'SIGNED_REWARD',
+            enabled: true,
+            verified: true,
+            authoritative: true,
+            signedRewardObserved: true,
+            impressionObserved: true,
+            pairedSourceObserved: false,
             blockers: []
           }
         ]

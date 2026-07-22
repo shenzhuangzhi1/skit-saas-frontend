@@ -48,6 +48,9 @@
               <el-tag :type="network.impressionObserved ? 'success' : 'danger'" size="small">
                 {{ network.impressionObserved ? '展示已观测' : '展示未观测' }}
               </el-tag>
+              <el-tag :type="network.pairedSourceObserved ? 'success' : 'danger'" size="small">
+                {{ network.pairedSourceObserved ? '同源配对已通过' : '同源配对未通过' }}
+              </el-tag>
             </div>
           </div>
           <div
@@ -68,6 +71,9 @@
             <div v-if="safeRefs(network.impressionSourceRefs).length">
               展示来源：{{ safeRefs(network.impressionSourceRefs).join('、') }}
             </div>
+            <div v-if="safeRefs(network.pairedSourceRefs).length">
+              配对来源（安全截断）：{{ safeRefs(network.pairedSourceRefs).join('、') }}
+            </div>
           </div>
         </div>
       </div>
@@ -82,6 +88,12 @@
         class="mt-6px text-[var(--el-color-danger)]"
       >
         缺少展示证据：{{ networkIdSetLabel(missingImpressionNetworkFirmIds) }}
+      </div>
+      <div
+        v-if="missingPairedSourceNetworkFirmIds.length"
+        class="mt-6px text-[var(--el-color-danger)]"
+      >
+        缺少同源配对证据：{{ networkIdSetLabel(missingPairedSourceNetworkFirmIds) }}
       </div>
       <div
         v-if="readiness.productionReady && !perNetworkReady"
@@ -140,11 +152,13 @@ interface NetworkReadinessDisplay {
   authoritative: boolean
   signedRewardObserved: boolean
   impressionObserved: boolean
+  pairedSourceObserved: boolean
   lastSignedRewardCallbackAt?: TenantAdReadiness['lastSignedRewardCallbackAt']
   lastImpressionCallbackAt?: TenantAdReadiness['lastImpressionCallbackAt']
   sourceRefs?: string[]
   signedRewardSourceRefs?: string[]
   impressionSourceRefs?: string[]
+  pairedSourceRefs?: string[]
   blockers: string[]
 }
 
@@ -155,6 +169,9 @@ const missingSignedRewardNetworkFirmIds = computed(
 )
 const missingImpressionNetworkFirmIds = computed(
   () => props.readiness.missingImpressionNetworkFirmIds || []
+)
+const missingPairedSourceNetworkFirmIds = computed(
+  () => props.readiness.missingPairedSourceNetworkFirmIds || []
 )
 
 const networkRows = computed<NetworkReadinessDisplay[]>(() => {
@@ -174,9 +191,11 @@ const networkRows = computed<NetworkReadinessDisplay[]>(() => {
         authoritative: false,
         signedRewardObserved: false,
         impressionObserved: false,
+        pairedSourceObserved: false,
         sourceRefs: [],
         signedRewardSourceRefs: [],
         impressionSourceRefs: [],
+        pairedSourceRefs: [],
         blockers: ['NETWORK_READINESS_MISSING']
       })
     }
@@ -251,6 +270,11 @@ const gates = computed(() => [
     key: 'impression',
     label: '最近展示回调',
     ready: props.readiness.impressionCallbackObserved
+  },
+  {
+    key: 'paired-source',
+    label: '同一广告源奖励+展示配对',
+    ready: props.readiness.pairedSourceEvidenceObserved
   },
   { key: 'release', label: 'App 发布与签名', ready: props.readiness.nativeReleaseReady },
   { key: 'protocol', label: '最低协议版本', ready: props.readiness.protocolReady },

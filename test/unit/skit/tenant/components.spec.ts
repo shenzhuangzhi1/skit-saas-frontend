@@ -167,6 +167,8 @@ describe('tenant revenue workspace components', () => {
           unlockNetworkFirmIds: [112],
           missingSignedRewardNetworkFirmIds: [112],
           missingImpressionNetworkFirmIds: [987],
+          pairedSourceEvidenceObserved: false,
+          missingPairedSourceNetworkFirmIds: [112],
           networkReadiness: [
             {
               networkFirmId: 112,
@@ -181,12 +183,14 @@ describe('tenant revenue workspace components', () => {
               authoritative: true,
               signedRewardObserved: false,
               impressionObserved: true,
+              pairedSourceObserved: false,
               lastSignedRewardCallbackAt: '2026-07-22T07:31:00Z',
               lastImpressionCallbackAt: '2026-07-22T07:32:00Z',
               sourceRefs: ['0a1b2c3d4e5f'],
               signedRewardSourceRefs: [],
               impressionSourceRefs: ['123456abcdef'],
-              blockers: ['SIGNED_REWARD_NOT_OBSERVED']
+              pairedSourceRefs: ['0a1b2c3d4e5f', 'raw-source-id-must-not-render'],
+              blockers: ['SIGNED_REWARD_NOT_OBSERVED', 'PAIRED_SOURCE_EVIDENCE_MISSING']
             }
           ]
         }
@@ -206,6 +210,10 @@ describe('tenant revenue workspace components', () => {
     expect(wrapper.text()).toContain('123456abcdef')
     expect(wrapper.text()).toContain('缺少签名奖励证据：networkFirmId 112')
     expect(wrapper.text()).toContain('缺少展示证据：networkFirmId 987')
+    expect(wrapper.text()).toContain('同一广告源奖励+展示配对未通过')
+    expect(wrapper.text()).toContain('缺少同源配对证据：networkFirmId 112')
+    expect(wrapper.text()).toContain('配对来源（安全截断）：0a1b2c3d4e5f')
+    expect(wrapper.text()).not.toContain('raw-source-id-must-not-render')
     expect(wrapper.text()).toContain('2026-07-22T07:31:00Z')
     expect(wrapper.text()).toContain('2026-07-22T07:32:00Z')
   })

@@ -90,11 +90,17 @@ describe('tenant advertising access API client', () => {
           authoritative: true,
           signedRewardObserved: true,
           impressionObserved: true,
+          pairedSourceObserved: true,
           lastSignedRewardCallbackAt: '2026-07-22T07:31:00',
           lastImpressionCallbackAt: '2026-07-22T07:32:00',
           sourceRefs: ['0a1b2c3d4e5f', 'ABCDEF123456', '1234', '0a1b2c3d4e5f'],
           signedRewardSourceRefs: ['0a1b2c3d4e5f', 'raw-source-id'],
           impressionSourceRefs: ['123456abcdef'],
+          pairedSourceRefs: [
+            '0a1b2c3d4e5f',
+            'raw-paired-source-id-must-not-reach-the-view',
+            '0a1b2c3d4e5f'
+          ],
           blockers: [],
           adsourceId: 'raw-adsource-id-must-not-reach-the-view',
           showId: 'must-not-reach-the-view'
@@ -102,6 +108,8 @@ describe('tenant advertising access API client', () => {
       ],
       missingSignedRewardNetworkFirmIds: [987, 112, 987, -1, '654'],
       missingImpressionNetworkFirmIds: [654],
+      pairedSourceEvidenceObserved: true,
+      missingPairedSourceNetworkFirmIds: [987, 112, 987, -1, '654'],
       callbackError: 'must-not-reach-the-view',
       rewardSecret: 'must-not-reach-the-view'
     })
@@ -133,13 +141,18 @@ describe('tenant advertising access API client', () => {
         networkFirmId: 112,
         lastSignedRewardCallbackAt: '2026-07-22T07:31:00',
         lastImpressionCallbackAt: '2026-07-22T07:32:00',
+        pairedSourceObserved: true,
         sourceRefs: ['0a1b2c3d4e5f'],
         signedRewardSourceRefs: ['0a1b2c3d4e5f'],
-        impressionSourceRefs: ['123456abcdef']
+        impressionSourceRefs: ['123456abcdef'],
+        pairedSourceRefs: ['0a1b2c3d4e5f']
       })
     )
     expect(response.missingSignedRewardNetworkFirmIds).toEqual([112, 987])
     expect(response.missingImpressionNetworkFirmIds).toEqual([654])
+    expect(response.pairedSourceEvidenceObserved).toBe(true)
+    expect(response.missingPairedSourceNetworkFirmIds).toEqual([112, 987])
+    expect(JSON.stringify(response)).not.toContain('raw-paired-source-id')
     expect(response.networkReadiness?.[0]).not.toHaveProperty('adsourceId')
     expect(response.networkReadiness?.[0]).not.toHaveProperty('showId')
     expect(response).not.toHaveProperty('callbackError')

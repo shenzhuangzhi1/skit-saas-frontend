@@ -55,6 +55,8 @@ interface ProductionReadinessLike {
   unlockNetworkFirmIds?: unknown
   missingSignedRewardNetworkFirmIds?: unknown
   missingImpressionNetworkFirmIds?: unknown
+  pairedSourceEvidenceObserved?: unknown
+  missingPairedSourceNetworkFirmIds?: unknown
   networkReadiness?: unknown
 }
 
@@ -63,7 +65,11 @@ interface ProductionReadinessLike {
  * every selected network must carry its own complete capability and callback evidence.
  */
 export const isTenantAdProductionReady = (readiness: ProductionReadinessLike): boolean => {
-  if (readiness.productionReady !== true || !Array.isArray(readiness.unlockNetworkFirmIds)) {
+  if (
+    readiness.productionReady !== true ||
+    readiness.pairedSourceEvidenceObserved !== true ||
+    !Array.isArray(readiness.unlockNetworkFirmIds)
+  ) {
     return false
   }
   const selectedNetworkIds = readiness.unlockNetworkFirmIds.filter(
@@ -84,6 +90,9 @@ export const isTenantAdProductionReady = (readiness: ProductionReadinessLike): b
       : []),
     ...(Array.isArray(readiness.missingImpressionNetworkFirmIds)
       ? readiness.missingImpressionNetworkFirmIds
+      : []),
+    ...(Array.isArray(readiness.missingPairedSourceNetworkFirmIds)
+      ? readiness.missingPairedSourceNetworkFirmIds
       : [])
   ])
   if (selectedNetworkIds.some((networkFirmId) => explicitlyMissing.has(networkFirmId))) {
@@ -111,6 +120,7 @@ export const isTenantAdProductionReady = (readiness: ProductionReadinessLike): b
       row.authoritative === true &&
       row.signedRewardObserved === true &&
       row.impressionObserved === true &&
+      row.pairedSourceObserved === true &&
       Array.isArray(row.blockers) &&
       row.blockers.length === 0
     )

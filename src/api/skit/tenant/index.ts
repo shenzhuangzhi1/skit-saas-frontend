@@ -133,12 +133,14 @@ export interface TenantAdNetworkReadinessVO extends TenantAdNetworkCapabilityVO 
   authoritative: boolean
   signedRewardObserved: boolean
   impressionObserved: boolean
+  pairedSourceObserved: boolean
   lastSignedRewardCallbackAt?: TenantAdTimestamp
   lastImpressionCallbackAt?: TenantAdTimestamp
   /** Redacted SHA-256-derived identifiers; raw Taku adsourceId values are never exposed. */
   sourceRefs: string[]
   signedRewardSourceRefs: string[]
   impressionSourceRefs: string[]
+  pairedSourceRefs: string[]
   blockers: string[]
 }
 
@@ -155,6 +157,7 @@ export interface TenantAdReadinessVO {
   networkReadiness?: TenantAdNetworkReadinessVO[]
   missingSignedRewardNetworkFirmIds: number[]
   missingImpressionNetworkFirmIds: number[]
+  missingPairedSourceNetworkFirmIds: number[]
   shadowTestMemberIds?: number[]
   minNativeVersion?: string | null
   minProtocolVersion?: number | null
@@ -176,6 +179,7 @@ export interface TenantAdReadinessVO {
   reportFresh: boolean
   signedRewardCallbackObserved: boolean
   impressionCallbackObserved: boolean
+  pairedSourceEvidenceObserved: boolean
   nativeReleaseReady: boolean
   protocolReady: boolean
   shadowMembersValid: boolean
@@ -288,11 +292,13 @@ const sanitizeNetworkReadiness = (value: unknown): TenantAdNetworkReadinessVO[] 
       authoritative: item.authoritative === true,
       signedRewardObserved: item.signedRewardObserved === true,
       impressionObserved: item.impressionObserved === true,
+      pairedSourceObserved: item.pairedSourceObserved === true,
       lastSignedRewardCallbackAt: safeTimestamp(item.lastSignedRewardCallbackAt),
       lastImpressionCallbackAt: safeTimestamp(item.lastImpressionCallbackAt),
       sourceRefs: safeSourceRefList(item.sourceRefs),
       signedRewardSourceRefs: safeSourceRefList(item.signedRewardSourceRefs),
       impressionSourceRefs: safeSourceRefList(item.impressionSourceRefs),
+      pairedSourceRefs: safeSourceRefList(item.pairedSourceRefs),
       blockers: blockerList(item.blockers)
     })
   })
@@ -325,6 +331,9 @@ export const normalizeTenantAdReadiness = (value: unknown): TenantAdReadinessVO 
       source.missingSignedRewardNetworkFirmIds
     ),
     missingImpressionNetworkFirmIds: positiveIntegerList(source.missingImpressionNetworkFirmIds),
+    missingPairedSourceNetworkFirmIds: positiveIntegerList(
+      source.missingPairedSourceNetworkFirmIds
+    ),
     shadowTestMemberIds: positiveIntegerList(source.shadowTestMemberIds),
     minNativeVersion: safeText(source.minNativeVersion, 64) ?? null,
     minProtocolVersion: positiveInteger(source.minProtocolVersion) ?? null,
@@ -346,6 +355,7 @@ export const normalizeTenantAdReadiness = (value: unknown): TenantAdReadinessVO 
     reportFresh: source.reportFresh === true,
     signedRewardCallbackObserved: source.signedRewardCallbackObserved === true,
     impressionCallbackObserved: source.impressionCallbackObserved === true,
+    pairedSourceEvidenceObserved: source.pairedSourceEvidenceObserved === true,
     nativeReleaseReady: source.nativeReleaseReady === true,
     protocolReady: source.protocolReady === true,
     shadowMembersValid: source.shadowMembersValid === true,
