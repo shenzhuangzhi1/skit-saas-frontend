@@ -32,13 +32,23 @@
       <el-descriptions-item label="异常名">
         {{ detailData.exceptionName }}
       </el-descriptions-item>
-      <el-descriptions-item v-if="detailData.exceptionStackTrace" label="异常堆栈">
-        <el-input
-          v-model="detailData.exceptionStackTrace"
-          :autosize="{ maxRows: 20 }"
-          :readonly="true"
-          type="textarea"
-        />
+      <el-descriptions-item v-if="detailData.exceptionMessage" label="异常消息">
+        {{ detailData.exceptionMessage }}
+      </el-descriptions-item>
+      <el-descriptions-item v-if="detailData.exceptionRootCauseMessage" label="根因消息">
+        {{ detailData.exceptionRootCauseMessage }}
+      </el-descriptions-item>
+      <el-descriptions-item v-if="detailData.exceptionClassName" label="异常类">
+        {{ detailData.exceptionClassName }}
+      </el-descriptions-item>
+      <el-descriptions-item v-if="detailData.exceptionFileName" label="异常文件">
+        {{ detailData.exceptionFileName }}
+      </el-descriptions-item>
+      <el-descriptions-item v-if="detailData.exceptionMethodName" label="异常方法">
+        {{ detailData.exceptionMethodName }}
+      </el-descriptions-item>
+      <el-descriptions-item v-if="detailData.exceptionLineNumber" label="异常行号">
+        {{ detailData.exceptionLineNumber }}
       </el-descriptions-item>
       <el-descriptions-item label="处理状态">
         <dict-tag
