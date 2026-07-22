@@ -7,6 +7,8 @@ import {
 
 export type { ManagementTenantTarget } from './managementTarget'
 
+export type MemberManagementTarget = ManagementTenantTarget | { kind: 'all' }
+
 export interface PageResult<T> {
   list: T[]
   total: number
@@ -565,6 +567,10 @@ export interface TenantCommissionRuleSaveReqVO {
 export interface TenantMemberVO {
   id: number
   userId: number
+  tenantId: number
+  tenantCode?: string
+  tenantName?: string
+  agentName?: string
   username: string
   nickname?: string
   mobile: string
@@ -1098,12 +1104,12 @@ export const getTenantMemberPage = (params: TenantMemberPageReqVO) => {
 }
 
 export const getManagedTenantMemberPage = (
-  target: ManagementTenantTarget,
+  target: MemberManagementTarget,
   params: Omit<TenantMemberPageReqVO, 'tenantId'>
 ) =>
   request.get<PageResult<TenantMemberVO>>({
     url: '/skit/tenant/member/page',
-    params: { ...managementTenantQuery(target), ...params },
+    params: { ...(target.kind === 'all' ? {} : managementTenantQuery(target)), ...params },
     skipErrorMessage: true
   })
 

@@ -41,6 +41,14 @@
       <el-table-column align="center" label="用户编号" min-width="100">
         <template #default="scope">{{ scope.row.userId ?? scope.row.id }}</template>
       </el-table-column>
+      <el-table-column v-if="showTenant" align="center" label="所属代理商" min-width="160">
+        <template #default="scope">
+          <div>{{ scope.row.agentName || scope.row.tenantName || '-' }}</div>
+          <el-text v-if="scope.row.tenantCode" size="small" type="info">
+            {{ scope.row.tenantCode }}
+          </el-text>
+        </template>
+      </el-table-column>
       <el-table-column align="center" label="昵称" min-width="130" prop="nickname" />
       <el-table-column align="center" label="手机号" min-width="130" prop="mobile" />
       <el-table-column align="center" label="邀请码" min-width="140" prop="inviteCode" />
@@ -298,8 +306,12 @@ interface MemberPasswordFormData {
 }
 
 const props = withDefaults(
-  defineProps<{ target: TenantApi.ManagementTenantTarget; readOnly?: boolean }>(),
-  { readOnly: false }
+  defineProps<{
+    target: TenantApi.MemberManagementTarget
+    readOnly?: boolean
+    showTenant?: boolean
+  }>(),
+  { readOnly: false, showTenant: false }
 )
 const message = useMessage()
 const loading = ref(false)
@@ -333,9 +345,12 @@ const summaryRange = ref<[string, string]>()
 const summaryCurrency = ref('USD')
 const summaryProvider = ref<TenantApi.TenantAdProvider>()
 const subtreeSummary = ref<TenantApi.MemberSubtreeSummaryVO>()
+const treeTarget = ref<TenantApi.ManagementTenantTarget>()
 let treeRequestId = 0
 
-const targetKey = computed(() => `${props.target.kind}:${props.target.tenantId}`)
+const targetKey = computed(() =>
+  props.target.kind === 'all' ? 'all' : `${props.target.kind}:${props.target.tenantId}`
+)
 const selectedMemberLabel = computed(() => {
   if (!selectedMember.value) return ''
   return (
@@ -394,12 +409,24 @@ const resetQuery = () => {
   handleQuery()
 }
 
-const loadMemberDetail = async (id: number) => {
+const concreteTargetFor = (
+  member: TenantApi.TenantMemberVO
+): TenantApi.ManagementTenantTarget | undefined => {
+  if (props.target.kind !== 'all') return props.target
+  const tenantId = Number(member.tenantId)
+  if (!Number.isSafeInteger(tenantId) || tenantId <= 0) {
+    message.error('成员缺少有效代理商归属，操作已阻止')
+    return undefined
+  }
+  return { kind: 'platform', tenantId }
+}
+
+const loadMemberDetail = async (target: TenantApi.ManagementTenantTarget, id: number) => {
   const currentTarget = targetKey.value
   const requestId = ++detailRequestId
   detailLoading.value = true
   try {
-    const data = await TenantApi.getManagedTenantMember(props.target, id)
+    const data = await TenantApi.getManagedTenantMember(target, id)
     if (requestId !== detailRequestId || currentTarget !== targetKey.value) return
     detailMember.value = data
   } finally {
@@ -407,9 +434,11 @@ const loadMemberDetail = async (id: number) => {
   }
 }
 const openDetail = async (member: TenantApi.TenantMemberVO) => {
+  const target = concreteTargetFor(member)
+  if (!target) return
   detailVisible.value = true
   detailMember.value = undefined
-  await loadMemberDetail(member.id)
+  await loadMemberDetail(target, member.id)
 }
 const clearMemberDetail = () => {
   detailRequestId++
@@ -442,13 +471,18 @@ const findBranch = (root: MemberTreeBranch, memberId: number): MemberTreeBranch 
 }
 
 const loadAncestors = async (memberId: number, currentRequestId: number) => {
-  const response = await TenantApi.getMemberAncestors(props.target, memberId, { timezone: 'UTC+8' })
+  const target = treeTarget.value
+  if (!target) return
+  const response = await TenantApi.getMemberAncestors(target, memberId, { timezone: 'UTC+8' })
   if (currentRequestId !== treeRequestId) return
   treeAncestors.value = response.list || []
 }
 
 const openTree = async (member: TenantApi.TenantMemberVO) => {
+  const target = concreteTargetFor(member)
+  if (!target) return
   const currentRequestId = ++treeRequestId
+  treeTarget.value = target
   treeRoot.value = memberToTreeBranch(member)
   treeAncestors.value = []
   subtreeSummary.value = undefined
@@ -490,7 +524,9 @@ const loadTreeChildren = async (memberId: number, cursor?: string) => {
   branch.loading = true
   const currentRequestId = treeRequestId
   try {
-    const response = await TenantApi.getMemberChildren(props.target, memberId, {
+    const target = treeTarget.value
+    if (!target) return
+    const response = await TenantApi.getMemberChildren(target, memberId, {
       cursor,
       pageSize: 50,
       timezone: 'UTC+8'
@@ -521,7 +557,9 @@ const loadSubtreeSummary = async () => {
   }
   summaryLoading.value = true
   try {
-    subtreeSummary.value = await TenantApi.getMemberSubtreeSummary(props.target, memberId, {
+    const target = treeTarget.value
+    if (!target) return
+    subtreeSummary.value = await TenantApi.getMemberSubtreeSummary(target, memberId, {
       startTime: summaryRange.value[0],
       endTime: summaryRange.value[1],
       currency,
@@ -537,6 +575,7 @@ const loadSubtreeSummary = async () => {
 const closeTree = () => {
   treeRequestId++
   treeRoot.value = undefined
+  treeTarget.value = undefined
   treeAncestors.value = []
   subtreeSummary.value = undefined
 }
@@ -547,6 +586,8 @@ const clearMemberPassword = () => {
 const handleStatusChange = async (member: TenantApi.TenantMemberVO) => {
   const currentTarget = targetKey.value
   if (props.readOnly) return
+  const target = concreteTargetFor(member)
+  if (!target) return
   const nextStatus =
     member.status === CommonStatusEnum.ENABLE ? CommonStatusEnum.DISABLE : CommonStatusEnum.ENABLE
   const action = nextStatus === CommonStatusEnum.ENABLE ? '启用' : '停用'
@@ -563,7 +604,7 @@ const handleStatusChange = async (member: TenantApi.TenantMemberVO) => {
       return
     }
     if (currentTarget !== targetKey.value || props.readOnly) return
-    await TenantApi.updateManagedTenantMemberStatus(props.target, {
+    await TenantApi.updateManagedTenantMemberStatus(target, {
       id: member.id,
       status: nextStatus,
       reason
@@ -586,8 +627,11 @@ const openPasswordForm = async (member: TenantApi.TenantMemberVO) => {
 
 const submitPasswordReset = async () => {
   const currentTarget = targetKey.value
-  const memberId = selectedMember.value?.id
-  if (!memberId || props.readOnly) return
+  const member = selectedMember.value
+  const memberId = member?.id
+  if (!memberId || !member || props.readOnly) return
+  const target = concreteTargetFor(member)
+  if (!target) return
   const valid = await passwordFormRef.value?.validate()
   if (!valid) return
   try {
@@ -607,7 +651,7 @@ const submitPasswordReset = async () => {
     )
       return
     passwordLoading.value = true
-    await TenantApi.resetManagedTenantMemberPassword(props.target, {
+    await TenantApi.resetManagedTenantMemberPassword(target, {
       id: memberId,
       password: passwordForm.value.password,
       reason
