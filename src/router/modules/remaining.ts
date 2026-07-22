@@ -208,6 +208,18 @@ const remainingRouter: AppRouteRecordRaw[] = [
     ]
   },
   {
+    path: '/skit/ad-center/skit/ad-consumption',
+    redirect: '/skit/ad-consumption',
+    name: 'SkitAdConsumptionLegacyRedirect',
+    meta: { hidden: true, noTagsView: true }
+  },
+  {
+    path: '/skit/ad-center/skit/ad-record',
+    redirect: '/skit/ad-record',
+    name: 'SkitAdRecordLegacyRedirect',
+    meta: { hidden: true, noTagsView: true }
+  },
+  {
     path: '/user',
     component: Layout,
     name: 'UserInfo',

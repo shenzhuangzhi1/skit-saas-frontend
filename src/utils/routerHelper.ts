@@ -289,8 +289,8 @@ const generateRoutePath = (parentPath: string, path: string) => {
 export const pathResolve = (parentPath: string, path: string) => {
   if (isUrl(path)) return path
   if (!path) return parentPath // 修复 path 为空时返回 parentPath，避免拼接出错 https://t.zsxq.com/QVr6b
-  const childPath = path.startsWith('/') ? path : `/${path}`
-  return `${parentPath}${childPath}`.replace(/\/+/g, '/')
+  if (path.startsWith('/')) return path.replace(/\/+/g, '/')
+  return `${parentPath}/${path}`.replace(/\/+/g, '/')
 }
 
 // 路由降级
