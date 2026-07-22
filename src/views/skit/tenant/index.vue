@@ -34,6 +34,9 @@
             :target="tenantWorkspaceTarget(false, selfInvitation.tenantId)"
           />
         </el-tab-pane>
+        <el-tab-pane label="收益报表" name="reporting" lazy>
+          <ReportingEditor :target="tenantWorkspaceTarget(false, selfInvitation.tenantId)" />
+        </el-tab-pane>
         <el-tab-pane label="分成规则" name="commission" lazy>
           <CommissionRuleEditor :target="tenantWorkspaceTarget(false, selfInvitation.tenantId)" />
         </el-tab-pane>
@@ -233,6 +236,9 @@
             :target="tenantWorkspaceTarget(true, selectedAgent.tenantId)"
           />
         </el-tab-pane>
+        <el-tab-pane :disabled="selectedAgentArchived" label="收益报表" name="reporting" lazy>
+          <ReportingEditor :target="tenantWorkspaceTarget(true, selectedAgent.tenantId)" />
+        </el-tab-pane>
         <el-tab-pane label="分成规则" name="commission" lazy>
           <CommissionRuleEditor
             :read-only="selectedAgentArchived"
@@ -271,6 +277,7 @@ import { hasAnyRole } from '@/utils/role'
 import { useUserStore } from '@/store/modules/user'
 import * as TenantApi from '@/api/skit/tenant'
 import AdAccessEditor from './AdAccessEditor.vue'
+import ReportingEditor from './ReportingEditor.vue'
 import CommissionRuleEditor from './CommissionRuleEditor.vue'
 import MemberList from './MemberList.vue'
 import CommissionLedger from './CommissionLedger.vue'
@@ -312,7 +319,10 @@ const isArchived = (agent?: TenantApi.TenantAgentVO) => Boolean(agent?.archivedT
 const selectedAgentArchived = computed(() => isArchived(selectedAgent.value))
 
 const ensureReadableTab = () => {
-  if (selectedAgentArchived.value && ['ad-access', 'app-release'].includes(activeTab.value)) {
+  if (
+    selectedAgentArchived.value &&
+    ['ad-access', 'reporting', 'app-release'].includes(activeTab.value)
+  ) {
     activeTab.value = 'members'
   }
 }

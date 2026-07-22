@@ -55,21 +55,17 @@ export interface TenantInvitationVO {
   tenantName: string
 }
 
-interface TenantAgentProviderWriteFields {
-  pangleUsername?: string
+interface TenantAdAccountWriteFields {
   pangleAppId?: string
   pangleAppSecret?: string
-  panglePlacementId?: string
   pangleEnabled: boolean
-  takuUsername?: string
   takuAppId?: string
   takuAppKey?: string
-  takuAppSecret?: string
   takuPlacementId?: string
   takuEnabled: boolean
 }
 
-export interface TenantAgentCreateReqVO extends TenantAgentProviderWriteFields {
+export interface TenantAgentCreateReqVO {
   name: string
   mobile: string
   password: string
@@ -482,7 +478,7 @@ export interface TenantReportingConfigurationSaveReqVO {
   reason: string
 }
 
-export interface TenantAdAccountSaveReqVO extends TenantAgentProviderWriteFields {
+export interface TenantAdAccountSaveReqVO extends TenantAdAccountWriteFields {
   tenantId?: number
   reason: string
 }

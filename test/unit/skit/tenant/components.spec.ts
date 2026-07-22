@@ -39,9 +39,12 @@ const readiness = {
 
 describe('tenant revenue workspace components', () => {
   it('identifies the Pangle server credential required for dynamic drama sync', () => {
-    expect(agentFormSource).toContain('Server Key')
-    expect(agentFormSource).not.toContain('label="App Secret" prop="pangleAppSecret"')
+    expect(agentFormSource).toContain('创建代理商后，请在代理商工作台的“广告接入”中完成运行配置。')
+    expect(agentFormSource).not.toContain('pangleAppSecret')
+    expect(agentFormSource).not.toContain('takuAppKey')
     expect(adAccessEditorSource).toContain('Pangle Server Key')
+    expect(adAccessEditorSource).not.toContain('label="账号"')
+    expect(adAccessEditorSource).not.toContain('Taku App Secret')
   })
 
   it('does not encode a default rewarded network in the tenant workspace', () => {
@@ -655,7 +658,7 @@ describe('AdAccessEditor', () => {
       takuAppKeyConfigured: true,
       takuSecretConfigured: true
     })
-    getTenantAdReadiness.mockResolvedValue(readiness)
+    getTenantAdReadiness.mockResolvedValue({ ...readiness, adAccountId: 9 })
     getTenantReportingConfiguration.mockResolvedValue({
       adAccountId: 9,
       appId: 'taku-app',
@@ -691,13 +694,12 @@ describe('AdAccessEditor', () => {
     })
     await flushPromises()
 
-    expect(wrapper.html()).toContain('pangle-account')
+    expect(wrapper.html()).not.toContain('pangle-account')
     expect(wrapper.text()).toContain('密钥已配置')
     expect(wrapper.html()).not.toContain('leaked-pangle-secret')
     expect(wrapper.html()).not.toContain('leaked-taku-key')
     expect(wrapper.html()).not.toContain('leaked-taku-secret')
     expect(wrapper.html()).not.toContain('leaked-publisher-key')
-    expect(wrapper.text()).toContain('Publisher Key 已配置')
     expect(wrapper.get('[data-testid="capability-ad-account-id"]').attributes('value')).toBe('9')
     expect(
       wrapper.findAll('input[type="password"]').every((input) => !input.attributes('value'))
@@ -724,7 +726,6 @@ describe('AdAccessEditor', () => {
 
     expect(wrapper.text()).toContain('账号服务不可用')
     expect(wrapper.text()).toContain('就绪服务不可用')
-    expect(wrapper.text()).toContain('报表配置不可用')
     expect(wrapper.text()).not.toContain('生产已就绪')
   })
 })

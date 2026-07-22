@@ -11,6 +11,7 @@ import {
   resolveTenantAdAccountId,
   sanitizeAdAccountResponse,
   sanitizeReportingConfiguration,
+  validateAdAccountForm,
   validateCommissionDraft
 } from '@/views/skit/tenant/workspaceModel'
 
@@ -145,10 +146,10 @@ describe('tenant revenue workspace model', () => {
       takuAppSecret: 'also-secret'
     })
 
-    expect(form.pangleUsername).toBe('pangle-account')
+    expect(form).not.toHaveProperty('pangleUsername')
     expect(form.pangleAppSecret).toBe('')
     expect(form.takuAppKey).toBe('')
-    expect(form.takuAppSecret).toBe('')
+    expect(form).not.toHaveProperty('takuAppSecret')
     expect(JSON.stringify(form)).not.toContain('must-not-survive')
   })
 
@@ -160,11 +161,8 @@ describe('tenant revenue workspace model', () => {
     })
 
     expect(buildAdAccountWritePayload(base, { kind: 'own', tenantId: 17 })).toEqual({
-      pangleUsername: '',
       pangleAppId: '',
-      panglePlacementId: '',
       pangleEnabled: false,
-      takuUsername: '',
       takuAppId: '',
       takuPlacementId: '',
       takuEnabled: true
@@ -172,14 +170,47 @@ describe('tenant revenue workspace model', () => {
 
     expect(
       buildAdAccountWritePayload(
-        { ...base, takuAppKey: ' replacement-key ', takuAppSecret: ' replacement-secret ' },
+        { ...base, takuAppKey: ' replacement-key ' },
         { kind: 'platform', tenantId: 23 }
       )
     ).toMatchObject({
       tenantId: 23,
-      takuAppKey: 'replacement-key',
-      takuAppSecret: 'replacement-secret'
+      takuAppKey: 'replacement-key'
     })
+  })
+
+  it('requires only runtime-effective fields and accepts an already stored credential', () => {
+    const base = sanitizeAdAccountResponse({})
+
+    expect(
+      validateAdAccountForm({
+        ...base,
+        pangleEnabled: true,
+        pangleAppId: 'pangle-app',
+        pangleAppSecret: 'server-key'
+      })
+    ).toEqual({ valid: true, error: '' })
+    expect(
+      validateAdAccountForm({
+        ...base,
+        takuEnabled: true,
+        takuAppId: 'taku-app',
+        takuPlacementId: 'reward-placement',
+        takuAppKeyConfigured: true
+      })
+    ).toEqual({ valid: true, error: '' })
+    expect(validateAdAccountForm({ ...base, pangleEnabled: true })).toEqual({
+      valid: false,
+      error: '启用穿山甲时 App ID 不能为空'
+    })
+    expect(
+      validateAdAccountForm({
+        ...base,
+        takuEnabled: true,
+        takuAppId: 'taku-app',
+        takuPlacementId: 'reward-placement'
+      })
+    ).toEqual({ valid: false, error: '启用 Taku 时 App Key 不能为空' })
   })
 
   it('never copies a Publisher Key from a reporting configuration response', () => {

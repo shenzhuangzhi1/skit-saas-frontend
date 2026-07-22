@@ -164,11 +164,8 @@ describe('tenant advertising access API client', () => {
     const target = { kind: 'platform', tenantId: 23 } as const
 
     await saveManagedTenantAdAccount(target, {
-      pangleUsername: '',
       pangleAppId: '',
-      panglePlacementId: '',
       pangleEnabled: false,
-      takuUsername: 'account',
       takuAppId: 'app',
       takuPlacementId: 'placement',
       takuEnabled: true,

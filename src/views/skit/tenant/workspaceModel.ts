@@ -128,47 +128,34 @@ export const isTenantAdProductionReady = (readiness: ProductionReadinessLike): b
 }
 
 export interface AdAccountResponseLike {
-  pangleUsername?: unknown
   pangleAppId?: unknown
-  panglePlacementId?: unknown
   pangleEnabled?: unknown
   pangleSecretConfigured?: unknown
-  takuUsername?: unknown
   takuAppId?: unknown
   takuPlacementId?: unknown
   takuEnabled?: unknown
   takuAppKeyConfigured?: unknown
-  takuSecretConfigured?: unknown
 }
 
 export interface SafeAdAccountForm {
-  pangleUsername: string
   pangleAppId: string
   pangleAppSecret: string
-  panglePlacementId: string
   pangleEnabled: boolean
   pangleSecretConfigured: boolean
-  takuUsername: string
   takuAppId: string
   takuAppKey: string
-  takuAppSecret: string
   takuPlacementId: string
   takuEnabled: boolean
   takuAppKeyConfigured: boolean
-  takuSecretConfigured: boolean
 }
 
 export interface AdAccountWritePayload {
   tenantId?: number
-  pangleUsername: string
   pangleAppId: string
   pangleAppSecret?: string
-  panglePlacementId: string
   pangleEnabled: boolean
-  takuUsername: string
   takuAppId: string
   takuAppKey?: string
-  takuAppSecret?: string
   takuPlacementId: string
   takuEnabled: boolean
 }
@@ -263,21 +250,41 @@ const safeNonNegativeInteger = (value: unknown): number =>
 
 /** Build a form from an allow-list. Raw credential-shaped response fields are never copied. */
 export const sanitizeAdAccountResponse = (source: AdAccountResponseLike): SafeAdAccountForm => ({
-  pangleUsername: safeString(source.pangleUsername),
   pangleAppId: safeString(source.pangleAppId),
   pangleAppSecret: '',
-  panglePlacementId: safeString(source.panglePlacementId),
   pangleEnabled: safeBoolean(source.pangleEnabled),
   pangleSecretConfigured: safeBoolean(source.pangleSecretConfigured),
-  takuUsername: safeString(source.takuUsername),
   takuAppId: safeString(source.takuAppId),
   takuAppKey: '',
-  takuAppSecret: '',
   takuPlacementId: safeString(source.takuPlacementId),
   takuEnabled: safeBoolean(source.takuEnabled),
-  takuAppKeyConfigured: safeBoolean(source.takuAppKeyConfigured),
-  takuSecretConfigured: safeBoolean(source.takuSecretConfigured)
+  takuAppKeyConfigured: safeBoolean(source.takuAppKeyConfigured)
 })
+
+export const validateAdAccountForm = (
+  form: SafeAdAccountForm
+): { valid: boolean; error: string } => {
+  if (form.pangleEnabled) {
+    if (!form.pangleAppId.trim()) {
+      return { valid: false, error: '启用穿山甲时 App ID 不能为空' }
+    }
+    if (!form.pangleSecretConfigured && !form.pangleAppSecret.trim()) {
+      return { valid: false, error: '启用穿山甲时 Server Key 不能为空' }
+    }
+  }
+  if (form.takuEnabled) {
+    if (!form.takuAppId.trim()) {
+      return { valid: false, error: '启用 Taku 时 App ID 不能为空' }
+    }
+    if (!form.takuPlacementId.trim()) {
+      return { valid: false, error: '启用 Taku 时激励视频广告位不能为空' }
+    }
+    if (!form.takuAppKeyConfigured && !form.takuAppKey.trim()) {
+      return { valid: false, error: '启用 Taku 时 App Key 不能为空' }
+    }
+  }
+  return { valid: true, error: '' }
+}
 
 export const sanitizeReportingConfiguration = (
   source: ReportingConfigurationResponseLike
@@ -308,21 +315,16 @@ export const buildAdAccountWritePayload = (
   target: ManagementTenantTarget
 ): AdAccountWritePayload => {
   const payload: Omit<AdAccountWritePayload, 'tenantId'> = {
-    pangleUsername: form.pangleUsername.trim(),
     pangleAppId: form.pangleAppId.trim(),
-    panglePlacementId: form.panglePlacementId.trim(),
     pangleEnabled: form.pangleEnabled,
-    takuUsername: form.takuUsername.trim(),
     takuAppId: form.takuAppId.trim(),
     takuPlacementId: form.takuPlacementId.trim(),
     takuEnabled: form.takuEnabled
   }
   const pangleAppSecret = form.pangleAppSecret.trim()
   const takuAppKey = form.takuAppKey.trim()
-  const takuAppSecret = form.takuAppSecret.trim()
   if (pangleAppSecret) payload.pangleAppSecret = pangleAppSecret
   if (takuAppKey) payload.takuAppKey = takuAppKey
-  if (takuAppSecret) payload.takuAppSecret = takuAppSecret
   return managementTenantBody(target, payload)
 }
 
