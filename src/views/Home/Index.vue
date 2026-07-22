@@ -18,7 +18,7 @@
         </div>
       </div>
       <div class="skit-home__actions">
-        <el-button @click="go('SkitUser')">用户管理</el-button>
+        <el-button @click="go('SkitAgentManagement')">代理商管理</el-button>
         <el-button type="primary" @click="go('SkitAdRecord')">广告监控</el-button>
         <el-button :loading="loading" :icon="Refresh" circle aria-label="刷新" @click="load" />
       </div>

@@ -7,6 +7,7 @@ const pageConfig = readFileSync(
   resolve(process.cwd(), 'src/views/skit/admin/pageConfig.ts'),
   'utf8'
 )
+const home = readFileSync(resolve(process.cwd(), 'src/views/Home/Index.vue'), 'utf8')
 
 describe('agent and app user navigation', () => {
   it('uses a visible two-item left submenu under user management', () => {
@@ -24,5 +25,11 @@ describe('agent and app user navigation', () => {
     expect(routes).toMatch(/path: 'user',[\s\S]*?hidden: true/)
     expect(pageConfig).toContain("title: '代理商管理', routeName: 'SkitAgentManagement'")
     expect(pageConfig).not.toContain("routeName: 'SkitUser'")
+  })
+
+  it('updates the home shortcut to the agent workspace instead of the removed route', () => {
+    expect(home).toContain("go('SkitAgentManagement')")
+    expect(home).toContain('>代理商管理</el-button>')
+    expect(home).not.toContain("go('SkitUser')")
   })
 })
