@@ -781,7 +781,7 @@ const saveCapability = async () => {
     ElMessage.warning('未读取到当前租户已启用的 Taku 广告账号')
     return
   }
-  if (form.unlockNetworkFirmIds.length === 0) {
+  if (currentReadiness.rolloutState !== 'OFF' && form.unlockNetworkFirmIds.length === 0) {
     ElMessage.warning('至少选择一个已验证的奖励解锁广告源')
     return
   }

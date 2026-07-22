@@ -489,7 +489,7 @@ describe('AdAccessEditor', () => {
     expect(verifyTenantAdNetworkCapability).not.toHaveBeenCalled()
   })
 
-  it('preserves unavailable selections and persists the exact arbitrary network set', async () => {
+  it('preserves unavailable selections and permits clearing sources only while rollout is OFF', async () => {
     getManagedTenantAdAccount.mockResolvedValue({
       takuEnabled: true,
       takuPlacementId: 'reward-placement'
@@ -596,6 +596,7 @@ describe('AdAccessEditor', () => {
 
     const vm = wrapper.vm as unknown as {
       capabilityForm: { reason: string; unlockNetworkFirmIds: number[] }
+      readiness: typeof readiness
     }
     vm.capabilityForm.reason = '保存当前租户任意广告来源选择集合'
     expect(vm.capabilityForm.unlockNetworkFirmIds).toEqual([112, 987])
@@ -617,7 +618,19 @@ describe('AdAccessEditor', () => {
 
     configureTenantAdCapability.mockClear()
     vm.capabilityForm.unlockNetworkFirmIds = []
-    vm.capabilityForm.reason = '不能静默提交空的奖励广告来源集合'
+    vm.capabilityForm.reason = '停用状态下清空全部奖励广告来源集合'
+    await wrapper.vm.$nextTick()
+    await saveButton?.trigger('click')
+    await flushPromises()
+    expect(configureTenantAdCapability).toHaveBeenCalledWith(
+      { kind: 'platform', tenantId: 23 },
+      expect.objectContaining({ unlockNetworkFirmIds: [] })
+    )
+
+    configureTenantAdCapability.mockClear()
+    vm.readiness = { ...vm.readiness, rolloutState: 'SHADOW_TEST_USERS' }
+    vm.capabilityForm.unlockNetworkFirmIds = []
+    vm.capabilityForm.reason = '灰度状态不能清空全部奖励广告来源集合'
     await wrapper.vm.$nextTick()
     await saveButton?.trigger('click')
     await flushPromises()
