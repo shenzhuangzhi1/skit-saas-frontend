@@ -126,19 +126,22 @@ describe('tenant revenue workspace components', () => {
 
     expect(wrapper.text()).toContain('动态来源甲')
     expect(wrapper.text()).toContain('networkFirmId 987')
+    expect(wrapper.text()).toContain('能力已停用')
+    expect(wrapper.text()).toContain('能力已验证')
+    expect(wrapper.text()).toContain('SIGNED_REWARD')
     expect(wrapper.text()).toContain('CAPABILITY_DISABLED')
     expect(wrapper.text()).toContain('SIGNED_REWARD_NOT_OBSERVED')
     expect(wrapper.get('[data-testid="enforce-rollout"]').attributes('disabled')).toBeDefined()
   })
 
-  it('fails closed for a legacy aggregate that selects multiple networks without per-network evidence', () => {
+  it('fails closed for even one selected network without per-network evidence', () => {
     const wrapper = mount(AdReadinessChecklist, {
       props: {
         readiness: {
           ...readiness,
           productionReady: true,
           blockers: [],
-          unlockNetworkFirmIds: [112, 987]
+          unlockNetworkFirmIds: [112]
         }
       },
       global: {
@@ -153,6 +156,58 @@ describe('tenant revenue workspace components', () => {
     })
 
     expect(wrapper.get('[data-testid="enforce-rollout"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('后端未返回逐广告源证据')
+  })
+
+  it('renders only safe source references and the explicit missing-network sets', () => {
+    const wrapper = mount(AdReadinessChecklist, {
+      props: {
+        readiness: {
+          ...readiness,
+          unlockNetworkFirmIds: [112],
+          missingSignedRewardNetworkFirmIds: [112],
+          missingImpressionNetworkFirmIds: [987],
+          networkReadiness: [
+            {
+              networkFirmId: 112,
+              rewardAuthority: 'SIGNED_REWARD',
+              enabled: true,
+              verified: true,
+              supportsUserId: true,
+              supportsCustomData: true,
+              supportsStableTransaction: true,
+              supportsImpressionRevenue: true,
+              supportsReporting: true,
+              authoritative: true,
+              signedRewardObserved: false,
+              impressionObserved: true,
+              lastSignedRewardCallbackAt: '2026-07-22T07:31:00Z',
+              lastImpressionCallbackAt: '2026-07-22T07:32:00Z',
+              sourceRefs: ['0a1b2c3d4e5f'],
+              signedRewardSourceRefs: [],
+              impressionSourceRefs: ['123456abcdef'],
+              blockers: ['SIGNED_REWARD_NOT_OBSERVED']
+            }
+          ]
+        }
+      },
+      global: {
+        stubs: {
+          'el-tag': { template: '<span><slot /></span>' },
+          'el-button': {
+            props: ['disabled'],
+            template: '<button :disabled="disabled"><slot /></button>'
+          }
+        }
+      }
+    })
+
+    expect(wrapper.text()).toContain('0a1b2c3d4e5f')
+    expect(wrapper.text()).toContain('123456abcdef')
+    expect(wrapper.text()).toContain('缺少签名奖励证据：networkFirmId 112')
+    expect(wrapper.text()).toContain('缺少展示证据：networkFirmId 987')
+    expect(wrapper.text()).toContain('2026-07-22T07:31:00Z')
+    expect(wrapper.text()).toContain('2026-07-22T07:32:00Z')
   })
 
   it('renders the 100-unit split including explicit agent retention', () => {
@@ -261,12 +316,14 @@ const {
   configureTenantAdCapability,
   getManagedTenantAdAccount,
   getTenantAdReadiness,
-  getTenantReportingConfiguration
+  getTenantReportingConfiguration,
+  verifyTenantAdNetworkCapability
 } = vi.hoisted(() => ({
   configureTenantAdCapability: vi.fn(),
   getManagedTenantAdAccount: vi.fn(),
   getTenantAdReadiness: vi.fn(),
-  getTenantReportingConfiguration: vi.fn()
+  getTenantReportingConfiguration: vi.fn(),
+  verifyTenantAdNetworkCapability: vi.fn()
 }))
 
 vi.mock('@/api/skit/tenant', () => ({
@@ -276,7 +333,8 @@ vi.mock('@/api/skit/tenant', () => ({
   getTenantReportingConfiguration,
   saveManagedTenantAdAccount: vi.fn(),
   saveTenantReportingConfiguration: vi.fn(),
-  transitionTenantAdRollout: vi.fn()
+  transitionTenantAdRollout: vi.fn(),
+  verifyTenantAdNetworkCapability
 }))
 
 describe('AdAccessEditor', () => {
@@ -285,6 +343,150 @@ describe('AdAccessEditor', () => {
     getManagedTenantAdAccount.mockReset()
     getTenantAdReadiness.mockReset()
     getTenantReportingConfiguration.mockReset()
+    verifyTenantAdNetworkCapability.mockReset()
+  })
+
+  it('lets only a super admin verify or disable an arbitrary network capability', async () => {
+    getManagedTenantAdAccount.mockResolvedValue({
+      takuEnabled: true,
+      takuPlacementId: 'reward-placement'
+    })
+    getTenantAdReadiness.mockResolvedValue({
+      ...readiness,
+      adAccountId: 9,
+      unlockNetworkFirmIds: [],
+      availableNetworkCapabilities: [],
+      networkReadiness: []
+    })
+    getTenantReportingConfiguration.mockResolvedValue({
+      adAccountId: 9,
+      appId: 'taku-app',
+      placementId: 'reward-placement',
+      reportTimezone: 'UTC+8',
+      currency: 'USD',
+      amountScale: 8,
+      adFormat: 'rewarded_video',
+      credentialConfigured: true,
+      credentialVersion: 2
+    })
+    verifyTenantAdNetworkCapability.mockResolvedValue({
+      networkFirmId: 314159,
+      enabled: true,
+      verified: true
+    })
+
+    const stubs = {
+      AsyncState: { template: '<div><slot /></div>' },
+      AdReadinessChecklist: { template: '<div>readiness</div>' },
+      InputPassword: true,
+      'el-form': { template: '<form><slot /></form>' },
+      'el-form-item': { template: '<label><slot /></label>' },
+      'el-input': { props: ['modelValue'], template: '<input :value="modelValue" />' },
+      'el-input-number': true,
+      'el-switch': true,
+      'el-button': {
+        props: ['disabled'],
+        template: '<button :disabled="disabled"><slot /></button>'
+      },
+      'el-tag': { template: '<span><slot /></span>' },
+      'el-checkbox': { template: '<span><slot /></span>' },
+      'el-alert': true,
+      'el-divider': true,
+      'el-select': { template: '<div><slot /></div>' },
+      'el-option': true,
+      ContentWrap: { template: '<section><slot /></section>' },
+      Dialog: true
+    }
+    const superAdmin = mount(AdAccessEditor, {
+      props: {
+        target: { kind: 'platform', tenantId: 23 },
+        roles: ['super_admin']
+      },
+      global: { stubs }
+    })
+    await flushPromises()
+
+    expect(superAdmin.find('[data-testid="network-capability-manager"]').exists()).toBe(true)
+    const vm = superAdmin.vm as unknown as {
+      networkCapabilityForm: {
+        networkFirmId: number
+        rewardAuthority: 'SIGNED_REWARD' | 'NONE'
+        supportsUserId: boolean
+        supportsCustomData: boolean
+        supportsStableTransaction: boolean
+        supportsImpressionRevenue: boolean
+        supportsReporting: boolean
+        reason: string
+      }
+    }
+    Object.assign(vm.networkCapabilityForm, {
+      networkFirmId: 314159,
+      rewardAuthority: 'SIGNED_REWARD',
+      supportsUserId: true,
+      supportsCustomData: true,
+      supportsStableTransaction: true,
+      supportsImpressionRevenue: true,
+      supportsReporting: false,
+      reason: '核验当前账号新发现的动态广告来源能力'
+    })
+    await superAdmin.vm.$nextTick()
+    const verifyButton = superAdmin
+      .findAll('button')
+      .find((button) => button.text().includes('核验并启用能力'))
+    await verifyButton?.trigger('click')
+    await flushPromises()
+
+    expect(verifyTenantAdNetworkCapability).toHaveBeenCalledWith(
+      { kind: 'platform', tenantId: 23 },
+      {
+        adAccountId: 9,
+        networkFirmId: 314159,
+        rewardAuthority: 'SIGNED_REWARD',
+        enabled: true,
+        supportsUserId: true,
+        supportsCustomData: true,
+        supportsStableTransaction: true,
+        supportsImpressionRevenue: true,
+        supportsReporting: false,
+        expectedReadinessVersion: 4,
+        reason: '核验当前账号新发现的动态广告来源能力'
+      }
+    )
+
+    verifyTenantAdNetworkCapability.mockClear()
+    vm.networkCapabilityForm.reason = '停用当前账号不再可信的动态广告来源'
+    await superAdmin.vm.$nextTick()
+    const disableButton = superAdmin
+      .findAll('button')
+      .find((button) => button.text().includes('停用能力'))
+    await disableButton?.trigger('click')
+    await flushPromises()
+    expect(verifyTenantAdNetworkCapability).toHaveBeenCalledWith(
+      { kind: 'platform', tenantId: 23 },
+      expect.objectContaining({
+        networkFirmId: 314159,
+        rewardAuthority: 'SIGNED_REWARD',
+        enabled: false,
+        expectedReadinessVersion: 4,
+        reason: '停用当前账号不再可信的动态广告来源'
+      })
+    )
+
+    verifyTenantAdNetworkCapability.mockClear()
+    const tenantAdmin = mount(AdAccessEditor, {
+      props: {
+        target: { kind: 'own', tenantId: 17 },
+        roles: ['tenant_admin']
+      },
+      global: { stubs }
+    })
+    await flushPromises()
+    expect(tenantAdmin.find('[data-testid="network-capability-manager"]').exists()).toBe(false)
+    const tenantVm = tenantAdmin.vm as unknown as {
+      saveNetworkCapability: (enabled: boolean) => Promise<void>
+    }
+    await tenantVm.saveNetworkCapability(true)
+    expect(verifyTenantAdNetworkCapability).not.toHaveBeenCalled()
   })
 
   it('preserves unavailable selections and persists the exact arbitrary network set', async () => {

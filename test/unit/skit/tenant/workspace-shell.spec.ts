@@ -70,4 +70,9 @@ describe('single tenant management workspace shell', () => {
     expect(adAccessSource).toContain('callbackKey')
     expect(adAccessSource).toContain('仅显示一次')
   })
+
+  it('derives network capability management visibility from the shared role helper', () => {
+    expect(source).toContain("hasAnyRole(['super_admin'], userStore.getRoles)")
+    expect(source).toContain(':roles="userStore.getRoles"')
+  })
 })

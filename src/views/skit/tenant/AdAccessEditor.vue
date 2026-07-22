@@ -282,6 +282,97 @@
       </el-form>
     </ContentWrap>
 
+    <ContentWrap
+      v-if="canManageNetworkCapabilities && readiness"
+      data-testid="network-capability-manager"
+    >
+      <div class="mb-12px">
+        <div class="text-16px font-600">广告源验奖能力（平台超管）</div>
+        <div class="text-13px text-[var(--el-text-color-secondary)]">
+          仅登记当前 Taku 账号真实返回的 networkFirmId。此处不读取或保存 adsourceId、密钥等凭据。
+        </div>
+      </div>
+      <div v-if="readiness.availableNetworkCapabilities?.length" class="mb-14px grid gap-8px">
+        <div
+          v-for="capability in readiness.availableNetworkCapabilities"
+          :key="capability.networkFirmId"
+          class="flex flex-wrap items-center justify-between gap-8px rounded border border-[var(--el-border-color)] p-8px"
+        >
+          <span>
+            {{ capability.displayName || `networkFirmId ${capability.networkFirmId}` }} ·
+            {{ capability.rewardAuthority }} · {{ capability.enabled ? '已启用' : '已停用' }}
+          </span>
+          <el-button link type="primary" @click="loadNetworkCapability(capability)">
+            载入能力字段
+          </el-button>
+        </div>
+      </div>
+      <el-form label-width="170px">
+        <el-form-item label="广告账号编号">
+          <el-input :model-value="capabilityAdAccountId || '-'" disabled />
+        </el-form-item>
+        <el-form-item label="预期就绪版本">
+          <el-input :model-value="String(readiness.readinessVersion)" disabled />
+        </el-form-item>
+        <el-form-item label="networkFirmId">
+          <el-input-number
+            v-model="networkCapabilityForm.networkFirmId"
+            :min="1"
+            :precision="0"
+            controls-position="right"
+          />
+        </el-form-item>
+        <el-form-item label="奖励权限">
+          <el-select v-model="networkCapabilityForm.rewardAuthority" class="w-full">
+            <el-option label="服务端签名奖励（SIGNED_REWARD）" value="SIGNED_REWARD" />
+            <el-option label="不具备奖励权限（NONE）" value="NONE" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="支持 userId">
+          <el-switch v-model="networkCapabilityForm.supportsUserId" />
+        </el-form-item>
+        <el-form-item label="支持 customData">
+          <el-switch v-model="networkCapabilityForm.supportsCustomData" />
+        </el-form-item>
+        <el-form-item label="稳定交易标识">
+          <el-switch v-model="networkCapabilityForm.supportsStableTransaction" />
+        </el-form-item>
+        <el-form-item label="展示收益回调">
+          <el-switch v-model="networkCapabilityForm.supportsImpressionRevenue" />
+        </el-form-item>
+        <el-form-item label="官方报表">
+          <el-switch v-model="networkCapabilityForm.supportsReporting" />
+        </el-form-item>
+        <el-form-item label="核验/停用原因">
+          <el-input
+            v-model="networkCapabilityForm.reason"
+            maxlength="500"
+            placeholder="每次核验或停用均必填 10–500 字"
+            show-word-limit
+            type="textarea"
+          />
+        </el-form-item>
+        <el-form-item>
+          <div class="flex flex-wrap gap-8px">
+            <el-button
+              :loading="networkCapabilitySaving"
+              type="primary"
+              @click="saveNetworkCapability(true)"
+            >
+              核验并启用能力
+            </el-button>
+            <el-button
+              :loading="networkCapabilitySaving"
+              type="danger"
+              @click="saveNetworkCapability(false)"
+            >
+              停用能力
+            </el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+    </ContentWrap>
+
     <ContentWrap v-if="readiness">
       <div class="mb-12px text-16px font-600">回调密钥轮换</div>
       <el-alert
@@ -395,6 +486,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useClipboard } from '@vueuse/core'
 import { InputPassword } from '@/components/InputPassword'
+import { hasAnyRole } from '@/utils/role'
 import AsyncState from '@/views/skit/shared/AsyncState.vue'
 import * as TenantApi from '@/api/skit/tenant'
 import AdReadinessChecklist from './AdReadinessChecklist.vue'
@@ -402,7 +494,9 @@ import RewardNetworkSelector from './RewardNetworkSelector.vue'
 import {
   buildAdAccountWritePayload,
   CURRENT_PROTOCOL_VERSION,
+  isTenantAdProductionReady,
   parseShadowMemberIds,
+  parseUnlockNetworkFirmIds,
   resolveTenantAdAccountId,
   sanitizeAdAccountResponse,
   sanitizeReportingConfiguration,
@@ -413,7 +507,13 @@ import {
 
 defineOptions({ name: 'SkitTenantAdAccessEditor' })
 
-const props = defineProps<{ target: ManagementTenantTarget }>()
+const props = withDefaults(
+  defineProps<{
+    target: ManagementTenantTarget
+    roles?: string[]
+  }>(),
+  { roles: () => [] }
+)
 const { copy: copyToClipboard } = useClipboard({ legacy: true })
 const accountForm = ref<SafeAdAccountForm>()
 const accountReason = ref('')
@@ -430,6 +530,9 @@ const reportingSaving = ref(false)
 const capabilityAdAccountId = computed(() =>
   resolveTenantAdAccountId(readiness.value, reportingForm.value)
 )
+const canManageNetworkCapabilities = computed(
+  () => props.target.kind === 'platform' && hasAnyRole(['super_admin'], props.roles)
+)
 interface CapabilityForm {
   dedicatedUnlockPlacementId: string
   dedicatedPlacementVerified: boolean
@@ -442,6 +545,27 @@ interface CapabilityForm {
 }
 const capabilityForm = ref<CapabilityForm>()
 const capabilitySaving = ref(false)
+interface NetworkCapabilityForm {
+  networkFirmId?: number
+  rewardAuthority: 'SIGNED_REWARD' | 'NONE'
+  supportsUserId: boolean
+  supportsCustomData: boolean
+  supportsStableTransaction: boolean
+  supportsImpressionRevenue: boolean
+  supportsReporting: boolean
+  reason: string
+}
+const networkCapabilityForm = reactive<NetworkCapabilityForm>({
+  networkFirmId: undefined,
+  rewardAuthority: 'SIGNED_REWARD',
+  supportsUserId: false,
+  supportsCustomData: false,
+  supportsStableTransaction: false,
+  supportsImpressionRevenue: false,
+  supportsReporting: false,
+  reason: ''
+})
+const networkCapabilitySaving = ref(false)
 const rolloutReason = ref('')
 const callbackRotation = reactive({ priorAcceptanceMinutes: 30, reason: '' })
 const rewardRotation = reactive({ priorAcceptanceMinutes: 30, rewardSecret: '', reason: '' })
@@ -466,6 +590,33 @@ const capabilityErrorText = (error: unknown) => {
     return '请填写最低原生版本，并确认已启用有效的 Taku 广告账号'
   }
   return message
+}
+
+const resetNetworkCapabilityForm = () => {
+  Object.assign(networkCapabilityForm, {
+    networkFirmId: undefined,
+    rewardAuthority: 'SIGNED_REWARD',
+    supportsUserId: false,
+    supportsCustomData: false,
+    supportsStableTransaction: false,
+    supportsImpressionRevenue: false,
+    supportsReporting: false,
+    reason: ''
+  } satisfies NetworkCapabilityForm)
+}
+
+const loadNetworkCapability = (capability: TenantApi.TenantAdNetworkCapabilityVO) => {
+  Object.assign(networkCapabilityForm, {
+    networkFirmId: capability.networkFirmId,
+    rewardAuthority:
+      capability.rewardAuthority === 'SIGNED_REWARD' ? 'SIGNED_REWARD' : ('NONE' as const),
+    supportsUserId: capability.supportsUserId,
+    supportsCustomData: capability.supportsCustomData,
+    supportsStableTransaction: capability.supportsStableTransaction,
+    supportsImpressionRevenue: capability.supportsImpressionRevenue,
+    supportsReporting: capability.supportsReporting,
+    reason: ''
+  })
 }
 
 const loadAccount = async (currentRequestId: number) => {
@@ -537,6 +688,7 @@ const reload = () => {
   callbackRotation.reason = ''
   rewardRotation.reason = ''
   rewardRotation.rewardSecret = ''
+  resetNetworkCapabilityForm()
   clearCallbackReveal()
   void loadAccount(currentRequestId)
   void loadReadiness(currentRequestId)
@@ -577,6 +729,50 @@ const auditedReason = (value: string, label: string) => {
   return reason
 }
 
+const saveNetworkCapability = async (enabled: boolean) => {
+  if (!canManageNetworkCapabilities.value) return
+  const currentReadiness = readiness.value
+  const adAccountId = capabilityAdAccountId.value
+  const networkFirmId = networkCapabilityForm.networkFirmId
+  if (!currentReadiness || !adAccountId) {
+    ElMessage.warning('未读取到当前租户已启用的 Taku 广告账号')
+    return
+  }
+  if (
+    typeof networkFirmId !== 'number' ||
+    !Number.isSafeInteger(networkFirmId) ||
+    networkFirmId <= 0
+  ) {
+    ElMessage.warning('networkFirmId 必须是正整数')
+    return
+  }
+  const reason = auditedReason(networkCapabilityForm.reason, '核验/停用原因')
+  if (!reason) return
+  networkCapabilitySaving.value = true
+  try {
+    await TenantApi.verifyTenantAdNetworkCapability(props.target, {
+      adAccountId,
+      networkFirmId,
+      rewardAuthority: networkCapabilityForm.rewardAuthority,
+      enabled,
+      supportsUserId: networkCapabilityForm.supportsUserId,
+      supportsCustomData: networkCapabilityForm.supportsCustomData,
+      supportsStableTransaction: networkCapabilityForm.supportsStableTransaction,
+      supportsImpressionRevenue: networkCapabilityForm.supportsImpressionRevenue,
+      supportsReporting: networkCapabilityForm.supportsReporting,
+      expectedReadinessVersion: currentReadiness.readinessVersion,
+      reason
+    })
+    networkCapabilityForm.reason = ''
+    ElMessage.success(enabled ? '广告源能力已核验并启用' : '广告源能力已停用')
+    await loadReadiness(requestId)
+  } catch (error) {
+    ElMessage.error(errorText(error, enabled ? '广告源能力核验失败' : '广告源能力停用失败'))
+  } finally {
+    networkCapabilitySaving.value = false
+  }
+}
+
 const saveCapability = async () => {
   const form = capabilityForm.value
   const currentReadiness = readiness.value
@@ -589,6 +785,13 @@ const saveCapability = async () => {
     ElMessage.warning('至少选择一个已验证的奖励解锁广告源')
     return
   }
+  let unlockNetworkFirmIds: number[]
+  try {
+    unlockNetworkFirmIds = parseUnlockNetworkFirmIds(form.unlockNetworkFirmIds.join(','))
+  } catch (error) {
+    ElMessage.warning(errorText(error, '奖励解锁广告源选择无效'))
+    return
+  }
   const reason = auditedReason(form.reason, '配置变更原因')
   if (!reason) return
   capabilitySaving.value = true
@@ -599,7 +802,7 @@ const saveCapability = async () => {
       dedicatedPlacementVerified: form.dedicatedPlacementVerified,
       rewardCallbackTemplateVerified: form.rewardCallbackTemplateVerified,
       impressionCallbackTemplateVerified: form.impressionCallbackTemplateVerified,
-      unlockNetworkFirmIds: [...form.unlockNetworkFirmIds],
+      unlockNetworkFirmIds,
       shadowTestMemberIds: parseShadowMemberIds(form.shadowTestMemberIds),
       minNativeVersion: form.minNativeVersion.trim(),
       minProtocolVersion: CURRENT_PROTOCOL_VERSION,
@@ -621,7 +824,7 @@ const transitionRollout = async (targetState: TenantApi.TenantAdRolloutState) =>
   if (!currentReadiness || !form) return
   const reason = auditedReason(rolloutReason.value, '灰度/启用原因')
   if (!reason) return
-  if (targetState === 'ENFORCED' && !currentReadiness.productionReady) {
+  if (targetState === 'ENFORCED' && !isTenantAdProductionReady(currentReadiness)) {
     ElMessage.warning('生产就绪门禁尚未全部通过，不能启用生产解锁')
     return
   }

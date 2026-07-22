@@ -4,8 +4,10 @@ import {
   buildCommissionPreview,
   buildMemberBreadcrumb,
   groupLedgerAmounts,
+  isTenantAdProductionReady,
   mergeMemberChildren,
   parseShadowMemberIds,
+  parseUnlockNetworkFirmIds,
   resolveTenantAdAccountId,
   sanitizeAdAccountResponse,
   sanitizeReportingConfiguration,
@@ -19,11 +21,74 @@ describe('tenant revenue workspace model', () => {
     expect(() => parseShadowMemberIds('member-101')).toThrow('正整数')
   })
 
+  it('parses at most 16 sorted unique positive rewarded-network ids', () => {
+    expect(parseUnlockNetworkFirmIds('987，\n112; 654、314')).toEqual([112, 314, 654, 987])
+    expect(() => parseUnlockNetworkFirmIds('112, 112')).toThrow('不能重复')
+    expect(() => parseUnlockNetworkFirmIds('112, 0')).toThrow('正整数')
+    expect(() => parseUnlockNetworkFirmIds('112, -1')).toThrow('正整数')
+    expect(() => parseUnlockNetworkFirmIds('112, 1.5')).toThrow('正整数')
+    expect(() =>
+      parseUnlockNetworkFirmIds(Array.from({ length: 17 }, (_, index) => index + 1).join(','))
+    ).toThrow('最多选择 16 个')
+
+    const tenantA = parseUnlockNetworkFirmIds('112, 987')
+    const tenantB = parseUnlockNetworkFirmIds('654, 314')
+    expect(tenantA).toEqual([112, 987])
+    expect(tenantB).toEqual([314, 654])
+    expect(tenantA).not.toBe(tenantB)
+  })
+
   it('derives one tenant-scoped Taku account id and rejects conflicting sources', () => {
     expect(resolveTenantAdAccountId({ adAccountId: undefined }, { adAccountId: 9 })).toBe(9)
     expect(resolveTenantAdAccountId({ adAccountId: 9 }, { adAccountId: 9 })).toBe(9)
     expect(resolveTenantAdAccountId({ adAccountId: 9 }, { adAccountId: 10 })).toBe(0)
     expect(resolveTenantAdAccountId({ adAccountId: '9' }, { adAccountId: 0 })).toBe(0)
+  })
+
+  it('requires complete evidence for every selected network regardless of aggregate readiness', () => {
+    const aggregateReady = {
+      productionReady: true,
+      unlockNetworkFirmIds: [112],
+      missingSignedRewardNetworkFirmIds: [],
+      missingImpressionNetworkFirmIds: []
+    }
+
+    expect(isTenantAdProductionReady(aggregateReady)).toBe(false)
+    expect(
+      isTenantAdProductionReady({
+        ...aggregateReady,
+        networkReadiness: [
+          {
+            networkFirmId: 112,
+            rewardAuthority: 'SIGNED_REWARD',
+            enabled: true,
+            verified: true,
+            authoritative: true,
+            signedRewardObserved: true,
+            impressionObserved: true,
+            blockers: []
+          }
+        ]
+      })
+    ).toBe(true)
+    expect(
+      isTenantAdProductionReady({
+        ...aggregateReady,
+        missingImpressionNetworkFirmIds: [112],
+        networkReadiness: [
+          {
+            networkFirmId: 112,
+            rewardAuthority: 'SIGNED_REWARD',
+            enabled: true,
+            verified: true,
+            authoritative: true,
+            signedRewardObserved: true,
+            impressionObserved: true,
+            blockers: []
+          }
+        ]
+      })
+    ).toBe(false)
   })
 
   it('treats provider credentials as write-only even if a malformed response contains them', () => {

@@ -29,7 +29,10 @@
       </div>
       <el-tabs v-model="activeTab">
         <el-tab-pane label="广告接入" name="ad-access" lazy>
-          <AdAccessEditor :target="tenantWorkspaceTarget(false, selfInvitation.tenantId)" />
+          <AdAccessEditor
+            :roles="userStore.getRoles"
+            :target="tenantWorkspaceTarget(false, selfInvitation.tenantId)"
+          />
         </el-tab-pane>
         <el-tab-pane label="分成规则" name="commission" lazy>
           <CommissionRuleEditor :target="tenantWorkspaceTarget(false, selfInvitation.tenantId)" />
@@ -225,7 +228,10 @@
       />
       <el-tabs v-model="activeTab">
         <el-tab-pane :disabled="selectedAgentArchived" label="广告接入" name="ad-access" lazy>
-          <AdAccessEditor :target="tenantWorkspaceTarget(true, selectedAgent.tenantId)" />
+          <AdAccessEditor
+            :roles="userStore.getRoles"
+            :target="tenantWorkspaceTarget(true, selectedAgent.tenantId)"
+          />
         </el-tab-pane>
         <el-tab-pane label="分成规则" name="commission" lazy>
           <CommissionRuleEditor
@@ -261,6 +267,7 @@ import type { ElTable, FormInstance } from 'element-plus'
 import { useClipboard } from '@vueuse/core'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
+import { hasAnyRole } from '@/utils/role'
 import { useUserStore } from '@/store/modules/user'
 import * as TenantApi from '@/api/skit/tenant'
 import AdAccessEditor from './AdAccessEditor.vue'
@@ -281,7 +288,7 @@ type AgentCommand = 'mobile' | 'password' | 'rotate' | 'archive' | 'restore'
 const userStore = useUserStore()
 const message = useMessage()
 const { copy: copyToClipboard } = useClipboard({ legacy: true })
-const isSuperAdmin = computed(() => userStore.getRoles.includes('super_admin'))
+const isSuperAdmin = computed(() => hasAnyRole(['super_admin'], userStore.getRoles))
 const selfInvitationLoading = ref(false)
 const selfInvitation = ref<TenantApi.TenantInvitationVO>()
 const loading = ref(false)

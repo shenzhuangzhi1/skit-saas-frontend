@@ -135,6 +135,10 @@ export interface TenantAdNetworkReadinessVO extends TenantAdNetworkCapabilityVO 
   impressionObserved: boolean
   lastSignedRewardCallbackAt?: TenantAdTimestamp
   lastImpressionCallbackAt?: TenantAdTimestamp
+  /** Redacted SHA-256-derived identifiers; raw Taku adsourceId values are never exposed. */
+  sourceRefs: string[]
+  signedRewardSourceRefs: string[]
+  impressionSourceRefs: string[]
   blockers: string[]
 }
 
@@ -149,6 +153,8 @@ export interface TenantAdReadinessVO {
   unlockNetworkFirmIds: number[]
   availableNetworkCapabilities?: TenantAdNetworkCapabilityVO[]
   networkReadiness?: TenantAdNetworkReadinessVO[]
+  missingSignedRewardNetworkFirmIds: number[]
+  missingImpressionNetworkFirmIds: number[]
   shadowTestMemberIds?: number[]
   minNativeVersion?: string | null
   minProtocolVersion?: number | null
@@ -216,6 +222,17 @@ const blockerList = (value: unknown): string[] =>
       )
     : []
 
+const safeSourceRefList = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? [
+        ...new Set(
+          value.filter(
+            (item): item is string => typeof item === 'string' && /^[0-9a-f]{12}$/.test(item)
+          )
+        )
+      ]
+    : []
+
 const safeTimestamp = (value: unknown): TenantAdTimestamp | undefined => {
   if (typeof value === 'number' && Number.isFinite(value)) return value
   if (
@@ -273,6 +290,9 @@ const sanitizeNetworkReadiness = (value: unknown): TenantAdNetworkReadinessVO[] 
       impressionObserved: item.impressionObserved === true,
       lastSignedRewardCallbackAt: safeTimestamp(item.lastSignedRewardCallbackAt),
       lastImpressionCallbackAt: safeTimestamp(item.lastImpressionCallbackAt),
+      sourceRefs: safeSourceRefList(item.sourceRefs),
+      signedRewardSourceRefs: safeSourceRefList(item.signedRewardSourceRefs),
+      impressionSourceRefs: safeSourceRefList(item.impressionSourceRefs),
       blockers: blockerList(item.blockers)
     })
   })
@@ -301,6 +321,10 @@ export const normalizeTenantAdReadiness = (value: unknown): TenantAdReadinessVO 
     unlockNetworkFirmIds: positiveIntegerList(source.unlockNetworkFirmIds),
     availableNetworkCapabilities: sanitizeNetworkCapabilities(source.availableNetworkCapabilities),
     networkReadiness: sanitizeNetworkReadiness(source.networkReadiness),
+    missingSignedRewardNetworkFirmIds: positiveIntegerList(
+      source.missingSignedRewardNetworkFirmIds
+    ),
+    missingImpressionNetworkFirmIds: positiveIntegerList(source.missingImpressionNetworkFirmIds),
     shadowTestMemberIds: positiveIntegerList(source.shadowTestMemberIds),
     minNativeVersion: safeText(source.minNativeVersion, 64) ?? null,
     minProtocolVersion: positiveInteger(source.minProtocolVersion) ?? null,
@@ -357,6 +381,20 @@ export interface TenantAdCapabilityConfigReqVO {
   shadowTestMemberIds: number[]
   minNativeVersion: string
   minProtocolVersion: number
+  expectedReadinessVersion: number
+  reason: string
+}
+
+export interface TenantAdNetworkCapabilityVerifyReqVO {
+  adAccountId: number
+  networkFirmId: number
+  rewardAuthority: 'SIGNED_REWARD' | 'NONE'
+  enabled: boolean
+  supportsUserId: boolean
+  supportsCustomData: boolean
+  supportsStableTransaction: boolean
+  supportsImpressionRevenue: boolean
+  supportsReporting: boolean
   expectedReadinessVersion: number
   reason: string
 }
@@ -861,6 +899,16 @@ export const configureTenantAdCapability = (
 ) =>
   request.put<TenantAdCapabilityVO>({
     url: '/skit/tenant/ad-readiness/configuration',
+    data: managementTenantBody(target, data),
+    skipErrorMessage: true
+  })
+
+export const verifyTenantAdNetworkCapability = (
+  target: ManagementTenantTarget,
+  data: TenantAdNetworkCapabilityVerifyReqVO
+) =>
+  request.put<TenantAdNetworkCapabilityVO>({
+    url: '/skit/tenant/ad-readiness/network-capability',
     data: managementTenantBody(target, data),
     skipErrorMessage: true
   })

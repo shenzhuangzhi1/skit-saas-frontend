@@ -9,15 +9,34 @@ export type { ManagementTenantTarget }
 
 export const CURRENT_PROTOCOL_VERSION = 1
 
+const ID_LIST_SEPARATOR = /[\s,，、;；]+/
+
 export const parseShadowMemberIds = (value: string): number[] => {
   const source = value.trim()
   if (!source) return []
-  const tokens = source.split(/[\s,，、;；]+/).filter(Boolean)
+  const tokens = source.split(ID_LIST_SEPARATOR).filter(Boolean)
   const ids = tokens.map((token) => Number(token))
   if (ids.some((id) => !Number.isSafeInteger(id) || id <= 0) || new Set(ids).size !== ids.length) {
     throw new Error('灰度会员 ID 必须是逗号、中文逗号或换行分隔且不重复的正整数')
   }
   return ids
+}
+
+export const parseUnlockNetworkFirmIds = (value: string): number[] => {
+  const source = value.trim()
+  if (!source) return []
+  const tokens = source.split(ID_LIST_SEPARATOR).filter(Boolean)
+  const ids = tokens.map((token) => Number(token))
+  if (ids.some((id) => !Number.isSafeInteger(id) || id <= 0)) {
+    throw new Error('奖励广告源 networkFirmId 必须是分隔且不重复的正整数')
+  }
+  if (new Set(ids).size !== ids.length) {
+    throw new Error('奖励广告源 networkFirmId 不能重复')
+  }
+  if (ids.length > 16) {
+    throw new Error('最多选择 16 个奖励广告源')
+  }
+  return [...ids].sort((left, right) => left - right)
 }
 
 export const resolveTenantAdAccountId = (
@@ -29,6 +48,73 @@ export const resolveTenantAdAccountId = (
   })
   if (ids.length === 0 || ids.some((value) => value !== ids[0])) return 0
   return ids[0]
+}
+
+interface ProductionReadinessLike {
+  productionReady?: unknown
+  unlockNetworkFirmIds?: unknown
+  missingSignedRewardNetworkFirmIds?: unknown
+  missingImpressionNetworkFirmIds?: unknown
+  networkReadiness?: unknown
+}
+
+/**
+ * Frontend release guard. Aggregate productionReady is necessary but never sufficient:
+ * every selected network must carry its own complete capability and callback evidence.
+ */
+export const isTenantAdProductionReady = (readiness: ProductionReadinessLike): boolean => {
+  if (readiness.productionReady !== true || !Array.isArray(readiness.unlockNetworkFirmIds)) {
+    return false
+  }
+  const selectedNetworkIds = readiness.unlockNetworkFirmIds.filter(
+    (value): value is number =>
+      typeof value === 'number' && Number.isSafeInteger(value) && value > 0
+  )
+  if (
+    selectedNetworkIds.length === 0 ||
+    selectedNetworkIds.length !== readiness.unlockNetworkFirmIds.length ||
+    new Set(selectedNetworkIds).size !== selectedNetworkIds.length ||
+    !Array.isArray(readiness.networkReadiness)
+  ) {
+    return false
+  }
+  const explicitlyMissing = new Set([
+    ...(Array.isArray(readiness.missingSignedRewardNetworkFirmIds)
+      ? readiness.missingSignedRewardNetworkFirmIds
+      : []),
+    ...(Array.isArray(readiness.missingImpressionNetworkFirmIds)
+      ? readiness.missingImpressionNetworkFirmIds
+      : [])
+  ])
+  if (selectedNetworkIds.some((networkFirmId) => explicitlyMissing.has(networkFirmId))) {
+    return false
+  }
+  const byNetwork = new Map<number, Record<string, unknown>>()
+  readiness.networkReadiness.forEach((value) => {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return
+    const row = value as Record<string, unknown>
+    if (
+      typeof row.networkFirmId === 'number' &&
+      Number.isSafeInteger(row.networkFirmId) &&
+      row.networkFirmId > 0
+    ) {
+      byNetwork.set(row.networkFirmId, row)
+    }
+  })
+  return selectedNetworkIds.every((networkFirmId) => {
+    const row = byNetwork.get(networkFirmId)
+    return Boolean(
+      row &&
+      row.rewardAuthority === 'SIGNED_REWARD' &&
+      row.enabled === true &&
+      row.verified === true &&
+      row.authoritative === true &&
+      row.signedRewardObserved === true &&
+      row.impressionObserved === true &&
+      Array.isArray(row.blockers) &&
+      row.blockers.length === 0
+    )
+  })
 }
 
 export interface AdAccountResponseLike {

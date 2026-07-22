@@ -11,7 +11,8 @@ import {
   getTenantAdReadiness,
   saveTenantReportingConfiguration,
   saveManagedTenantAdAccount,
-  transitionTenantAdRollout
+  transitionTenantAdRollout,
+  verifyTenantAdNetworkCapability
 } from '@/api/skit/tenant'
 
 describe('tenant advertising access API client', () => {
@@ -91,10 +92,16 @@ describe('tenant advertising access API client', () => {
           impressionObserved: true,
           lastSignedRewardCallbackAt: '2026-07-22T07:31:00',
           lastImpressionCallbackAt: '2026-07-22T07:32:00',
+          sourceRefs: ['0a1b2c3d4e5f', 'ABCDEF123456', '1234', '0a1b2c3d4e5f'],
+          signedRewardSourceRefs: ['0a1b2c3d4e5f', 'raw-source-id'],
+          impressionSourceRefs: ['123456abcdef'],
           blockers: [],
+          adsourceId: 'raw-adsource-id-must-not-reach-the-view',
           showId: 'must-not-reach-the-view'
         }
       ],
+      missingSignedRewardNetworkFirmIds: [987, 112, 987, -1, '654'],
+      missingImpressionNetworkFirmIds: [654],
       callbackError: 'must-not-reach-the-view',
       rewardSecret: 'must-not-reach-the-view'
     })
@@ -125,9 +132,15 @@ describe('tenant advertising access API client', () => {
       expect.objectContaining({
         networkFirmId: 112,
         lastSignedRewardCallbackAt: '2026-07-22T07:31:00',
-        lastImpressionCallbackAt: '2026-07-22T07:32:00'
+        lastImpressionCallbackAt: '2026-07-22T07:32:00',
+        sourceRefs: ['0a1b2c3d4e5f'],
+        signedRewardSourceRefs: ['0a1b2c3d4e5f'],
+        impressionSourceRefs: ['123456abcdef']
       })
     )
+    expect(response.missingSignedRewardNetworkFirmIds).toEqual([112, 987])
+    expect(response.missingImpressionNetworkFirmIds).toEqual([654])
+    expect(response.networkReadiness?.[0]).not.toHaveProperty('adsourceId')
     expect(response.networkReadiness?.[0]).not.toHaveProperty('showId')
     expect(response).not.toHaveProperty('callbackError')
     expect(response).not.toHaveProperty('rewardSecret')
@@ -169,6 +182,19 @@ describe('tenant advertising access API client', () => {
       expectedReadinessVersion: 5,
       reason: '进入指定会员灰度验奖阶段'
     })
+    await verifyTenantAdNetworkCapability(target, {
+      adAccountId: 9,
+      networkFirmId: 314159,
+      rewardAuthority: 'SIGNED_REWARD',
+      enabled: true,
+      supportsUserId: true,
+      supportsCustomData: true,
+      supportsStableTransaction: true,
+      supportsImpressionRevenue: true,
+      supportsReporting: false,
+      expectedReadinessVersion: 6,
+      reason: '核验当前账号新发现的广告来源能力'
+    })
 
     expect(put).toHaveBeenNthCalledWith(1, {
       url: '/skit/tenant/ad-account',
@@ -197,6 +223,24 @@ describe('tenant advertising access API client', () => {
         expectedReadinessVersion: 5,
         reason: '进入指定会员灰度验奖阶段'
       }),
+      skipErrorMessage: true
+    })
+    expect(put).toHaveBeenNthCalledWith(4, {
+      url: '/skit/tenant/ad-readiness/network-capability',
+      data: {
+        tenantId: 23,
+        adAccountId: 9,
+        networkFirmId: 314159,
+        rewardAuthority: 'SIGNED_REWARD',
+        enabled: true,
+        supportsUserId: true,
+        supportsCustomData: true,
+        supportsStableTransaction: true,
+        supportsImpressionRevenue: true,
+        supportsReporting: false,
+        expectedReadinessVersion: 6,
+        reason: '核验当前账号新发现的广告来源能力'
+      },
       skipErrorMessage: true
     })
   })
