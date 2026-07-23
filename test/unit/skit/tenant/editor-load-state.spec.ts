@@ -51,7 +51,8 @@ const buildMaterial = {
   takuAppKeyConfigured: true,
   takuAccountConfigured: true,
   pangleSettingsConfigured: true,
-  signingConfigured: true
+  signingConfigured: true,
+  verifiedAt: null
 }
 
 const releaseProfile = {

@@ -10,6 +10,22 @@ export type { ManagementTenantTarget }
 export const CURRENT_PROTOCOL_VERSION = 1
 
 const ID_LIST_SEPARATOR = /[\s,，、;；]+/
+const UTC_8_OFFSET_MS = 8 * 60 * 60 * 1000
+const padDatePart = (value: number) => String(value).padStart(2, '0')
+
+export const formatUtc8SnapshotDateTime = (value: number): string => {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new Error('快照时间必须是正安全整数时间戳')
+  }
+  const date = new Date(value + UTC_8_OFFSET_MS)
+  if (!Number.isFinite(date.getTime())) {
+    throw new Error('快照时间超出可格式化范围')
+  }
+  return [
+    `${date.getUTCFullYear()}-${padDatePart(date.getUTCMonth() + 1)}-${padDatePart(date.getUTCDate())}`,
+    `${padDatePart(date.getUTCHours())}:${padDatePart(date.getUTCMinutes())}:${padDatePart(date.getUTCSeconds())}`
+  ].join(' ')
+}
 
 export const parseShadowMemberIds = (value: string): number[] => {
   const source = value.trim()
@@ -161,6 +177,7 @@ export interface AdAccountWritePayload {
 }
 
 export interface ReportingConfigurationResponseLike {
+  tenantId?: unknown
   adAccountId?: unknown
   appId?: unknown
   placementId?: unknown
@@ -243,10 +260,6 @@ export interface MemberAncestor extends MemberTreeNode {
 
 const safeString = (value: unknown): string => (typeof value === 'string' ? value : '')
 const safeBoolean = (value: unknown): boolean => value === true
-const safePositiveInteger = (value: unknown): number =>
-  Number.isSafeInteger(value) && Number(value) > 0 ? Number(value) : 0
-const safeNonNegativeInteger = (value: unknown): number =>
-  Number.isSafeInteger(value) && Number(value) >= 0 ? Number(value) : 0
 
 /** Build a form from an allow-list. Raw credential-shaped response fields are never copied. */
 export const sanitizeAdAccountResponse = (source: AdAccountResponseLike): SafeAdAccountForm => ({
@@ -287,24 +300,72 @@ export const validateAdAccountForm = (
 }
 
 export const sanitizeReportingConfiguration = (
-  source: ReportingConfigurationResponseLike
+  source: ReportingConfigurationResponseLike,
+  expectedTenantId: number
 ): SafeReportingConfigurationForm => {
-  const timezone = safeString(source.reportTimezone)
-  const currency = safeString(source.currency)
-  const permissionVerifiedAt = safePositiveInteger(source.permissionVerifiedAt)
+  if (!Number.isSafeInteger(expectedTenantId) || expectedTenantId <= 0) {
+    throw new Error('目标 tenantId 必须是正整数')
+  }
+  if (!Number.isSafeInteger(source.tenantId) || Number(source.tenantId) <= 0) {
+    throw new Error('报表配置 tenantId 必须是正整数')
+  }
+  if (source.tenantId !== expectedTenantId) {
+    throw new Error('报表配置 tenantId 与当前租户不匹配')
+  }
+  if (!Number.isSafeInteger(source.adAccountId) || Number(source.adAccountId) <= 0) {
+    throw new Error('报表配置 adAccountId 必须是正整数')
+  }
+  if (typeof source.appId !== 'string' || !source.appId.trim()) {
+    throw new Error('报表配置 appId 不能为空')
+  }
+  if (typeof source.placementId !== 'string' || !source.placementId.trim()) {
+    throw new Error('报表配置 placementId 不能为空')
+  }
+  if (
+    source.reportTimezone !== 'UTC-8' &&
+    source.reportTimezone !== 'UTC+8' &&
+    source.reportTimezone !== 'UTC+0'
+  ) {
+    throw new Error('报表配置 reportTimezone 无效')
+  }
+  if (typeof source.currency !== 'string' || !/^[A-Z]{3}$/.test(source.currency)) {
+    throw new Error('报表配置 currency 必须是三个大写字母')
+  }
+  if (
+    !Number.isInteger(source.amountScale) ||
+    Number(source.amountScale) < 0 ||
+    Number(source.amountScale) > 18
+  ) {
+    throw new Error('报表配置 amountScale 必须是 0–18 的整数')
+  }
+  if (source.adFormat !== 'rewarded_video') {
+    throw new Error('报表配置 adFormat 必须是 rewarded_video')
+  }
+  if (typeof source.credentialConfigured !== 'boolean') {
+    throw new Error('报表配置 credentialConfigured 必须是布尔值')
+  }
+  if (!Number.isSafeInteger(source.credentialVersion) || Number(source.credentialVersion) < 0) {
+    throw new Error('报表配置 credentialVersion 必须是非负整数')
+  }
+  if (
+    source.permissionVerifiedAt != null &&
+    (!Number.isSafeInteger(source.permissionVerifiedAt) || Number(source.permissionVerifiedAt) <= 0)
+  ) {
+    throw new Error('报表配置 permissionVerifiedAt 必须为空或正整数')
+  }
+
   return {
-    adAccountId: safePositiveInteger(source.adAccountId),
-    appId: safeString(source.appId),
-    placementId: safeString(source.placementId),
-    reportTimezone: ['UTC-8', 'UTC+8', 'UTC+0'].includes(timezone)
-      ? (timezone as SafeReportingConfigurationForm['reportTimezone'])
-      : 'UTC+8',
-    currency: /^[A-Z]{3}$/.test(currency) ? currency : 'USD',
-    amountScale: Math.min(safeNonNegativeInteger(source.amountScale), 18),
+    adAccountId: source.adAccountId as number,
+    appId: source.appId,
+    placementId: source.placementId,
+    reportTimezone: source.reportTimezone,
+    currency: source.currency,
+    amountScale: source.amountScale as number,
     adFormat: 'rewarded_video',
-    credentialConfigured: safeBoolean(source.credentialConfigured),
-    credentialVersion: safeNonNegativeInteger(source.credentialVersion),
-    permissionVerifiedAt: permissionVerifiedAt || undefined,
+    credentialConfigured: source.credentialConfigured,
+    credentialVersion: source.credentialVersion as number,
+    permissionVerifiedAt:
+      source.permissionVerifiedAt == null ? undefined : (source.permissionVerifiedAt as number),
     publisherKey: '',
     reason: ''
   }

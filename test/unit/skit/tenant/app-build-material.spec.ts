@@ -12,6 +12,7 @@ describe('tenant native App build material', () => {
     expect(source).toMatch(/interface TenantAppBuildMaterialVO/)
     expect(source).toMatch(/pangleSettingsConfigured:\s*boolean/)
     expect(source).toMatch(/signingConfigured:\s*boolean/)
+    expect(source).toMatch(/verifiedAt:\s*number \| null/)
     expect(source).toContain("'/skit/tenant/app-build/material'")
     expect(editor).toContain('仅写入敏感资料')
     expect(editor).toContain('留空表示保留服务端已保存的密文')

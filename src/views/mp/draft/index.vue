@@ -72,7 +72,6 @@ import {
   DraftTable,
   createEmptyNewsItem
 } from './components/'
-// import drafts from './mock' // 可以用改本地数据模拟，避免API调用超限
 
 defineOptions({ name: 'MpDraft' })
 

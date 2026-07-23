@@ -3,6 +3,7 @@ import {
   buildAdAccountWritePayload,
   buildCommissionPreview,
   buildMemberBreadcrumb,
+  formatUtc8SnapshotDateTime,
   groupLedgerAmounts,
   isTenantAdProductionReady,
   mergeMemberChildren,
@@ -16,6 +17,12 @@ import {
 } from '@/views/skit/tenant/workspaceModel'
 
 describe('tenant revenue workspace model', () => {
+  it('formats snapshot query parameters in UTC+8 independently of browser timezone', () => {
+    expect(formatUtc8SnapshotDateTime(1_753_228_800_000)).toBe('2025-07-23 08:00:00')
+    expect(() => formatUtc8SnapshotDateTime(0)).toThrow('快照时间')
+    expect(() => formatUtc8SnapshotDateTime(Number.MAX_SAFE_INTEGER + 1)).toThrow('快照时间')
+  })
+
   it('parses gray-test member ids from common pasted separators', () => {
     expect(parseShadowMemberIds('101，\n102; 103、104')).toEqual([101, 102, 103, 104])
     expect(() => parseShadowMemberIds('101, 101')).toThrow('不重复')
@@ -214,22 +221,108 @@ describe('tenant revenue workspace model', () => {
   })
 
   it('never copies a Publisher Key from a reporting configuration response', () => {
-    const form = sanitizeReportingConfiguration({
-      adAccountId: 9,
-      appId: 'taku-app',
-      placementId: 'reward-placement',
-      reportTimezone: 'UTC+8',
-      currency: 'USD',
-      amountScale: 8,
-      adFormat: 'rewarded_video',
-      credentialConfigured: true,
-      credentialVersion: 2,
-      publisherKey: 'must-never-render'
-    })
+    const form = sanitizeReportingConfiguration(
+      {
+        tenantId: 23,
+        adAccountId: 9,
+        appId: 'taku-app',
+        placementId: 'reward-placement',
+        reportTimezone: 'UTC+8',
+        currency: 'USD',
+        amountScale: 8,
+        adFormat: 'rewarded_video',
+        credentialConfigured: true,
+        credentialVersion: 2,
+        publisherKey: 'must-never-render'
+      },
+      23
+    )
 
     expect(form.publisherKey).toBe('')
     expect(form.credentialConfigured).toBe(true)
     expect(JSON.stringify(form)).not.toContain('must-never-render')
+  })
+
+  it('accepts only a complete and valid reporting configuration response', () => {
+    expect(
+      sanitizeReportingConfiguration(
+        {
+          tenantId: 23,
+          adAccountId: 9,
+          appId: 'taku-app',
+          placementId: 'reward-placement',
+          reportTimezone: 'UTC-8',
+          currency: 'CNY',
+          amountScale: 0,
+          adFormat: 'rewarded_video',
+          credentialConfigured: false,
+          credentialVersion: 0,
+          permissionVerifiedAt: null
+        },
+        23
+      )
+    ).toEqual({
+      adAccountId: 9,
+      appId: 'taku-app',
+      placementId: 'reward-placement',
+      reportTimezone: 'UTC-8',
+      currency: 'CNY',
+      amountScale: 0,
+      adFormat: 'rewarded_video',
+      credentialConfigured: false,
+      credentialVersion: 0,
+      permissionVerifiedAt: undefined,
+      publisherKey: '',
+      reason: ''
+    })
+  })
+
+  it.each([
+    ['tenantId is missing', { tenantId: undefined }],
+    ['tenantId does not match the requested tenant', { tenantId: 24 }],
+    ['adAccountId is missing', { adAccountId: undefined }],
+    ['adAccountId is not positive', { adAccountId: 0 }],
+    ['appId is missing', { appId: undefined }],
+    ['appId is blank', { appId: '   ' }],
+    ['placementId is missing', { placementId: undefined }],
+    ['placementId is blank', { placementId: '' }],
+    ['reportTimezone is missing', { reportTimezone: undefined }],
+    ['reportTimezone is unsupported', { reportTimezone: 'UTC+9' }],
+    ['currency is missing', { currency: undefined }],
+    ['currency is not three uppercase letters', { currency: 'usd' }],
+    ['amountScale is missing', { amountScale: undefined }],
+    ['amountScale is negative', { amountScale: -1 }],
+    ['amountScale is too large', { amountScale: 19 }],
+    ['amountScale is not an integer', { amountScale: 1.5 }],
+    ['adFormat is missing', { adFormat: undefined }],
+    ['adFormat is unsupported', { adFormat: 'banner' }],
+    ['credentialConfigured is missing', { credentialConfigured: undefined }],
+    ['credentialConfigured is not boolean', { credentialConfigured: 1 }],
+    ['credentialVersion is missing', { credentialVersion: undefined }],
+    ['credentialVersion is negative', { credentialVersion: -1 }],
+    ['credentialVersion is not an integer', { credentialVersion: 1.5 }],
+    ['permissionVerifiedAt is not positive', { permissionVerifiedAt: 0 }],
+    ['permissionVerifiedAt is not an integer', { permissionVerifiedAt: 1.5 }]
+  ])('rejects a reporting configuration when %s', (_case, override) => {
+    expect(() =>
+      sanitizeReportingConfiguration(
+        {
+          tenantId: 23,
+          adAccountId: 9,
+          appId: 'taku-app',
+          placementId: 'reward-placement',
+          reportTimezone: 'UTC+8',
+          currency: 'USD',
+          amountScale: 8,
+          adFormat: 'rewarded_video',
+          credentialConfigured: true,
+          credentialVersion: 2,
+          permissionVerifiedAt: 1710000000,
+          ...override
+        },
+        23
+      )
+    ).toThrow()
   })
 
   it('supports arbitrary commission levels and makes the agent remainder explicit', () => {

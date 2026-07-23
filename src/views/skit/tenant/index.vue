@@ -93,7 +93,20 @@
     </ContentWrap>
 
     <ContentWrap>
+      <section
+        v-if="listError"
+        class="rounded-8px border border-[var(--el-color-danger-light-7)] bg-[var(--el-color-danger-light-9)] p-16px"
+        data-testid="tenant-agent-list-error"
+        role="alert"
+      >
+        <div class="font-600 text-[var(--el-color-danger)]">代理商列表加载失败</div>
+        <p class="mb-12px mt-6px text-14px text-[var(--el-text-color-secondary)]">
+          {{ listError }}
+        </p>
+        <el-button @click="getList">重新加载</el-button>
+      </section>
       <el-table
+        v-else
         ref="agentTableRef"
         v-loading="loading"
         :data="list"
@@ -199,6 +212,7 @@
         </el-table-column>
       </el-table>
       <Pagination
+        v-if="!listError"
         v-model:limit="queryParams.pageSize"
         v-model:page="queryParams.pageNo"
         :total="total"
@@ -276,6 +290,7 @@ import { dateFormatter } from '@/utils/formatTime'
 import { hasAnyRole } from '@/utils/role'
 import { useUserStore } from '@/store/modules/user'
 import * as TenantApi from '@/api/skit/tenant'
+import { requirePageResult } from '@/api/skit/tenant/pageIntegrity'
 import AdAccessEditor from './AdAccessEditor.vue'
 import ReportingEditor from './ReportingEditor.vue'
 import CommissionRuleEditor from './CommissionRuleEditor.vue'
@@ -286,6 +301,7 @@ import AppReleaseEditor from './AppReleaseEditor.vue'
 import AgentForm from './AgentForm.vue'
 import AgentMobileForm from './AgentMobileForm.vue'
 import AgentPasswordForm from './AgentPasswordForm.vue'
+import { isAgentPageRow } from './pageRowIntegrity'
 import { tenantWorkspaceTarget } from './workspaceModel'
 
 defineOptions({ name: 'SkitTenantManagement' })
@@ -301,6 +317,7 @@ const selfInvitation = ref<TenantApi.TenantInvitationVO>()
 const loading = ref(false)
 const total = ref(0)
 const list = ref<TenantApi.TenantAgentVO[]>([])
+const listError = ref('')
 const selectedAgent = ref<TenantApi.TenantAgentVO>()
 const activeTab = ref('ad-access')
 const queryFormRef = ref<FormInstance>()
@@ -314,9 +331,12 @@ const queryParams = reactive({
   keyword: '',
   status: undefined as number | undefined
 })
+let listRequestId = 0
 
 const isArchived = (agent?: TenantApi.TenantAgentVO) => Boolean(agent?.archivedTime)
 const selectedAgentArchived = computed(() => isArchived(selectedAgent.value))
+const errorText = (cause: unknown, fallback: string) =>
+  cause instanceof Error && cause.message ? cause.message : fallback
 
 const ensureReadableTab = () => {
   if (
@@ -329,7 +349,9 @@ const ensureReadableTab = () => {
 
 const getList = async () => {
   if (!isSuperAdmin.value) return
+  const requestId = ++listRequestId
   loading.value = true
+  listError.value = ''
   try {
     const data = await TenantApi.getTenantAgentPage({
       pageNo: queryParams.pageNo,
@@ -337,8 +359,10 @@ const getList = async () => {
       keyword: queryParams.keyword.trim() || undefined,
       status: queryParams.status
     })
-    list.value = data.list || []
-    total.value = Number(data.total || 0)
+    if (requestId !== listRequestId) return
+    const verified = requirePageResult(data, '代理商分页', isAgentPageRow)
+    list.value = verified.list
+    total.value = verified.total
     const current = list.value.find((item) => item.tenantId === selectedAgent.value?.tenantId)
     selectedAgent.value = current || list.value[0]
     ensureReadableTab()
@@ -346,8 +370,14 @@ const getList = async () => {
     if (selectedAgent.value) {
       agentTableRef.value?.setCurrentRow(selectedAgent.value)
     }
+  } catch (cause) {
+    if (requestId !== listRequestId) return
+    list.value = []
+    total.value = 0
+    selectedAgent.value = undefined
+    listError.value = `请稍后重试。${errorText(cause, '服务暂时不可用。')}`
   } finally {
-    loading.value = false
+    if (requestId === listRequestId) loading.value = false
   }
 }
 

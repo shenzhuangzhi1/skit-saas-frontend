@@ -6,10 +6,21 @@
     type="info"
     title="APK 暂由本地 Mac 构建，本页面只保存租户构建资料；不会在 SaaS 服务器或 GitHub Actions 上打包。"
   />
-  <el-alert v-if="material" class="mb-16px" :closable="false" show-icon type="success">
+  <el-alert
+    v-if="material"
+    class="mb-16px"
+    :closable="false"
+    show-icon
+    :type="material.materialVersion === 0 ? 'warning' : 'success'"
+  >
     <template #title>
-      构建资料版本 {{ material.materialVersion || '未保存' }} ·
-      {{ material.verifiedAt ? `最近校验 ${formatTime(material.verifiedAt)}` : '尚未保存' }}
+      <template v-if="material.materialVersion === 0">
+        尚未创建构建资料 · 已进入新建草稿，版本需人工确认
+      </template>
+      <template v-else>
+        构建资料版本 {{ material.materialVersion }} ·
+        {{ material.verifiedAt ? `最近校验 ${formatDate(material.verifiedAt)}` : '尚未校验' }}
+      </template>
     </template>
     <div class="mt-4px flex flex-wrap gap-8px">
       <el-tag :type="material.appReleaseProfileConfigured ? 'success' : 'warning'" size="small">
@@ -125,6 +136,7 @@
 <script lang="ts" setup>
 import type { FormInstance, FormRules } from 'element-plus'
 import * as TenantApi from '@/api/skit/tenant'
+import { formatDate } from '@/utils/formatTime'
 
 defineOptions({ name: 'SkitAppBuildMaterialEditor' })
 
@@ -143,9 +155,9 @@ type BuildForm = {
   tenantId: number
   apiBaseUrl: string
   appName: string
-  nativeVersionCode: number
+  nativeVersionCode?: number
   nativeVersionName: string
-  runtimeReleaseNo: number
+  runtimeReleaseNo?: number
   reason: string
 }
 
@@ -153,9 +165,9 @@ const emptyForm = (): BuildForm => ({
   tenantId: props.tenantId,
   apiBaseUrl: '',
   appName: '',
-  nativeVersionCode: 1,
+  nativeVersionCode: undefined,
   nativeVersionName: '',
-  runtimeReleaseNo: 1,
+  runtimeReleaseNo: undefined,
   reason: ''
 })
 const formData = ref<BuildForm>(emptyForm())
@@ -219,7 +231,56 @@ const rules = reactive<FormRules<BuildForm>>({
   ]
 })
 
-const formatTime = (value: string) => value.replace('T', ' ').replace(/\.\d+$/, '')
+const buildMaterialStringFields = ['apiBaseUrl', 'appName', 'nativeVersionName'] as const
+
+const buildMaterialBooleanFields = [
+  'pangleSettingsConfigured',
+  'signingConfigured',
+  'takuAppKeyConfigured',
+  'takuAccountConfigured',
+  'appReleaseProfileConfigured'
+] as const
+
+const isNonNegativeInteger = (value: unknown): value is number =>
+  Number.isSafeInteger(value) && Number(value) >= 0
+
+const isPositiveInteger = (value: unknown): value is number =>
+  Number.isSafeInteger(value) && Number(value) > 0
+
+const isNativeVersionCode = (value: unknown): value is number =>
+  isPositiveInteger(value) && value <= 2100000000
+
+const isPositiveEpochMillis = (value: unknown): value is number =>
+  Number.isSafeInteger(value) && Number(value) > 0
+
+const isTenantAppBuildMaterial = (
+  value: unknown,
+  tenantId: number
+): value is TenantApi.TenantAppBuildMaterialVO => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const materialResponse = value as Record<string, unknown>
+  if (
+    materialResponse.tenantId !== tenantId ||
+    !isPositiveInteger(materialResponse.tenantId) ||
+    !isNonNegativeInteger(materialResponse.materialVersion) ||
+    !buildMaterialStringFields.every((field) => typeof materialResponse[field] === 'string') ||
+    !buildMaterialBooleanFields.every((field) => typeof materialResponse[field] === 'boolean') ||
+    (materialResponse.verifiedAt !== null && !isPositiveEpochMillis(materialResponse.verifiedAt))
+  ) {
+    return false
+  }
+  if (materialResponse.materialVersion === 0) {
+    return (
+      isNonNegativeInteger(materialResponse.nativeVersionCode) &&
+      Number(materialResponse.nativeVersionCode) <= 2100000000 &&
+      isNonNegativeInteger(materialResponse.runtimeReleaseNo)
+    )
+  }
+  return (
+    isNativeVersionCode(materialResponse.nativeVersionCode) &&
+    isPositiveInteger(materialResponse.runtimeReleaseNo)
+  )
+}
 
 const load = async () => {
   const sequence = loadSequence.value + 1
@@ -234,14 +295,17 @@ const load = async () => {
   try {
     const response = await TenantApi.getTenantAppBuildMaterial(tenantId)
     if (sequence !== loadSequence.value) return
-    material.value = response
+    if (!isTenantAppBuildMaterial(response, tenantId)) {
+      throw new Error('Invalid app build material response')
+    }
+    material.value = { ...response }
     formData.value = {
       tenantId,
-      apiBaseUrl: response.apiBaseUrl || '',
-      appName: response.appName || '',
-      nativeVersionCode: response.nativeVersionCode || 1,
-      nativeVersionName: response.nativeVersionName || '',
-      runtimeReleaseNo: Math.max(response.runtimeReleaseNo || 1, 1),
+      apiBaseUrl: response.apiBaseUrl,
+      appName: response.appName,
+      nativeVersionCode: response.materialVersion === 0 ? undefined : response.nativeVersionCode,
+      nativeVersionName: response.nativeVersionName,
+      runtimeReleaseNo: response.materialVersion === 0 ? undefined : response.runtimeReleaseNo,
       reason: ''
     }
     Object.assign(secrets, {
@@ -254,6 +318,8 @@ const load = async () => {
     loaded.value = true
   } catch {
     if (sequence !== loadSequence.value) return
+    material.value = undefined
+    loaded.value = false
     loadError.value = '暂时无法读取构建资料，请稍后重试。'
   } finally {
     if (sequence === loadSequence.value) {
@@ -274,12 +340,20 @@ const save = async () => {
     message.warning('变更原因长度必须为 10–500 个字符')
     return
   }
+  const nativeVersionCode = formData.value.nativeVersionCode
+  const runtimeReleaseNo = formData.value.runtimeReleaseNo
+  if (!isNativeVersionCode(nativeVersionCode) || !isPositiveInteger(runtimeReleaseNo)) {
+    message.warning('versionCode 与运行时发布序号必须人工确认为正整数')
+    return
+  }
   const saveId = saveSequence.value + 1
   saveSequence.value = saveId
   saving.value = true
   try {
     const response = await TenantApi.updateTenantAppBuildMaterial({
       ...formData.value,
+      nativeVersionCode,
+      runtimeReleaseNo,
       apiBaseUrl: formData.value.apiBaseUrl.trim(),
       appName: formData.value.appName.trim(),
       nativeVersionName: formData.value.nativeVersionName.trim(),
@@ -297,7 +371,11 @@ const save = async () => {
     ) {
       return
     }
-    material.value = response
+    if (!isTenantAppBuildMaterial(response, tenantId) || response.materialVersion === 0) {
+      message.warning('服务端未返回已创建的构建资料版本，请重新加载确认')
+      return
+    }
+    material.value = { ...response }
     formData.value.reason = ''
     Object.assign(secrets, {
       pangleSettingsJson: '',

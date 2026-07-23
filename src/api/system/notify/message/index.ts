@@ -1,8 +1,6 @@
 import request from '@/config/axios'
 import qs from 'qs'
 
-const isSkitDemoLogin = () => import.meta.env.VITE_SKIT_DEMO_LOGIN === 'true'
-
 export interface NotifyMessageVO {
   id: number
   userId: number
@@ -42,16 +40,10 @@ export const updateAllNotifyMessageRead = async () => {
 
 // 获取当前用户的最新站内信列表
 export const getUnreadNotifyMessageList = async () => {
-  if (isSkitDemoLogin()) {
-    return []
-  }
   return await request.get({ url: '/system/notify-message/get-unread-list' })
 }
 
 // 获得当前用户的未读站内信数量
 export const getUnreadNotifyMessageCount = async () => {
-  if (isSkitDemoLogin()) {
-    return 0
-  }
   return await request.get({ url: '/system/notify-message/get-unread-count' })
 }

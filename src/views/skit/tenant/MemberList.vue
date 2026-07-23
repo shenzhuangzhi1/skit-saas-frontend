@@ -37,7 +37,19 @@
   </ContentWrap>
 
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" row-key="id">
+    <section
+      v-if="listError"
+      class="rounded-8px border border-[var(--el-color-danger-light-7)] bg-[var(--el-color-danger-light-9)] p-16px"
+      data-testid="tenant-member-list-error"
+      role="alert"
+    >
+      <div class="font-600 text-[var(--el-color-danger)]">成员列表加载失败</div>
+      <p class="mb-12px mt-6px text-14px text-[var(--el-text-color-secondary)]">
+        {{ listError }}
+      </p>
+      <el-button @click="getList">重新加载</el-button>
+    </section>
+    <el-table v-else v-loading="loading" :data="list" :show-overflow-tooltip="true" row-key="id">
       <el-table-column align="center" label="用户编号" min-width="100">
         <template #default="scope">{{ scope.row.userId ?? scope.row.id }}</template>
       </el-table-column>
@@ -61,10 +73,10 @@
         </template>
       </el-table-column>
       <el-table-column align="center" label="直属成员" min-width="100">
-        <template #default="scope">{{ scope.row.childCount ?? 0 }}</template>
+        <template #default="scope">{{ scope.row.childCount }}</template>
       </el-table-column>
       <el-table-column align="center" label="所属层级" min-width="100">
-        <template #default="scope">第 {{ scope.row.depth ?? scope.row.level ?? 0 }} 层</template>
+        <template #default="scope">第 {{ scope.row.depth }} 层</template>
       </el-table-column>
       <el-table-column align="center" label="状态" min-width="90" prop="status">
         <template #default="scope">
@@ -97,6 +109,7 @@
       </el-table-column>
     </el-table>
     <Pagination
+      v-if="!listError"
       v-model:limit="queryParams.pageSize"
       v-model:page="queryParams.pageNo"
       :total="total"
@@ -224,14 +237,14 @@
         <el-descriptions-item label="邀请码">{{
           detailMember.inviteCode || '-'
         }}</el-descriptions-item>
-        <el-descriptions-item label="直属成员"
-          >{{ detailMember.childCount ?? 0 }} 人</el-descriptions-item
-        >
+        <el-descriptions-item label="直属成员">
+          {{ detailMember.childCount === undefined ? '未提供' : `${detailMember.childCount} 人` }}
+        </el-descriptions-item>
         <el-descriptions-item label="上级编号">
           {{ detailMember.parentUserId ?? detailMember.parentId ?? detailMember.inviterId ?? '-' }}
         </el-descriptions-item>
         <el-descriptions-item label="所属层级">
-          第 {{ detailMember.depth ?? detailMember.level ?? 0 }} 层
+          {{ detailMember.depth === undefined ? '未提供' : `第 ${detailMember.depth} 层` }}
         </el-descriptions-item>
         <el-descriptions-item label="加入时间">
           {{ formatMemberDate(detailMember.createTime) }}
@@ -294,8 +307,10 @@ import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { CommonStatusEnum } from '@/utils/constants'
 import { dateFormatter, formatDate } from '@/utils/formatTime'
 import * as TenantApi from '@/api/skit/tenant'
+import { requirePageResult } from '@/api/skit/tenant/pageIntegrity'
 import MoneyText from '@/views/skit/shared/MoneyText.vue'
 import MemberTree from './MemberTree.vue'
+import { isMemberPageRowFor } from './pageRowIntegrity'
 import type { MemberTreeBranch } from './workspaceModel'
 
 defineOptions({ name: 'SkitTenantMemberList' })
@@ -317,6 +332,7 @@ const message = useMessage()
 const loading = ref(false)
 const total = ref(0)
 const list = ref<TenantApi.TenantMemberVO[]>([])
+const listError = ref('')
 const queryFormRef = ref<FormInstance>()
 const queryParams = reactive({
   pageNo: 1,
@@ -351,6 +367,8 @@ let treeRequestId = 0
 const targetKey = computed(() =>
   props.target.kind === 'all' ? 'all' : `${props.target.kind}:${props.target.tenantId}`
 )
+const errorText = (cause: unknown, fallback: string) =>
+  cause instanceof Error && cause.message ? cause.message : fallback
 const selectedMemberLabel = computed(() => {
   if (!selectedMember.value) return ''
   return (
@@ -385,6 +403,7 @@ const getList = async () => {
   const currentTarget = targetKey.value
   const requestId = ++listRequestId
   loading.value = true
+  listError.value = ''
   try {
     const data = await TenantApi.getManagedTenantMemberPage(props.target, {
       pageNo: queryParams.pageNo,
@@ -393,8 +412,14 @@ const getList = async () => {
       status: queryParams.status
     })
     if (requestId !== listRequestId || currentTarget !== targetKey.value) return
-    list.value = data.list || []
-    total.value = Number(data.total || 0)
+    const verified = requirePageResult(data, '成员分页', isMemberPageRowFor(props.target))
+    list.value = verified.list
+    total.value = verified.total
+  } catch (cause) {
+    if (requestId !== listRequestId || currentTarget !== targetKey.value) return
+    list.value = []
+    total.value = 0
+    listError.value = `请稍后重试。${errorText(cause, '服务暂时不可用。')}`
   } finally {
     if (requestId === listRequestId) loading.value = false
   }
@@ -673,6 +698,7 @@ watch(
     queryParams.pageNo = 1
     list.value = []
     total.value = 0
+    listError.value = ''
     detailVisible.value = false
     clearMemberDetail()
     passwordVisible.value = false

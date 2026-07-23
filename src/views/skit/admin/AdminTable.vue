@@ -15,26 +15,14 @@
 
       <div v-if="isDramaPage" class="tenant-scope-row">
         <TenantScopeBar v-model="scopeModel" :tenants="tenantOptions" />
-        <span v-if="tenantOptionsError || dramaPageError" class="tenant-scope-error">
-          {{ tenantOptionsError || dramaPageError }}
-        </span>
+        <span v-if="tenantOptionsError" class="tenant-scope-error">{{ tenantOptionsError }}</span>
       </div>
 
       <div id="admin-advanced-search" v-show="advancedVisible" class="commonsearch-table">
         <div class="commonsearch-grid">
           <label v-for="field in page.searchFields" :key="field.prop" class="commonsearch-item">
             <span>{{ field.label }}</span>
-            <select
-              v-if="field.type === 'select'"
-              v-model="advancedModel[field.prop]"
-              class="form-control"
-            >
-              <option value="">全部</option>
-              <option value="正常">正常</option>
-              <option value="待处理">待处理</option>
-              <option value="禁用">禁用</option>
-            </select>
-            <div v-else-if="field.type === 'dateRange'" class="date-range">
+            <div v-if="field.type === 'dateRange'" class="date-range">
               <input
                 v-model="advancedModel[`${field.prop}Start`]"
                 class="form-control"
@@ -59,88 +47,6 @@
           <button class="btn btn-success" type="button" @click="applySearch">提交</button>
           <button class="btn btn-default" type="button" @click="resetSearch()">重置</button>
         </div>
-      </div>
-
-      <div
-        v-if="page.sections?.length"
-        class="profile-forms"
-        :class="{ 'profile-forms--tabs': sectionTabsEnabled }"
-      >
-        <template v-if="sectionTabsEnabled">
-          <div class="config-tabs" role="tablist">
-            <button
-              v-for="(section, index) in page.sections"
-              :key="section.title"
-              class="config-tab"
-              :class="{ active: activeSectionIndex === index }"
-              type="button"
-              role="tab"
-              :aria-selected="activeSectionIndex === index"
-              @click="activeSectionIndex = index"
-            >
-              {{ section.title }}
-            </button>
-          </div>
-          <section v-if="activeSection" class="profile-section profile-section--tab">
-            <div class="commonsearch-grid">
-              <label
-                v-for="field in activeSection.fields"
-                :key="field.prop"
-                class="commonsearch-item"
-              >
-                <span>{{ field.label }}</span>
-                <textarea
-                  v-if="field.prop === 'content'"
-                  v-model="formModel[field.prop]"
-                  class="form-control"
-                  rows="3"
-                ></textarea>
-                <input v-else v-model="formModel[field.prop]" class="form-control" />
-              </label>
-            </div>
-            <div class="commonsearch-actions">
-              <button
-                class="btn btn-success"
-                type="button"
-                @click="saveProfile(activeSection.title)"
-              >
-                提交
-              </button>
-              <button
-                class="btn btn-default"
-                type="button"
-                @click="resetProfile(activeSection.fields)"
-              >
-                重置
-              </button>
-            </div>
-          </section>
-        </template>
-        <template v-else>
-          <section v-for="section in page.sections" :key="section.title" class="profile-section">
-            <h3>{{ section.title }}</h3>
-            <div class="commonsearch-grid">
-              <label v-for="field in section.fields" :key="field.prop" class="commonsearch-item">
-                <span>{{ field.label }}</span>
-                <textarea
-                  v-if="field.prop === 'content'"
-                  v-model="formModel[field.prop]"
-                  class="form-control"
-                  rows="3"
-                ></textarea>
-                <input v-else v-model="formModel[field.prop]" class="form-control" />
-              </label>
-            </div>
-            <div class="commonsearch-actions">
-              <button class="btn btn-success" type="button" @click="saveProfile(section.title)">
-                提交
-              </button>
-              <button class="btn btn-default" type="button" @click="resetProfile(section.fields)">
-                重置
-              </button>
-            </div>
-          </section>
-        </template>
       </div>
 
       <div v-if="hasTable" class="fixed-table-toolbar">
@@ -319,12 +225,12 @@
       </div>
 
       <div v-if="hasTable" class="fixed-table-container">
-        <div v-if="pageLoadError" class="table-load-error" role="alert">
-          <span>{{ pageLoadError }}</span>
+        <div v-if="dataLoadError" class="table-load-error" role="alert">
+          <span>{{ dataLoadError }}</span>
           <button class="btn btn-default" type="button" @click="loadPageRows">重试</button>
         </div>
         <div v-if="loading" class="fixed-table-loading">正在努力地加载数据中，请稍候……</div>
-        <div class="fixed-table-body">
+        <div v-if="!dataLoadError" class="fixed-table-body">
           <table
             class="table table-striped table-bordered table-hover table-nowrap"
             :aria-label="`${page.title}数据表`"
@@ -399,7 +305,7 @@
         </div>
       </div>
 
-      <div v-if="hasTable" class="fixed-table-pagination">
+      <div v-if="hasTable && !dataLoadError" class="fixed-table-pagination">
         <div class="pull-left pagination-detail">
           <span>
             显示第 {{ rangeStart }} 到第 {{ rangeEnd }} 条记录，总共 {{ displayTotalRows }} 条记录
@@ -522,7 +428,6 @@
 <script lang="ts" setup>
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
 import {
   createSkitAdminRecord,
   deleteSkitAdminRecord,
@@ -541,15 +446,18 @@ import { skitPageConfigs, type SkitColumn, type SkitSearchField } from './pageCo
 defineOptions({ name: 'SkitAdminTable' })
 
 const props = defineProps<{
-  pageKey?: string
+  pageKey: string
 }>()
 
 type CellValue = string | number | null | undefined
 type TableRow = Record<string, CellValue>
 
-const route = useRoute()
-const pageKey = computed(() => (props.pageKey || route.meta?.skitPageKey || 'adRecord') as string)
-const page = computed(() => skitPageConfigs[pageKey.value] || skitPageConfigs.adRecord)
+const pageKey = computed(() => props.pageKey)
+const page = computed(() => {
+  const config = skitPageConfigs[pageKey.value]
+  if (!config) throw new Error(`Unknown Skit admin page: ${pageKey.value}`)
+  return config
+})
 const isDramaPage = computed(() => page.value.key === 'drama')
 const scopeManager = useTenantScope()
 
@@ -561,7 +469,6 @@ const pageLoadError = ref('')
 const selectedKeys = ref(new Set<string>())
 const visibleColumnKeys = ref(new Set<string>())
 const advancedModel = reactive<Record<string, string>>({})
-const formModel = reactive<Record<string, string>>({})
 const keywordInput = ref('')
 const keyword = ref('')
 const advancedVisible = ref(false)
@@ -575,7 +482,6 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const pageSizes = [10, 25, 50, 100]
 const pageSizeMenuOpen = ref(false)
-const activeSectionIndex = ref(0)
 const jumpValue = ref('')
 const editorVisible = ref(false)
 const editorMode = ref<'add' | 'edit' | 'view'>('add')
@@ -608,11 +514,7 @@ const availableColumns = computed(() =>
   page.value.columns.filter((column) => column.prop !== 'state' && column.prop !== '0')
 )
 const hasTable = computed(() => availableColumns.value.length > 0 || hasSelection.value)
-const sectionTabsEnabled = computed(() => (page.value.sections?.length || 0) > 1)
-const activeSection = computed(() => {
-  const sections = page.value.sections || []
-  return sections[activeSectionIndex.value] || sections[0]
-})
+const dataLoadError = computed(() => pageLoadError.value || dramaPageError.value)
 const visibleColumns = computed(() =>
   availableColumns.value.filter((column) => visibleColumnKeys.value.has(column.prop))
 )
@@ -650,15 +552,10 @@ const filteredRows = computed(() => {
 const hasLocalFilters = computed(() =>
   Object.values(advancedModel).some((value) => String(value || '').trim())
 )
-const rowOperateActions = computed<OperateAction[]>(() => {
-  if (page.value.operateMode === 'detail') {
-    return [{ mode: 'view', label: '详情', text: '详情', icon: '' }]
-  }
-  return [
-    { mode: 'view', label: '详情', text: '', icon: 'ep:view' },
-    { mode: 'edit', label: '编辑', text: '', icon: 'ep:edit' }
-  ]
-})
+const rowOperateActions: OperateAction[] = [
+  { mode: 'view', label: '详情', text: '', icon: 'ep:view' },
+  { mode: 'edit', label: '编辑', text: '', icon: 'ep:edit' }
+]
 const displayTotalRows = computed(() =>
   backendAvailable.value && !hasLocalFilters.value
     ? backendTotalRows.value
@@ -671,7 +568,7 @@ const pagedRows = computed(() => {
   return filteredRows.value.slice(start, start + pageSize.value)
 })
 const rangeStart = computed(() =>
-  hasTable.value ? (displayTotalRows.value ? (currentPage.value - 1) * pageSize.value + 1 : 1) : 0
+  hasTable.value ? (displayTotalRows.value ? (currentPage.value - 1) * pageSize.value + 1 : 0) : 0
 )
 const rangeEnd = computed(() =>
   Math.min(currentPage.value * pageSize.value, displayTotalRows.value)
@@ -742,9 +639,9 @@ const sourceField = (source: Record<string, unknown>, ...keys: string[]) => {
 }
 
 const sdkContentStatus = (value: unknown) => {
-  if (Number(value) === 1) return '连载中'
-  if (Number(value) === 0) return '已完结'
-  return String(value ?? '').trim() || '未知'
+  if (value === 1 || value === '1') return '连载中'
+  if (value === 0 || value === '0') return '已完结'
+  return String(value ?? '').trim()
 }
 
 const normalizeSdkDrama = (source: Record<string, unknown>): TableRow | null => {
@@ -769,9 +666,9 @@ const normalizeSdkDrama = (source: Record<string, unknown>): TableRow | null => 
   }
   return {
     pangleDramaId,
-    title: String(sourceField(source, 'title', 'scriptName', 'name') || '').trim() || '未命名短剧',
+    title: String(sourceField(source, 'title', 'scriptName', 'name') || '').trim(),
     cover: String(sourceField(source, 'coverImage', 'cover_image', 'cover', 'poster') || '').trim(),
-    category: String(sourceField(source, 'type', 'category') || '').trim() || '热播',
+    category: String(sourceField(source, 'type', 'category') || '').trim(),
     episodes,
     freeEpisodes,
     unlockSize,
@@ -806,7 +703,7 @@ const loadTenantOptions = async () => {
   try {
     if (scopeManager.isPlatformAdmin.value) {
       const result = await TenantApi.getTenantAgentPage({ pageNo: 1, pageSize: 100 })
-      tenantOptions.value = (result.list || []).map((tenant) => ({
+      tenantOptions.value = result.list.map((tenant) => ({
         tenantId: tenant.tenantId,
         name: tenant.name
       }))
@@ -840,19 +737,20 @@ const loadPageRows = async () => {
     backendAvailable.value = false
     backendTotalRows.value = 0
     loading.value = false
-    return
+    return true
   }
   dramaPageError.value = ''
   pageLoadError.value = ''
   loading.value = true
   try {
     const result = await fetchBackendRows(page.value.key)
-    if (seq !== backendLoadSeq.value) return
+    if (seq !== backendLoadSeq.value) return false
     backendAvailable.value = true
-    backendTotalRows.value = Number(result.total || 0)
-    tableRows.value = (result.list || []).map((record) => mapBackendRecord(record))
+    backendTotalRows.value = result.total
+    tableRows.value = result.list.map((record) => mapBackendRecord(record))
+    return true
   } catch (cause) {
-    if (seq !== backendLoadSeq.value) return
+    if (seq !== backendLoadSeq.value) return false
     backendAvailable.value = false
     backendTotalRows.value = 0
     tableRows.value = []
@@ -864,6 +762,7 @@ const loadPageRows = async () => {
     } else {
       pageLoadError.value = '真实数据加载失败，请重试'
     }
+    return false
   } finally {
     if (seq === backendLoadSeq.value) {
       loading.value = false
@@ -884,7 +783,7 @@ const fetchBackendRows = (targetPageKey: string) => {
 
 const mapBackendRecord = (record: SkitAdminRecordRespVO) => {
   const row: TableRow = {}
-  const data = record.recordData || {}
+  const data = record.recordData
   page.value.columns.forEach((column) => {
     row[column.prop] = normalizeCellValue(data[column.prop])
   })
@@ -893,9 +792,9 @@ const mapBackendRecord = (record: SkitAdminRecordRespVO) => {
       row[key] = normalizeCellValue(value)
     }
   })
-  row.__rowKey = record.rowKey || `${record.pageKey}-${record.id}`
+  row.__rowKey = record.rowKey
   row.__backendId = record.id
-  row.__backendSort = record.sort || 0
+  row.__backendSort = record.sort
   return row
 }
 
@@ -984,14 +883,10 @@ const changePage = async (target: number) => {
   await loadPageRows()
 }
 
-const loadProfileModel = async () => {
-  resetProfileModel()
-}
-
 const refreshTable = async () => {
-  await loadPageRows()
+  const loaded = await loadPageRows()
   clearSelection()
-  ElMessage.success('刷新成功')
+  if (loaded) ElMessage.success('刷新成功')
 }
 
 const toggleColumn = (prop: string) => {
@@ -1293,73 +1188,6 @@ const jumpPage = () => {
   changePage(target)
 }
 
-const saveProfile = async (section: string) => {
-  ElMessage.success(`${section}保存成功`)
-}
-
-const resetProfileModel = () => {
-  Object.keys(formModel).forEach((key) => delete formModel[key])
-  applyProfileValues({})
-}
-
-const applyProfileValues = (values: Record<string, unknown>) => {
-  page.value.sections?.forEach((section) => {
-    section.fields.forEach((field) => {
-      formModel[field.prop] = normalizeProfileValue(values[field.prop], field.prop)
-    })
-  })
-}
-
-const normalizeProfileValue = (value: unknown, prop: string) => {
-  if (value === null || value === undefined) return defaultProfileValue(prop)
-  if (typeof value === 'string') return value
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-  return JSON.stringify(value)
-}
-
-const resetProfile = (fields: SkitSearchField[]) => {
-  fields.forEach((field) => {
-    formModel[field.prop] = defaultProfileValue(field.prop)
-  })
-  ElMessage.success('已重置')
-}
-
-const defaultProfileValue = (prop: string) => {
-  const values: Record<string, string> = {
-    username: '123456',
-    email: '123456@qq.com',
-    nickname: '123456',
-    site_name: '短剧 SaaS 管理平台',
-    site_title: '精准短剧',
-    site_logo: '/favicon.ico',
-    site_icp: '粤ICP备00000000号',
-    site_copyright: 'Copyright © 2026',
-    upload_storage: 'local',
-    upload_max_size: '20MB',
-    upload_exts: 'jpg,png,gif,mp4,zip,pdf',
-    upload_cdn_url: '',
-    upload_callback_url: '/admin-api/skit/upload/callback',
-    score_per_yuan: '1000',
-    withdraw_min_amount: '1.00',
-    withdraw_fee_rate: '0',
-    withdraw_fixed_fee: '0',
-    withdraw_review_mode: '人工审核',
-    ad_base_score: '10',
-    max_ad_score: '1000',
-    self_commission_rate: '100',
-    agent_commission_rate: '10',
-    reward_enabled: '开启',
-    sms_sign: '精准短剧',
-    mail_host: 'smtp.example.com',
-    mail_username: 'notice@example.com',
-    mail_from: 'notice@example.com',
-    notify_webhook: '',
-    name: '我的网站',
-    reviewStatus: '待审核'
-  }
-  return values[prop] || ''
-}
-
 watch(
   pageKey,
   async () => {
@@ -1367,11 +1195,9 @@ watch(
     selectedKeys.value = new Set()
     visibleColumnKeys.value = new Set(availableColumns.value.map((column) => column.prop))
     await resetSearch(false, false)
-    await loadProfileModel()
     currentPage.value = 1
     pageSize.value = 10
     pageSizeMenuOpen.value = false
-    activeSectionIndex.value = 0
     advancedVisible.value = false
     columnMenuOpen.value = false
     exportMenuOpen.value = false
@@ -1492,68 +1318,6 @@ textarea.form-control {
   justify-content: center;
   gap: 8px;
   margin-top: 12px;
-}
-
-.profile-forms {
-  display: grid;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.profile-forms--tabs {
-  display: block;
-}
-
-.config-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0;
-  margin-bottom: -1px;
-  border-bottom: 1px solid var(--admin-border-strong);
-}
-
-.config-tab {
-  height: 38px;
-  min-width: 110px;
-  padding: 8px 15px;
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--admin-primary);
-  white-space: nowrap;
-  cursor: pointer;
-  background: transparent;
-  border: 1px solid transparent;
-  border-bottom: 0;
-  border-radius: 3px 3px 0 0;
-
-  &.active {
-    color: var(--admin-text);
-    cursor: default;
-    background: var(--admin-surface);
-    border-color: var(--admin-border-strong);
-  }
-
-  &:not(.active):hover {
-    color: var(--admin-primary);
-    background: var(--admin-surface-hover);
-  }
-}
-
-.profile-section {
-  padding: 12px;
-  border: 1px solid var(--admin-border);
-
-  h3 {
-    margin: 0 0 12px;
-    font-size: 15px;
-    color: var(--admin-text);
-  }
-}
-
-.profile-section--tab {
-  min-height: 210px;
-  border-top: 0;
-  border-color: var(--admin-border-strong);
 }
 
 .fixed-table-toolbar {
@@ -1980,7 +1744,6 @@ textarea.form-control {
 }
 
 .commonsearch-item span,
-.profile-section h3,
 .fixed-table-pagination,
 .column-menu label,
 .export-menu button,
@@ -2018,41 +1781,6 @@ textarea.form-control {
 .date-range span,
 .no-record {
   color: var(--admin-text-secondary);
-}
-
-.config-tabs {
-  gap: 5px;
-  padding: 5px;
-  margin-bottom: 12px;
-  background: var(--admin-surface-soft);
-  border: 1px solid var(--admin-border);
-  border-radius: 12px;
-}
-
-.config-tab {
-  color: var(--admin-text-secondary);
-  border: 0;
-  border-radius: 9px;
-
-  &.active {
-    color: var(--admin-primary);
-    background: var(--admin-surface);
-    border: 0;
-    box-shadow: var(--admin-control-shadow);
-  }
-
-  &:not(.active):hover {
-    color: var(--admin-primary);
-    background: var(--admin-surface-hover);
-  }
-}
-
-.profile-section,
-.profile-section--tab {
-  padding: 16px;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: 13px;
 }
 
 .fixed-table-toolbar {

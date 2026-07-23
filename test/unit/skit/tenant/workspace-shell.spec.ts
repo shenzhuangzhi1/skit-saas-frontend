@@ -68,6 +68,9 @@ describe('single tenant management workspace shell', () => {
     expect(ledgerSource).toContain('getCommissionLedgerPage')
     expect(ledgerSource).toContain('amountUnits')
     expect(ledgerSource).toContain('currency')
+    expect(ledgerSource).toContain(
+      'asOf: expectedAsOf ? formatUtc8SnapshotDateTime(expectedAsOf) : undefined'
+    )
     expect(ledgerSource).not.toContain('客户端上报的预估分成')
 
     expect(membersSource).toContain('getMemberChildren')

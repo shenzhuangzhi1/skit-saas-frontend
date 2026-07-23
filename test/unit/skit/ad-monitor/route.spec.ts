@@ -20,13 +20,11 @@ describe('advertising monitoring route', () => {
     expect(route).not.toMatch(/AdminTable|pageKey|编辑|删除/)
   })
 
-  it('removes the fake ad-record total from the dashboard menu entry', () => {
+  it('removes the unreachable legacy ad-record table configuration', () => {
     const source = readSource('src/views/skit/admin/pageConfig.ts')
-    const menuStart = source.indexOf('export const skitMenuGroups')
-    const menu = source.slice(menuStart)
 
-    expect(menu).toContain("title: '广告监控'")
-    expect(menu).not.toMatch(/key:\s*'adRecord'.*totalRows:\s*947/)
+    expect(source).not.toMatch(/^\s{2}adRecord:\s*\{/m)
+    expect(source).not.toContain('totalRows')
   })
 
   it('keeps super-admin all-scope on the server aggregation path', () => {

@@ -16,7 +16,7 @@ export interface PageResult<T> {
 
 export interface StablePageResult<T> extends PageResult<T> {
   tenantId: number
-  asOf: string
+  asOf: number
   timezone: TakuReportTimezone
   pageNo: number
   pageSize: number
@@ -508,12 +508,12 @@ export type CommissionPlanStatus = 'UNCONFIGURED' | 'ACTIVE' | 'ARCHIVED'
 
 export interface CommissionPlanVO {
   tenantId: number
-  asOf: string
+  asOf: number
   timezone: TakuReportTimezone
   id?: number | null
   version: number
   status: CommissionPlanStatus
-  publishedAt?: string | null
+  publishedAt: number | null
   totalMemberRateBps: number
   agentRateBps: number
   rules: CommissionRuleBpsVO[]
@@ -534,7 +534,7 @@ export interface CommissionPlanPreviewReqVO {
 
 export interface CommissionPlanPreviewVO {
   tenantId: number
-  asOf: string
+  asOf: number
   timezone: TakuReportTimezone
   currency: string
   amountScale: number
@@ -679,8 +679,8 @@ export interface CommissionLedgerVO {
   amountUnits: string
   revisionNo: number
   reversalOfId?: number | null
-  occurredAt: string
-  createdAt: string
+  occurredAt: number
+  createdAt: number
 }
 
 export interface MemberTreeNodeVO {
@@ -795,7 +795,7 @@ export interface TenantAppBuildMaterialVO {
   takuAppKeyConfigured: boolean
   takuAccountConfigured: boolean
   appReleaseProfileConfigured: boolean
-  verifiedAt?: string | null
+  verifiedAt: number | null
 }
 
 export interface TenantAppBuildMaterialUpdateReqVO {

@@ -19,8 +19,20 @@
     </p>
     <el-button type="primary" @click="load">重新加载</el-button>
   </section>
+  <section
+    v-else-if="notFound"
+    class="max-w-760px rounded-8px border border-[var(--el-color-warning-light-7)] bg-[var(--el-color-warning-light-9)] p-20px"
+    data-testid="app-release-profile-not-found"
+    role="status"
+  >
+    <div class="text-16px font-600 text-[var(--el-color-warning)]">未找到发布档案</div>
+    <p class="mb-16px mt-6px text-14px text-[var(--el-text-color-secondary)]">
+      当前代理商尚未创建 App 发布档案，请先由服务端完成初始化。
+    </p>
+    <el-button @click="load">重新加载</el-button>
+  </section>
   <el-form
-    v-else-if="loaded"
+    v-else-if="loaded && formData"
     ref="formRef"
     :model="formData"
     :rules="rules"
@@ -107,7 +119,7 @@
       />
     </el-form-item>
     <el-form-item>
-      <el-button type="primary" :disabled="!loaded" :loading="saving" @click="save">
+      <el-button type="primary" :disabled="!loaded || !formData" :loading="saving" @click="save">
         保存发布档案
       </el-button>
     </el-form-item>
@@ -125,31 +137,48 @@ const message = useMessage()
 const loading = ref(false)
 const loaded = ref(false)
 const loadError = ref('')
+const notFound = ref(false)
 const loadSequence = ref(0)
 const saving = ref(false)
 const saveSequence = ref(0)
 const formRef = ref<FormInstance>()
 const reason = ref('')
-const emptyProfile = (): TenantApi.TenantAppReleaseProfileVO => ({
-  tenantId: props.tenantId,
-  profileCode: '',
-  channel: 'production',
-  minNativeVersion: '',
-  hotVersion: '',
-  hotBundleUrl: '',
-  hotBundleSha256: '',
-  hotReleaseNo: 0,
-  hotManifestSignature: '',
-  nativeVersion: '',
-  nativePackage: '',
-  nativeProtocolVersion: 1,
-  runtimeUpdatePublicKey: '',
-  runtimeUpdateKeyFingerprint: '',
-  status: 1
-})
-const formData = ref<TenantApi.TenantAppReleaseProfileVO>(emptyProfile())
+const formData = ref<TenantApi.TenantAppReleaseProfileVO | null>(null)
+
+const releaseProfileStringFields = [
+  'profileCode',
+  'minNativeVersion',
+  'hotVersion',
+  'hotBundleUrl',
+  'hotBundleSha256',
+  'hotManifestSignature',
+  'nativeVersion',
+  'nativePackage',
+  'runtimeUpdatePublicKey',
+  'runtimeUpdateKeyFingerprint'
+] as const
+
+const isTenantAppReleaseProfile = (
+  value: unknown,
+  tenantId: number
+): value is TenantApi.TenantAppReleaseProfileVO => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const profile = value as Record<string, unknown>
+  return (
+    profile.tenantId === tenantId &&
+    Number.isInteger(profile.tenantId) &&
+    releaseProfileStringFields.every((field) => typeof profile[field] === 'string') &&
+    (profile.channel === 'production' || profile.channel === 'staging') &&
+    Number.isInteger(profile.hotReleaseNo) &&
+    Number(profile.hotReleaseNo) >= 0 &&
+    Number.isInteger(profile.nativeProtocolVersion) &&
+    Number(profile.nativeProtocolVersion) >= 1 &&
+    (profile.status === 0 || profile.status === 1)
+  )
+}
+
 const requiredWhenEnabled = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
-  if (formData.value.status === 0 && !String(value || '').trim()) {
+  if (formData.value?.status === 0 && !String(value || '').trim()) {
     callback(new Error('启用前必须填写该项'))
     return
   }
@@ -191,14 +220,26 @@ const load = async () => {
   loading.value = true
   loaded.value = false
   loadError.value = ''
+  notFound.value = false
+  formData.value = null
   try {
     const profile = await TenantApi.getTenantAppReleaseProfile(tenantId)
     if (sequence !== loadSequence.value) return
-    formData.value = { ...emptyProfile(), ...profile, tenantId }
+    if (profile === null) {
+      notFound.value = true
+      return
+    }
+    if (!isTenantAppReleaseProfile(profile, tenantId)) {
+      throw new Error('Invalid app release profile response')
+    }
+    formData.value = { ...profile }
     reason.value = ''
     loaded.value = true
   } catch {
     if (sequence !== loadSequence.value) return
+    formData.value = null
+    loaded.value = false
+    notFound.value = false
     loadError.value = '暂时无法读取发布档案，请稍后重试。'
   } finally {
     if (sequence === loadSequence.value) {
@@ -208,7 +249,8 @@ const load = async () => {
 }
 
 const save = async () => {
-  if (!loaded.value) return
+  const profile = formData.value
+  if (!loaded.value || !profile) return
   const tenantId = props.tenantId
   const sequence = loadSequence.value
   const valid = await formRef.value?.validate()
@@ -224,10 +266,10 @@ const save = async () => {
   saving.value = true
   try {
     const response = await TenantApi.updateTenantAppReleaseProfile({
-      ...formData.value,
-      hotBundleSha256: formData.value.hotBundleSha256.toLowerCase(),
-      hotManifestSignature: formData.value.hotManifestSignature.trim(),
-      runtimeUpdatePublicKey: formData.value.runtimeUpdatePublicKey.trim(),
+      ...profile,
+      hotBundleSha256: profile.hotBundleSha256.toLowerCase(),
+      hotManifestSignature: profile.hotManifestSignature.trim(),
+      runtimeUpdatePublicKey: profile.runtimeUpdatePublicKey.trim(),
       reason: normalizedReason
     })
     if (
@@ -237,7 +279,11 @@ const save = async () => {
     ) {
       return
     }
-    formData.value = response
+    if (!isTenantAppReleaseProfile(response, tenantId)) {
+      message.warning('服务端未返回完整发布档案，请重新加载确认')
+      return
+    }
+    formData.value = { ...response }
     reason.value = ''
     message.success('发布档案已保存')
   } finally {

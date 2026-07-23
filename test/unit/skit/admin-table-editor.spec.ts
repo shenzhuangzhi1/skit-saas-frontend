@@ -13,6 +13,18 @@ describe('admin table editor', () => {
   it('never replaces a failed management query with fabricated rows', () => {
     expect(source).toContain('真实数据加载失败，请重试')
     expect(source).not.toContain('tableRows.value = buildRows()')
+    expect(source).not.toContain('Number(result.total || 0)')
+    expect(source).not.toContain('(result.list || [])')
+    expect(source).not.toContain('record.recordData || {}')
+    expect(source).not.toContain('record.rowKey || `${record.pageKey}-${record.id}`')
+  })
+
+  it('keeps load failures distinct from a truthful empty result', () => {
+    expect(source).toContain('const dataLoadError = computed')
+    expect(source).toContain('v-if="dataLoadError" class="table-load-error"')
+    expect(source).toContain('v-if="!dataLoadError" class="fixed-table-body"')
+    expect(source).toContain('v-if="hasTable && !dataLoadError" class="fixed-table-pagination"')
+    expect(source).toContain("if (loaded) ElMessage.success('刷新成功')")
   })
 
   it('does not optimistically mutate batch status before the server accepts it', () => {

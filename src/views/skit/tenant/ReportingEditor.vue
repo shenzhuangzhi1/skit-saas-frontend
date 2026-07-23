@@ -7,7 +7,7 @@
           配置 Taku 官方收益对账口径。Publisher Key 只写不读，官方报表确认前收益不能进入可结算余额。
         </div>
       </div>
-      <el-button :disabled="!form" :loading="saving" type="primary" @click="save">
+      <el-button :disabled="!form || saving" :loading="saving" type="primary" @click="save">
         保存报表配置
       </el-button>
     </div>
@@ -45,7 +45,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="报表时区" required>
-              <el-select v-model="form.reportTimezone" class="w-full">
+              <el-select v-model="form.reportTimezone" class="w-full" :disabled="saving">
                 <el-option label="UTC-8" value="UTC-8" />
                 <el-option label="UTC+8" value="UTC+8" />
                 <el-option label="UTC+0" value="UTC+0" />
@@ -54,12 +54,23 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="ISO 币种" required>
-              <el-input v-model="form.currency" maxlength="3" placeholder="USD" />
+              <el-input
+                v-model="form.currency"
+                :disabled="saving"
+                maxlength="3"
+                placeholder="USD"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="金额精度" required>
-              <el-input-number v-model="form.amountScale" :max="18" :min="0" :precision="0" />
+              <el-input-number
+                v-model="form.amountScale"
+                :disabled="saving"
+                :max="18"
+                :min="0"
+                :precision="0"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -67,6 +78,7 @@
               <InputPassword
                 v-model="form.publisherKey"
                 autocomplete="new-password"
+                :disabled="saving"
                 maxlength="4096"
                 :placeholder="
                   form.credentialConfigured
@@ -80,6 +92,7 @@
             <el-form-item label="变更原因" required>
               <el-input
                 v-model="form.reason"
+                :disabled="saving"
                 maxlength="500"
                 placeholder="必填 10–500 字，用于跨租户代管和安全审计"
                 :rows="3"
@@ -114,19 +127,32 @@ const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
 let requestId = 0
+let saveId = 0
 
 const errorText = (cause: unknown, fallback: string) =>
   cause instanceof Error && cause.message ? cause.message : fallback
+const reportingDraftSignature = (value: SafeReportingConfigurationForm) =>
+  JSON.stringify({
+    reportTimezone: value.reportTimezone,
+    currency: value.currency,
+    amountScale: value.amountScale,
+    credentialVersion: value.credentialVersion,
+    publisherKey: value.publisherKey,
+    reason: value.reason
+  })
 
 const load = async () => {
   const currentRequestId = ++requestId
+  const target = { ...props.target }
+  saveId += 1
+  saving.value = false
   loading.value = true
   error.value = ''
   form.value = undefined
   try {
-    const response = await TenantApi.getTenantReportingConfiguration(props.target)
+    const response = await TenantApi.getTenantReportingConfiguration(target)
     if (currentRequestId !== requestId) return
-    form.value = sanitizeReportingConfiguration(response)
+    form.value = sanitizeReportingConfiguration(response, target.tenantId)
   } catch (cause) {
     if (currentRequestId !== requestId) return
     error.value = errorText(cause, 'Taku 报表配置加载失败')
@@ -161,9 +187,13 @@ const save = async () => {
     ElMessage.warning('变更原因必须为 10–500 个字符')
     return
   }
+  const currentRequestId = requestId
+  const currentSaveId = ++saveId
+  const target = { ...props.target }
+  const draftSignature = reportingDraftSignature(current)
   saving.value = true
   try {
-    const response = await TenantApi.saveTenantReportingConfiguration(props.target, {
+    const response = await TenantApi.saveTenantReportingConfiguration(target, {
       credentialVersion: current.credentialVersion,
       ...(publisherKey ? { publisherKey } : {}),
       reportTimezone: current.reportTimezone,
@@ -172,12 +202,20 @@ const save = async () => {
       adFormat: 'rewarded_video',
       reason
     })
-    form.value = sanitizeReportingConfiguration(response)
+    if (currentRequestId !== requestId || currentSaveId !== saveId) return
+    if (!form.value || reportingDraftSignature(form.value) !== draftSignature) {
+      ElMessage.warning('保存期间表单已变化，已保留当前编辑内容，请重新保存')
+      return
+    }
+    form.value = sanitizeReportingConfiguration(response, target.tenantId)
     ElMessage.success('收益报表配置已保存；Publisher Key 输入已清空')
   } catch (cause) {
+    if (currentRequestId !== requestId || currentSaveId !== saveId) return
     ElMessage.error(errorText(cause, 'Taku 报表配置保存失败'))
   } finally {
-    saving.value = false
+    if (currentRequestId === requestId && currentSaveId === saveId) {
+      saving.value = false
+    }
   }
 }
 

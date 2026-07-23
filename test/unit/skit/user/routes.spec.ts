@@ -23,8 +23,8 @@ describe('agent and app user navigation', () => {
   it('keeps the old user URL as a hidden redirect and updates the management shortcut', () => {
     expect(routes).toContain("redirect: '/skit/user-center/agents'")
     expect(routes).toMatch(/path: 'user',[\s\S]*?hidden: true/)
-    expect(pageConfig).toContain("title: '代理商管理', routeName: 'SkitAgentManagement'")
-    expect(pageConfig).not.toContain("routeName: 'SkitUser'")
+    expect(pageConfig).not.toMatch(/^\s{2}user:\s*\{/m)
+    expect(pageConfig).not.toContain('routeName')
   })
 
   it('updates the home shortcut to the agent workspace instead of the removed route', () => {

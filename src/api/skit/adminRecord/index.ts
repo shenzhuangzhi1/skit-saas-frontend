@@ -1,4 +1,7 @@
 import request from '@/config/axios'
+import { assertSkitAdminRecordPage } from './integrity'
+
+export { assertSkitAdminRecordPage } from './integrity'
 
 export interface SkitAdminRecordRespVO {
   id: number
@@ -42,11 +45,13 @@ export interface PageResult<T> {
 const silent = { skipErrorMessage: true }
 
 export const getSkitAdminRecordPage = (params: SkitAdminRecordPageReqVO) => {
-  return request.get<PageResult<SkitAdminRecordRespVO>>({
-    url: '/skit/admin-record/page',
-    params,
-    ...silent
-  })
+  return request
+    .get<unknown>({
+      url: '/skit/admin-record/page',
+      params,
+      ...silent
+    })
+    .then((response) => assertSkitAdminRecordPage(response, params.pageKey))
 }
 
 export const createSkitAdminRecord = (data: SkitAdminRecordSaveReqVO) => {
