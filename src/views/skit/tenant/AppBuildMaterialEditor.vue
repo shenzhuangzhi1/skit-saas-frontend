@@ -31,8 +31,20 @@
   </el-alert>
 
   <el-skeleton v-if="loading" :rows="10" animated />
+  <section
+    v-else-if="loadError"
+    class="max-w-900px rounded-8px border border-[var(--el-color-danger-light-7)] bg-[var(--el-color-danger-light-9)] p-20px"
+    data-testid="app-build-material-load-error"
+    role="alert"
+  >
+    <div class="text-16px font-600 text-[var(--el-color-danger)]">构建资料加载失败</div>
+    <p class="mb-16px mt-6px text-14px text-[var(--el-text-color-secondary)]">
+      {{ loadError }}
+    </p>
+    <el-button type="primary" @click="load">重新加载</el-button>
+  </section>
   <el-form
-    v-else
+    v-else-if="loaded"
     ref="formRef"
     :model="formData"
     :rules="rules"
@@ -103,7 +115,9 @@
       />
     </el-form-item>
     <el-form-item>
-      <el-button type="primary" :loading="saving" @click="save">保存构建资料版本</el-button>
+      <el-button type="primary" :disabled="!loaded" :loading="saving" @click="save">
+        保存构建资料版本
+      </el-button>
     </el-form-item>
   </el-form>
 </template>
@@ -117,7 +131,11 @@ defineOptions({ name: 'SkitAppBuildMaterialEditor' })
 const props = defineProps<{ tenantId: number }>()
 const message = useMessage()
 const loading = ref(false)
+const loaded = ref(false)
+const loadError = ref('')
+const loadSequence = ref(0)
 const saving = ref(false)
+const saveSequence = ref(0)
 const formRef = ref<FormInstance>()
 const material = ref<TenantApi.TenantAppBuildMaterialVO>()
 
@@ -204,12 +222,21 @@ const rules = reactive<FormRules<BuildForm>>({
 const formatTime = (value: string) => value.replace('T', ' ').replace(/\.\d+$/, '')
 
 const load = async () => {
+  const sequence = loadSequence.value + 1
+  const tenantId = props.tenantId
+  loadSequence.value = sequence
+  saveSequence.value += 1
+  saving.value = false
   loading.value = true
+  loaded.value = false
+  loadError.value = ''
+  material.value = undefined
   try {
-    const response = await TenantApi.getTenantAppBuildMaterial(props.tenantId)
+    const response = await TenantApi.getTenantAppBuildMaterial(tenantId)
+    if (sequence !== loadSequence.value) return
     material.value = response
     formData.value = {
-      tenantId: props.tenantId,
+      tenantId,
       apiBaseUrl: response.apiBaseUrl || '',
       appName: response.appName || '',
       nativeVersionCode: response.nativeVersionCode || 1,
@@ -224,19 +251,31 @@ const load = async () => {
       keyAlias: '',
       keyPassword: ''
     })
+    loaded.value = true
+  } catch {
+    if (sequence !== loadSequence.value) return
+    loadError.value = '暂时无法读取构建资料，请稍后重试。'
   } finally {
-    loading.value = false
+    if (sequence === loadSequence.value) {
+      loading.value = false
+    }
   }
 }
 
 const save = async () => {
+  if (!loaded.value) return
+  const tenantId = props.tenantId
+  const sequence = loadSequence.value
   const valid = await formRef.value?.validate()
   if (!valid) return
+  if (tenantId !== props.tenantId || sequence !== loadSequence.value) return
   const reason = formData.value.reason.trim()
   if (reason.length < 10 || reason.length > 500) {
     message.warning('变更原因长度必须为 10–500 个字符')
     return
   }
+  const saveId = saveSequence.value + 1
+  saveSequence.value = saveId
   saving.value = true
   try {
     const response = await TenantApi.updateTenantAppBuildMaterial({
@@ -251,6 +290,13 @@ const save = async () => {
       keyPassword: secrets.keyPassword,
       reason
     })
+    if (
+      saveId !== saveSequence.value ||
+      tenantId !== props.tenantId ||
+      sequence !== loadSequence.value
+    ) {
+      return
+    }
     material.value = response
     formData.value.reason = ''
     Object.assign(secrets, {
@@ -262,7 +308,9 @@ const save = async () => {
     })
     message.success(`构建资料版本 ${response.materialVersion} 已保存`)
   } finally {
-    saving.value = false
+    if (saveId === saveSequence.value) {
+      saving.value = false
+    }
   }
 }
 

@@ -214,6 +214,16 @@ const addDragListeners = () => {
   window.addEventListener('touchend', handleEnd)
   window.addEventListener('mouseup', handleEnd)
 }
+const syncSize = () => {
+  nextTick(() => {
+    if (!proxy.$el) return
+    const { imgHeight, imgWidth, barHeight, barWidth } = resetSize(proxy)
+    setSize.imgHeight = imgHeight
+    setSize.imgWidth = imgWidth
+    setSize.barHeight = barHeight
+    setSize.barWidth = barWidth
+  })
+}
 const init = () => {
   if (explain.value === '') {
     text.value = t('captcha.slide')
@@ -221,20 +231,18 @@ const init = () => {
     text.value = explain.value
   }
   getPictrue()
-  nextTick(() => {
-    let { imgHeight, imgWidth, barHeight, barWidth } = resetSize(proxy)
-    setSize.imgHeight = imgHeight
-    setSize.imgWidth = imgWidth
-    setSize.barHeight = barHeight
-    setSize.barWidth = barWidth
-    proxy.$parent.$emit('ready', proxy)
-  })
+  syncSize()
+  nextTick(() => proxy.$parent.$emit('ready', proxy))
 
   addDragListeners()
 }
 watch(type, () => {
   init()
 })
+watch(
+  () => [props.imgSize.width, props.imgSize.height, props.barSize.width, props.barSize.height],
+  syncSize
+)
 onMounted(() => {
   // 禁止拖拽
   init()

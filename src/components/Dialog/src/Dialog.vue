@@ -85,29 +85,48 @@ function closedHandler() {
     @close="closeHandler"
     @closed="closedHandler"
   >
-    <template #header="{ close }">
+    <template #header="{ close, titleId, titleClass }">
       <div class="relative h-54px flex items-center justify-between pl-15px pr-15px">
-        <slot name="title">
-          {{ title }}
-        </slot>
+        <div :id="titleId" class="com-dialog__title" :class="titleClass">
+          <slot name="title">
+            {{ title }}
+          </slot>
+        </div>
         <div
-          class="absolute right-15px top-[50%] h-54px flex translate-y-[-50%] items-center justify-between"
+          class="absolute right-15px top-[50%] h-54px flex translate-y-[-50%] items-center justify-between gap-2px"
         >
-          <Icon
+          <button
             v-if="fullscreen"
-            class="is-hover mr-10px cursor-pointer"
-            :icon="isFullscreen ? 'radix-icons:exit-full-screen' : 'radix-icons:enter-full-screen'"
-            color="var(--el-color-info)"
-            hover-color="var(--el-color-primary)"
+            type="button"
+            class="com-dialog__action"
+            :aria-label="isFullscreen ? '还原弹窗' : '最大化弹窗'"
+            :aria-pressed="isFullscreen"
             @click="toggleFull"
-          />
-          <Icon
-            class="is-hover cursor-pointer"
-            icon="ep:close"
-            hover-color="var(--el-color-primary)"
-            color="var(--el-color-info)"
+          >
+            <Icon
+              aria-hidden="true"
+              focusable="false"
+              :icon="
+                isFullscreen ? 'radix-icons:exit-full-screen' : 'radix-icons:enter-full-screen'
+              "
+              color="var(--el-color-info)"
+              hover-color="var(--el-color-primary)"
+            />
+          </button>
+          <button
+            type="button"
+            class="com-dialog__action"
+            aria-label="关闭弹窗"
             @click.stop="close"
-          />
+          >
+            <Icon
+              aria-hidden="true"
+              focusable="false"
+              icon="ep:close"
+              hover-color="var(--el-color-primary)"
+              color="var(--el-color-info)"
+            />
+          </button>
         </div>
       </div>
     </template>
@@ -130,6 +149,11 @@ function closedHandler() {
 
 <style lang="scss">
 .com-dialog {
+  &.#{$elNamespace}-dialog:not(.is-fullscreen),
+  .#{$elNamespace}-dialog:not(.is-fullscreen) {
+    max-width: calc(100vw - 32px);
+  }
+
   .#{$elNamespace}-overlay-dialog {
     display: flex;
     justify-content: center;
@@ -158,5 +182,36 @@ function closedHandler() {
       top: 0;
     }
   }
+}
+
+.com-dialog__action {
+  display: inline-flex;
+  min-width: 40px;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--el-color-info);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--el-border-radius-base);
+
+  &:hover {
+    background: var(--el-fill-color-light);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.com-dialog__title {
+  min-width: 0;
+  padding-right: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

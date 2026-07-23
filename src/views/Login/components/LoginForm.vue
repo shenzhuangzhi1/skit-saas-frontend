@@ -13,6 +13,10 @@
           <el-input
             id="skit-login-username"
             v-model="loginData.loginForm.username"
+            name="username"
+            autocomplete="username"
+            autocapitalize="none"
+            :spellcheck="false"
             placeholder="请输入账号"
             :prefix-icon="iconAvatar"
           />
@@ -24,6 +28,10 @@
           <el-input
             id="skit-login-password"
             v-model="loginData.loginForm.password"
+            name="password"
+            autocomplete="current-password"
+            autocapitalize="none"
+            :spellcheck="false"
             placeholder="请输入密码"
             :prefix-icon="iconLock"
             show-password
@@ -53,8 +61,8 @@
         v-if="loginData.captchaEnable === 'true'"
         ref="verify"
         :captchaType="captchaType"
-        :barSize="{ width: '400px', height: '46px' }"
-        :imgSize="{ width: '400px', height: '200px' }"
+        :barSize="captchaDimensions.barSize"
+        :imgSize="captchaDimensions.imgSize"
         mode="pop"
         @success="handleLogin"
       />
@@ -62,6 +70,7 @@
   </el-form>
 </template>
 <script lang="ts" setup>
+import { useWindowSize } from '@vueuse/core'
 import { ElLoading } from 'element-plus'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 
@@ -73,6 +82,7 @@ import {
   runLoginChallengeTransition,
   runLoginTransition
 } from '@/plugins/microInteractions/transitions'
+import { getCaptchaDimensions } from './captchaSizing'
 import { useFormValid } from './useLogin'
 
 defineOptions({ name: 'LoginForm' })
@@ -86,6 +96,8 @@ const redirect = ref<string>('')
 const loginLoading = ref(false)
 const verify = ref()
 const captchaType = ref('blockPuzzle') // blockPuzzle 滑块 clickWord 点击文字 pictureWord 文字验证码
+const { width: viewportWidth } = useWindowSize()
+const captchaDimensions = computed(() => getCaptchaDimensions(viewportWidth.value))
 
 const LoginRules = {
   username: [required],
@@ -245,16 +257,20 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 750;
   letter-spacing: 0.12em;
-  background: var(--skit-active-gradient);
+  background: var(--el-color-primary);
   border: 0;
   border-radius: 14px;
-  box-shadow: 0 16px 30px -18px var(--skit-shadow-strong);
+  box-shadow: 0 12px 24px -18px var(--skit-shadow-strong);
 
-  &:hover,
-  &:focus {
-    background: var(--skit-active-gradient);
-    filter: brightness(1.08);
-    transform: translateY(-1px);
+  &:hover {
+    background: var(--el-color-primary-dark-2);
+  }
+
+  &:focus-visible {
+    background: var(--el-color-primary);
+    box-shadow:
+      0 0 0 3px var(--skit-surface-solid),
+      0 0 0 5px var(--el-color-primary);
   }
 }
 </style>

@@ -3,7 +3,7 @@
     <div v-show="showBox" :class="mode == 'pop' ? 'mask' : ''">
       <div
         :class="mode == 'pop' ? 'verifybox' : ''"
-        :style="{ 'max-width': parseInt(imgSize.width) + 20 + 'px' }"
+        :style="{ 'max-width': parseInt(imgSize.width) + 32 + 'px' }"
       >
         <div v-if="mode == 'pop'" class="verifybox-top">
           {{ t('captcha.verification') }}

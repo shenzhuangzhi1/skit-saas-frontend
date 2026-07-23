@@ -1,6 +1,18 @@
 <template>
   <div class="skit-fastadmin-page">
     <div class="skit-panel">
+      <header class="admin-page-header" aria-labelledby="admin-page-title">
+        <div class="admin-page-header__copy">
+          <div class="admin-page-context">
+            <span>{{ page.parent || '短剧运营' }}</span>
+            <span aria-hidden="true">/</span>
+            <span>管理工作台</span>
+          </div>
+          <h1 id="admin-page-title">{{ page.title }}</h1>
+          <p>{{ page.description }}</p>
+        </div>
+      </header>
+
       <div v-if="isDramaPage" class="tenant-scope-row">
         <TenantScopeBar v-model="scopeModel" :tenants="tenantOptions" />
         <span v-if="tenantOptionsError || dramaPageError" class="tenant-scope-error">
@@ -8,7 +20,7 @@
         </span>
       </div>
 
-      <div v-show="advancedVisible" class="commonsearch-table">
+      <div id="admin-advanced-search" v-show="advancedVisible" class="commonsearch-table">
         <div class="commonsearch-grid">
           <label v-for="field in page.searchFields" :key="field.prop" class="commonsearch-item">
             <span>{{ field.label }}</span>
@@ -133,8 +145,14 @@
 
       <div v-if="hasTable" class="fixed-table-toolbar">
         <div class="toolbar">
-          <button class="btn btn-primary" type="button" title="刷新" @click="refreshTable">
-            <Icon icon="ep:refresh" />
+          <button
+            class="btn btn-primary"
+            type="button"
+            title="刷新"
+            aria-label="刷新数据"
+            @click="refreshTable"
+          >
+            <Icon icon="ep:refresh" aria-hidden="true" />
           </button>
           <button
             v-if="hasAction('添加')"
@@ -157,6 +175,7 @@
             v-if="hasAction('编辑')"
             class="btn btn-success"
             :class="{ disabled: selectedRows.length !== 1 }"
+            :disabled="selectedRows.length !== 1"
             type="button"
             title="编辑"
             @click="openEditor('edit')"
@@ -167,6 +186,7 @@
             v-if="hasAction('删除')"
             class="btn btn-danger"
             :class="{ disabled: selectedRows.length === 0 }"
+            :disabled="selectedRows.length === 0"
             type="button"
             title="删除"
             @click="deleteSelected"
@@ -177,6 +197,7 @@
             v-if="hasAction('审核通过')"
             class="btn btn-success"
             :class="{ disabled: selectedRows.length === 0 }"
+            :disabled="selectedRows.length === 0"
             type="button"
             @click="batchSetStatus('审核通过')"
           >
@@ -186,6 +207,7 @@
             v-if="hasAction('审核拒绝')"
             class="btn btn-danger"
             :class="{ disabled: selectedRows.length === 0 }"
+            :disabled="selectedRows.length === 0"
             type="button"
             @click="batchSetStatus('审核拒绝')"
           >
@@ -195,6 +217,7 @@
             v-if="hasAction('上架')"
             class="btn btn-success"
             :class="{ disabled: selectedRows.length === 0 }"
+            :disabled="selectedRows.length === 0"
             type="button"
             @click="batchSetPublishStatus('上架')"
           >
@@ -204,6 +227,7 @@
             v-if="hasAction('下架')"
             class="btn btn-warning-light"
             :class="{ disabled: selectedRows.length === 0 }"
+            :disabled="selectedRows.length === 0"
             type="button"
             @click="batchSetPublishStatus('下架')"
           >
@@ -225,19 +249,25 @@
               class="btn btn-default"
               type="button"
               title="普通搜索"
+              :aria-label="advancedVisible ? '收起搜索条件' : '打开搜索条件'"
+              :aria-expanded="advancedVisible"
+              aria-controls="admin-advanced-search"
               @click="advancedVisible = !advancedVisible"
             >
-              <Icon icon="ep:search" />
+              <Icon icon="ep:search" aria-hidden="true" />
             </button>
             <button
               class="btn btn-default dropdown-toggle"
               type="button"
               title="切换"
+              aria-label="选择显示列"
+              :aria-expanded="columnMenuOpen"
+              aria-controls="admin-column-menu"
               @click="columnMenuOpen = !columnMenuOpen"
             >
-              <Icon icon="ep:grid" />
+              <Icon icon="ep:grid" aria-hidden="true" />
             </button>
-            <div v-show="columnMenuOpen" class="dropdown-menu column-menu">
+            <div id="admin-column-menu" v-show="columnMenuOpen" class="dropdown-menu column-menu">
               <label v-for="column in availableColumns" :key="column.prop">
                 <input
                   type="checkbox"
@@ -253,11 +283,14 @@
               class="btn btn-default dropdown-toggle"
               type="button"
               title="导出数据"
+              aria-label="导出数据"
+              :aria-expanded="exportMenuOpen"
+              aria-controls="admin-export-menu"
               @click="exportMenuOpen = !exportMenuOpen"
             >
-              <Icon icon="ep:download" />
+              <Icon icon="ep:download" aria-hidden="true" />
             </button>
-            <div v-show="exportMenuOpen" class="dropdown-menu export-menu">
+            <div id="admin-export-menu" v-show="exportMenuOpen" class="dropdown-menu export-menu">
               <button type="button" @click="exportRows('json')">JSON</button>
               <button type="button" @click="exportRows('csv')">CSV</button>
               <button type="button" @click="exportRows('txt')">TXT</button>
@@ -265,9 +298,21 @@
             </div>
           </div>
           <div class="search input-group">
-            <input v-model="keywordInput" class="form-control search-input" placeholder="搜索" />
-            <button class="btn btn-default" type="button" @click="applySearch">
-              <Icon icon="ep:search" />
+            <input
+              v-model="keywordInput"
+              class="form-control search-input"
+              type="search"
+              placeholder="搜索"
+              aria-label="搜索当前页面记录"
+              @keyup.enter="applySearch"
+            />
+            <button
+              class="btn btn-default"
+              type="button"
+              aria-label="搜索当前页面"
+              @click="applySearch"
+            >
+              <Icon icon="ep:search" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -280,11 +325,21 @@
         </div>
         <div v-if="loading" class="fixed-table-loading">正在努力地加载数据中，请稍候……</div>
         <div class="fixed-table-body">
-          <table class="table table-striped table-bordered table-hover table-nowrap">
+          <table
+            class="table table-striped table-bordered table-hover table-nowrap"
+            :aria-label="`${page.title}数据表`"
+          >
             <thead>
               <tr>
                 <th v-if="hasSelection" class="bs-checkbox">
-                  <input type="checkbox" :checked="allPageSelected" @change="togglePageSelection" />
+                  <input
+                    type="checkbox"
+                    :checked="allPageSelected"
+                    :indeterminate="pageSelectionIndeterminate"
+                    :aria-checked="pageSelectionIndeterminate ? 'mixed' : allPageSelected"
+                    aria-label="选择当前页全部记录"
+                    @change="togglePageSelection"
+                  />
                 </th>
                 <th
                   v-for="column in visibleColumns"
@@ -307,6 +362,7 @@
                   <input
                     type="checkbox"
                     :checked="selectedKeys.has(String(row.__rowKey))"
+                    :aria-label="`选择记录 ${row.__rowKey}`"
                     @change="toggleRow(row)"
                   />
                 </td>
@@ -354,11 +410,18 @@
               <button
                 class="btn btn-default page-size"
                 type="button"
+                :aria-label="`选择每页显示数量，当前 ${pageSize} 条`"
+                :aria-expanded="pageSizeMenuOpen"
+                aria-controls="admin-page-size-menu"
                 @click="pageSizeMenuOpen = !pageSizeMenuOpen"
               >
                 {{ pageSize }}
               </button>
-              <span v-show="pageSizeMenuOpen" class="dropdown-menu page-size-dropdown">
+              <span
+                id="admin-page-size-menu"
+                v-show="pageSizeMenuOpen"
+                class="dropdown-menu page-size-dropdown"
+              >
                 <button
                   v-for="size in pageSizes"
                   :key="size"
@@ -388,6 +451,7 @@
             :class="{ active: item.page === currentPage, ellipsis: !item.page }"
             type="button"
             :disabled="!item.page"
+            :aria-current="item.page === currentPage ? 'page' : undefined"
             @click="item.page && changePage(item.page)"
           >
             {{ item.label }}
@@ -400,8 +464,16 @@
           >
             下一页
           </button>
-          <input v-model="jumpValue" class="pagination-jump" />
-          <button class="page-btn" type="button" @click="jumpPage">Go</button>
+          <input
+            v-model="jumpValue"
+            class="pagination-jump"
+            inputmode="numeric"
+            aria-label="输入目标页码"
+            @keyup.enter="jumpPage"
+          />
+          <button class="page-btn" type="button" aria-label="跳转到目标页" @click="jumpPage">
+            跳转
+          </button>
         </div>
       </div>
     </div>
@@ -608,6 +680,11 @@ const allPageSelected = computed(
   () =>
     pagedRows.value.length > 0 &&
     pagedRows.value.every((row) => selectedKeys.value.has(String(row.__rowKey)))
+)
+const pageSelectionIndeterminate = computed(
+  () =>
+    !allPageSelected.value &&
+    pagedRows.value.some((row) => selectedKeys.value.has(String(row.__rowKey)))
 )
 const editorTitle = computed(() => {
   if (editorMode.value === 'add') return `添加${page.value.title}`
@@ -1855,6 +1932,45 @@ textarea.form-control {
   backdrop-filter: blur(18px);
 }
 
+.admin-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 2px 2px 18px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-page-header__copy {
+  min-width: 0;
+
+  h1 {
+    margin: 7px 0 6px;
+    font-size: clamp(22px, 2vw, 28px);
+    font-weight: 760;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+    color: var(--admin-text);
+  }
+
+  p {
+    max-width: 760px;
+    margin: 0;
+    line-height: 1.65;
+    color: var(--admin-text-secondary);
+  }
+}
+
+.admin-page-context {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--admin-primary);
+}
+
 .commonsearch-table {
   padding: 16px;
   margin-bottom: 16px;
@@ -1957,6 +2073,11 @@ textarea.form-control {
 
   &:hover:not(:disabled) {
     transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--admin-focus-ring);
   }
 }
 
@@ -2079,6 +2200,11 @@ textarea.form-control {
     background: var(--admin-primary-gradient);
     border-color: transparent;
   }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--admin-focus-ring);
+  }
 }
 
 input[type='checkbox'] {
@@ -2093,6 +2219,21 @@ input[type='checkbox'] {
   .skit-panel {
     padding: 14px;
     border-radius: 13px;
+  }
+
+  .admin-page-header {
+    padding: 2px 0 14px;
+    margin-bottom: 14px;
+  }
+
+  .admin-page-header__copy {
+    h1 {
+      font-size: 22px;
+    }
+
+    p {
+      font-size: 13px;
+    }
   }
 }
 </style>

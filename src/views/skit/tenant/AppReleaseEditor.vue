@@ -7,8 +7,20 @@
     title="热更新只更新前端业务包；穿山甲/Taku SDK、包名与签名变更必须重新构建该代理商的原生 APK。"
   />
   <el-skeleton v-if="loading" :rows="8" animated />
+  <section
+    v-else-if="loadError"
+    class="max-w-760px rounded-8px border border-[var(--el-color-danger-light-7)] bg-[var(--el-color-danger-light-9)] p-20px"
+    data-testid="app-release-profile-load-error"
+    role="alert"
+  >
+    <div class="text-16px font-600 text-[var(--el-color-danger)]">发布档案加载失败</div>
+    <p class="mb-16px mt-6px text-14px text-[var(--el-text-color-secondary)]">
+      {{ loadError }}
+    </p>
+    <el-button type="primary" @click="load">重新加载</el-button>
+  </section>
   <el-form
-    v-else
+    v-else-if="loaded"
     ref="formRef"
     :model="formData"
     :rules="rules"
@@ -95,7 +107,9 @@
       />
     </el-form-item>
     <el-form-item>
-      <el-button type="primary" :loading="saving" @click="save">保存发布档案</el-button>
+      <el-button type="primary" :disabled="!loaded" :loading="saving" @click="save">
+        保存发布档案
+      </el-button>
     </el-form-item>
   </el-form>
 </template>
@@ -109,7 +123,11 @@ defineOptions({ name: 'SkitAppReleaseEditor' })
 const props = defineProps<{ tenantId: number }>()
 const message = useMessage()
 const loading = ref(false)
+const loaded = ref(false)
+const loadError = ref('')
+const loadSequence = ref(0)
 const saving = ref(false)
+const saveSequence = ref(0)
 const formRef = ref<FormInstance>()
 const reason = ref('')
 const emptyProfile = (): TenantApi.TenantAppReleaseProfileVO => ({
@@ -165,37 +183,67 @@ const rules = reactive<FormRules<TenantApi.TenantAppReleaseProfileVO>>({
 })
 
 const load = async () => {
+  const sequence = loadSequence.value + 1
+  const tenantId = props.tenantId
+  loadSequence.value = sequence
+  saveSequence.value += 1
+  saving.value = false
   loading.value = true
+  loaded.value = false
+  loadError.value = ''
   try {
-    const profile = await TenantApi.getTenantAppReleaseProfile(props.tenantId)
-    formData.value = { ...emptyProfile(), ...profile, tenantId: props.tenantId }
+    const profile = await TenantApi.getTenantAppReleaseProfile(tenantId)
+    if (sequence !== loadSequence.value) return
+    formData.value = { ...emptyProfile(), ...profile, tenantId }
     reason.value = ''
+    loaded.value = true
+  } catch {
+    if (sequence !== loadSequence.value) return
+    loadError.value = '暂时无法读取发布档案，请稍后重试。'
   } finally {
-    loading.value = false
+    if (sequence === loadSequence.value) {
+      loading.value = false
+    }
   }
 }
 
 const save = async () => {
+  if (!loaded.value) return
+  const tenantId = props.tenantId
+  const sequence = loadSequence.value
   const valid = await formRef.value?.validate()
   if (!valid) return
+  if (tenantId !== props.tenantId || sequence !== loadSequence.value) return
   const normalizedReason = reason.value.trim()
   if (normalizedReason.length < 10 || normalizedReason.length > 500) {
     message.warning('变更原因长度必须为 10–500 个字符')
     return
   }
+  const saveId = saveSequence.value + 1
+  saveSequence.value = saveId
   saving.value = true
   try {
-    formData.value = await TenantApi.updateTenantAppReleaseProfile({
+    const response = await TenantApi.updateTenantAppReleaseProfile({
       ...formData.value,
       hotBundleSha256: formData.value.hotBundleSha256.toLowerCase(),
       hotManifestSignature: formData.value.hotManifestSignature.trim(),
       runtimeUpdatePublicKey: formData.value.runtimeUpdatePublicKey.trim(),
       reason: normalizedReason
     })
+    if (
+      saveId !== saveSequence.value ||
+      tenantId !== props.tenantId ||
+      sequence !== loadSequence.value
+    ) {
+      return
+    }
+    formData.value = response
     reason.value = ''
     message.success('发布档案已保存')
   } finally {
-    saving.value = false
+    if (saveId === saveSequence.value) {
+      saving.value = false
+    }
   }
 }
 
