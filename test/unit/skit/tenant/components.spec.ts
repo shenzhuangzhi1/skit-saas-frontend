@@ -328,12 +328,14 @@ const {
   getManagedTenantAdAccount,
   getTenantAdReadiness,
   getTenantReportingConfiguration,
+  saveManagedTenantAdAccount,
   verifyTenantAdNetworkCapability
 } = vi.hoisted(() => ({
   configureTenantAdCapability: vi.fn(),
   getManagedTenantAdAccount: vi.fn(),
   getTenantAdReadiness: vi.fn(),
   getTenantReportingConfiguration: vi.fn(),
+  saveManagedTenantAdAccount: vi.fn(),
   verifyTenantAdNetworkCapability: vi.fn()
 }))
 
@@ -342,7 +344,7 @@ vi.mock('@/api/skit/tenant', () => ({
   getManagedTenantAdAccount,
   getTenantAdReadiness,
   getTenantReportingConfiguration,
-  saveManagedTenantAdAccount: vi.fn(),
+  saveManagedTenantAdAccount,
   saveTenantReportingConfiguration: vi.fn(),
   transitionTenantAdRollout: vi.fn(),
   verifyTenantAdNetworkCapability
@@ -354,7 +356,112 @@ describe('AdAccessEditor', () => {
     getManagedTenantAdAccount.mockReset()
     getTenantAdReadiness.mockReset()
     getTenantReportingConfiguration.mockReset()
+    saveManagedTenantAdAccount.mockReset()
     verifyTenantAdNetworkCapability.mockReset()
+  })
+
+  it('ignores a stale account save after the platform admin switches tenants', async () => {
+    let resolveTenantASave:
+      | ((value: {
+          takuAppId: string
+          takuPlacementId: string
+          checkInEntryInterstitialPlacementId: string
+          postCheckInDramaInterstitialPlacementId: string
+          homeBannerPlacementId: string
+          takuEnabled: boolean
+          takuAppKeyConfigured: boolean
+        }) => void)
+      | undefined
+    saveManagedTenantAdAccount.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveTenantASave = resolve
+        })
+    )
+    getManagedTenantAdAccount.mockImplementation(
+      ({ tenantId }: { tenantId: number }) =>
+        Promise.resolve({
+          takuAppId: `tenant-${tenantId}-app`,
+          takuPlacementId: `tenant-${tenantId}-reward`,
+          checkInEntryInterstitialPlacementId: `tenant-${tenantId}-checkin`,
+          postCheckInDramaInterstitialPlacementId: `tenant-${tenantId}-drama`,
+          homeBannerPlacementId: `tenant-${tenantId}-banner`,
+          takuEnabled: true,
+          takuAppKeyConfigured: true
+        })
+    )
+    getTenantAdReadiness.mockImplementation(
+      ({ tenantId }: { tenantId: number }) =>
+        Promise.resolve({
+          ...readiness,
+          tenantId,
+          adAccountId: tenantId,
+          unlockNetworkFirmIds: [],
+          availableNetworkCapabilities: [],
+          networkReadiness: []
+        })
+    )
+
+    const wrapper = mount(AdAccessEditor, {
+      props: {
+        target: { kind: 'platform', tenantId: 23 },
+        roles: ['super_admin']
+      },
+      global: {
+        stubs: {
+          AsyncState: { template: '<div><slot /></div>' },
+          AdReadinessChecklist: { template: '<div>readiness</div>' },
+          InputPassword: true,
+          'el-form': { template: '<form><slot /></form>' },
+          'el-form-item': { template: '<label><slot /></label>' },
+          'el-input': { props: ['modelValue'], template: '<input :value="modelValue" />' },
+          'el-input-number': true,
+          'el-switch': true,
+          'el-button': { template: '<button><slot /></button>' },
+          'el-tag': { template: '<span><slot /></span>' },
+          'el-checkbox': { template: '<span><slot /></span>' },
+          'el-alert': true,
+          'el-divider': true,
+          'el-select': { template: '<div><slot /></div>' },
+          'el-option': true,
+          ContentWrap: { template: '<section><slot /></section>' },
+          Dialog: true
+        }
+      }
+    })
+    await flushPromises()
+
+    const vm = wrapper.vm as unknown as {
+      accountForm: { takuAppId: string }
+      accountReason: string
+      saveAccount: () => Promise<void>
+    }
+    vm.accountReason = '保存租户 A 的完整广告账号配置'
+    const tenantASave = vm.saveAccount()
+    await flushPromises()
+    expect(saveManagedTenantAdAccount).toHaveBeenCalledWith(
+      { kind: 'platform', tenantId: 23 },
+      expect.objectContaining({ takuAppId: 'tenant-23-app' })
+    )
+
+    await wrapper.setProps({ target: { kind: 'platform', tenantId: 24 } })
+    await flushPromises()
+    expect(vm.accountForm.takuAppId).toBe('tenant-24-app')
+
+    resolveTenantASave?.({
+      takuAppId: 'stale-tenant-23-app',
+      takuPlacementId: 'stale-tenant-23-reward',
+      checkInEntryInterstitialPlacementId: 'stale-tenant-23-checkin',
+      postCheckInDramaInterstitialPlacementId: 'stale-tenant-23-drama',
+      homeBannerPlacementId: 'stale-tenant-23-banner',
+      takuEnabled: true,
+      takuAppKeyConfigured: true
+    })
+    await tenantASave
+    await flushPromises()
+
+    expect(vm.accountForm.takuAppId).toBe('tenant-24-app')
+    expect(getTenantAdReadiness).toHaveBeenCalledTimes(2)
   })
 
   it('lets only a super admin verify or disable an arbitrary network capability', async () => {

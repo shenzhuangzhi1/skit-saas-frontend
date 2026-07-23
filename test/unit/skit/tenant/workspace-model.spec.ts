@@ -172,6 +172,9 @@ describe('tenant revenue workspace model', () => {
       pangleEnabled: false,
       takuAppId: '',
       takuPlacementId: '',
+      checkInEntryInterstitialPlacementId: '',
+      postCheckInDramaInterstitialPlacementId: '',
+      homeBannerPlacementId: '',
       takuEnabled: true
     })
 
@@ -203,6 +206,9 @@ describe('tenant revenue workspace model', () => {
         takuEnabled: true,
         takuAppId: 'taku-app',
         takuPlacementId: 'reward-placement',
+        checkInEntryInterstitialPlacementId: 'checkin-placement',
+        postCheckInDramaInterstitialPlacementId: 'post-checkin-placement',
+        homeBannerPlacementId: 'home-banner-placement',
         takuAppKeyConfigured: true
       })
     ).toEqual({ valid: true, error: '' })
@@ -215,7 +221,10 @@ describe('tenant revenue workspace model', () => {
         ...base,
         takuEnabled: true,
         takuAppId: 'taku-app',
-        takuPlacementId: 'reward-placement'
+        takuPlacementId: 'reward-placement',
+        checkInEntryInterstitialPlacementId: 'checkin-placement',
+        postCheckInDramaInterstitialPlacementId: 'post-checkin-placement',
+        homeBannerPlacementId: 'home-banner-placement'
       })
     ).toEqual({ valid: false, error: '启用 Taku 时 App Key 不能为空' })
   })

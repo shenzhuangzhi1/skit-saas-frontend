@@ -71,6 +71,18 @@
           <el-form-item label="激励视频广告位" :required="accountForm.takuEnabled">
             <el-input v-model="accountForm.takuPlacementId" maxlength="128" />
           </el-form-item>
+          <el-form-item label="签到页插屏广告位" :required="accountForm.takuEnabled">
+            <el-input v-model="accountForm.checkInEntryInterstitialPlacementId" maxlength="128" />
+          </el-form-item>
+          <el-form-item label="签到后首播插屏" :required="accountForm.takuEnabled">
+            <el-input
+              v-model="accountForm.postCheckInDramaInterstitialPlacementId"
+              maxlength="128"
+            />
+          </el-form-item>
+          <el-form-item label="首页 Banner 广告位" :required="accountForm.takuEnabled">
+            <el-input v-model="accountForm.homeBannerPlacementId" maxlength="128" />
+          </el-form-item>
           <el-form-item label="客户端 App Key" :required="accountForm.takuEnabled">
             <InputPassword
               v-model="accountForm.takuAppKey"
@@ -473,6 +485,7 @@ const rewardRotating = ref(false)
 const callbackReveal = ref<TenantApi.TenantCallbackKeyRotateVO>()
 const callbackRevealVisible = ref(false)
 let requestId = 0
+let saveId = 0
 
 const errorText = (error: unknown, fallback: string) =>
   error instanceof Error && error.message ? error.message : fallback
@@ -566,6 +579,8 @@ const loadReadiness = async (currentRequestId: number) => {
 
 const reload = () => {
   const currentRequestId = ++requestId
+  ++saveId
+  saving.value = false
   accountReason.value = ''
   rolloutReason.value = ''
   callbackRotation.reason = ''
@@ -578,8 +593,9 @@ const reload = () => {
 }
 
 const saveAccount = async () => {
-  if (!accountForm.value) return
-  const validation = validateAdAccountForm(accountForm.value)
+  const current = accountForm.value
+  if (!current) return
+  const validation = validateAdAccountForm(current)
   if (!validation.valid) {
     ElMessage.warning(validation.error)
     return
@@ -589,21 +605,36 @@ const saveAccount = async () => {
     ElMessage.warning('变更原因必须为 10–500 个字符')
     return
   }
+  const currentRequestId = requestId
+  const currentSaveId = ++saveId
+  const target = { ...props.target }
+  const draftSignature = JSON.stringify({ form: current, reason: accountReason.value })
   saving.value = true
   try {
-    const payload = buildAdAccountWritePayload(accountForm.value, props.target)
-    const response = await TenantApi.saveManagedTenantAdAccount(props.target, {
+    const payload = buildAdAccountWritePayload(current, target)
+    const response = await TenantApi.saveManagedTenantAdAccount(target, {
       ...payload,
       reason
     })
+    if (currentRequestId !== requestId || currentSaveId !== saveId) return
+    if (
+      !accountForm.value ||
+      JSON.stringify({ form: accountForm.value, reason: accountReason.value }) !== draftSignature
+    ) {
+      ElMessage.warning('保存期间表单已变化，已保留当前编辑内容，请重新保存')
+      return
+    }
     accountForm.value = sanitizeAdAccountResponse(response)
     accountReason.value = ''
     ElMessage.success('广告账号已保存；输入框中的密钥已清空')
-    await loadReadiness(requestId)
+    await loadReadiness(currentRequestId)
   } catch (error) {
+    if (currentRequestId !== requestId || currentSaveId !== saveId) return
     ElMessage.error(errorText(error, '广告账号保存失败'))
   } finally {
-    saving.value = false
+    if (currentRequestId === requestId && currentSaveId === saveId) {
+      saving.value = false
+    }
   }
 }
 
