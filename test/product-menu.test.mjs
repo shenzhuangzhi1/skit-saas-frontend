@@ -22,22 +22,34 @@ test('product navigation keeps only Home, Skit SaaS, and hidden utility routes',
   )
 })
 
-test('Skit SaaS user management renders the agent management component', () => {
+test('Skit SaaS user management exposes agent and app user left submenus', () => {
   const source = readFileSync(
     new URL('../src/router/modules/remaining.ts', import.meta.url),
     'utf8'
   )
-  assert.equal(source.match(/name:\s*'SkitUser'/g)?.length, 1)
+  assert.equal(source.match(/name:\s*'SkitUserCenter'/g)?.length, 1)
 
-  const userRouteStart = source.indexOf("path: 'user'")
+  const userRouteStart = source.indexOf("path: 'user-center'")
   const nextRouteStart = source.indexOf("path: 'announcement'", userRouteStart)
 
   assert.notEqual(userRouteStart, -1)
   assert.notEqual(nextRouteStart, -1)
   const userRoute = source.slice(userRouteStart, nextRouteStart)
-  assert.match(userRoute, /component:\s*\(\)\s*=>\s*import\('@\/views\/skit\/tenant\/index\.vue'\)/)
-  assert.doesNotMatch(userRoute, /AdminTable/)
+  assert.match(userRoute, /redirect:\s*'\/skit\/user-center\/agents'/)
+  assert.match(userRoute, /path:\s*'agents'[\s\S]*name:\s*'SkitAgentManagement'/)
+  assert.match(userRoute, /path:\s*'users'[\s\S]*name:\s*'SkitAppUserManagement'/)
+  assert.match(userRoute, /import\('@\/views\/skit\/tenant\/index\.vue'\)/)
+  assert.match(userRoute, /import\('@\/views\/skit\/user\/index\.vue'\)/)
   assert.match(userRoute, /roles:\s*\['super_admin',\s*'tenant_admin'\]/)
+})
+
+test('local push verification runs the same Node product tests as CI', () => {
+  const source = readFileSync(
+    new URL('../scripts/verify-local.sh', import.meta.url),
+    'utf8'
+  )
+
+  assert.match(source, /node --test test\/\*\.test\.mjs/)
 })
 
 test('Skit general management exposes API error logs only to super administrators', () => {

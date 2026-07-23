@@ -21,6 +21,7 @@ fi
 
 pnpm install --frozen-lockfile
 pnpm test:unit
+node --test test/*.test.mjs
 pnpm ts:check
 pnpm lint
 pnpm build:prod
