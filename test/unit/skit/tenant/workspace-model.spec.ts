@@ -147,6 +147,8 @@ describe('tenant revenue workspace model', () => {
       pangleUsername: 'pangle-account',
       pangleSecretConfigured: true,
       pangleAppSecret: 'must-not-survive',
+      pangleRewardSecurityKeyConfigured: true,
+      pangleRewardSecurityKey: 'pangle-security-key-must-not-survive',
       takuAppKeyConfigured: true,
       takuAppKey: 'must-not-survive-either',
       takuSecretConfigured: true,
@@ -155,9 +157,11 @@ describe('tenant revenue workspace model', () => {
 
     expect(form).not.toHaveProperty('pangleUsername')
     expect(form.pangleAppSecret).toBe('')
+    expect(form.pangleRewardSecurityKey).toBe('')
     expect(form.takuAppKey).toBe('')
     expect(form).not.toHaveProperty('takuAppSecret')
     expect(JSON.stringify(form)).not.toContain('must-not-survive')
+    expect(JSON.stringify(form)).not.toContain('pangle-security-key-must-not-survive')
   })
 
   it('only sends newly entered secrets and only lets platform admins target a tenant', () => {
@@ -169,6 +173,7 @@ describe('tenant revenue workspace model', () => {
 
     expect(buildAdAccountWritePayload(base, { kind: 'own', tenantId: 17 })).toEqual({
       pangleAppId: '',
+      panglePlacementId: '',
       pangleEnabled: false,
       takuAppId: '',
       takuPlacementId: '',
@@ -181,11 +186,18 @@ describe('tenant revenue workspace model', () => {
 
     expect(
       buildAdAccountWritePayload(
-        { ...base, takuAppKey: ' replacement-key ' },
+        {
+          ...base,
+          panglePlacementId: ' pangle-reward-placement ',
+          pangleRewardSecurityKey: ' replacement-security-key ',
+          takuAppKey: ' replacement-key '
+        },
         { kind: 'platform', tenantId: 23 }
       )
     ).toMatchObject({
       tenantId: 23,
+      panglePlacementId: 'pangle-reward-placement',
+      pangleRewardSecurityKey: ' replacement-security-key ',
       takuAppKey: 'replacement-key'
     })
   })
@@ -198,7 +210,8 @@ describe('tenant revenue workspace model', () => {
         ...base,
         pangleEnabled: true,
         pangleAppId: 'pangle-app',
-        pangleAppSecret: 'server-key'
+        pangleAppSecret: 'server-key',
+        panglePlacementId: 'reward-placement'
       })
     ).toEqual({ valid: true, error: '' })
     expect(
@@ -221,6 +234,17 @@ describe('tenant revenue workspace model', () => {
     expect(
       validateAdAccountForm({
         ...base,
+        pangleEnabled: true,
+        pangleAppId: 'pangle-app',
+        pangleAppSecret: 'server-key'
+      })
+    ).toEqual({
+      valid: false,
+      error: '启用穿山甲时激励视频广告位不能为空'
+    })
+    expect(
+      validateAdAccountForm({
+        ...base,
         takuEnabled: true,
         takuAppId: 'taku-app',
         takuPlacementId: 'reward-placement',
@@ -230,6 +254,35 @@ describe('tenant revenue workspace model', () => {
         homeBannerPlacementId: 'home-banner-placement'
       })
     ).toEqual({ valid: false, error: '启用 Taku 时 App Key 不能为空' })
+  })
+
+  it('validates the Pangle reward Security Key by UTF-8 bytes', () => {
+    const base = sanitizeAdAccountResponse({})
+
+    expect(
+      validateAdAccountForm({
+        ...base,
+        pangleRewardSecurityKey: '密钥值'
+      })
+    ).toEqual({ valid: true, error: '' })
+    expect(
+      validateAdAccountForm({
+        ...base,
+        pangleRewardSecurityKey: 'short'
+      })
+    ).toEqual({
+      valid: false,
+      error: '穿山甲奖励回调 Security Key 的 UTF-8 编码必须为 8–2048 字节'
+    })
+    expect(
+      validateAdAccountForm({
+        ...base,
+        pangleRewardSecurityKey: '密'.repeat(683)
+      })
+    ).toEqual({
+      valid: false,
+      error: '穿山甲奖励回调 Security Key 的 UTF-8 编码必须为 8–2048 字节'
+    })
   })
 
   it('never copies a Publisher Key from a reporting configuration response', () => {

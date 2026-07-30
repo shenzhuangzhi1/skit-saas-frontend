@@ -31,8 +31,18 @@
             <el-tag :type="accountForm.pangleSecretConfigured ? 'success' : 'info'" size="small">
               {{
                 accountForm.pangleSecretConfigured
-                  ? '密钥已配置（Server Key）'
-                  : '密钥未配置（Server Key）'
+                  ? '内容 Server Key 已配置（密钥已配置）'
+                  : '内容 Server Key 未配置'
+              }}
+            </el-tag>
+            <el-tag
+              :type="accountForm.pangleRewardSecurityKeyConfigured ? 'success' : 'info'"
+              size="small"
+            >
+              {{
+                accountForm.pangleRewardSecurityKeyConfigured
+                  ? '奖励 Security Key 已配置'
+                  : '奖励 Security Key 未配置'
               }}
             </el-tag>
           </div>
@@ -42,7 +52,10 @@
           <el-form-item label="App ID" :required="accountForm.pangleEnabled">
             <el-input v-model="accountForm.pangleAppId" maxlength="128" />
           </el-form-item>
-          <el-form-item label="Pangle Server Key" :required="accountForm.pangleEnabled">
+          <el-form-item
+            label="Pangle Server Key（内容 Server Key）"
+            :required="accountForm.pangleEnabled"
+          >
             <InputPassword
               v-model="accountForm.pangleAppSecret"
               autocomplete="new-password"
@@ -51,6 +64,21 @@
                 accountForm.pangleSecretConfigured
                   ? '留空保留已配置 Server Key'
                   : '输入内容接口 Server Key'
+              "
+            />
+          </el-form-item>
+          <el-form-item label="Pangle 激励广告位">
+            <el-input v-model="accountForm.panglePlacementId" maxlength="128" />
+          </el-form-item>
+          <el-form-item label="奖励 Security Key">
+            <InputPassword
+              v-model="accountForm.pangleRewardSecurityKey"
+              autocomplete="new-password"
+              maxlength="2048"
+              :placeholder="
+                accountForm.pangleRewardSecurityKeyConfigured
+                  ? '留空保留已配置奖励 Security Key'
+                  : '输入 Pangle 奖励回调 Security Key'
               "
             />
           </el-form-item>
@@ -338,7 +366,7 @@
             v-model="rewardRotation.rewardSecret"
             autocomplete="new-password"
             maxlength="2048"
-            placeholder="8–2048 个字符，只写不读"
+            placeholder="UTF-8 编码 8–2048 字节，只写不读"
           />
         </el-form-item>
         <el-form-item label="旧版本兼容（分钟）">
@@ -382,7 +410,7 @@
       class="mb-14px"
       :closable="false"
       show-icon
-      title="关闭窗口后无法再次查看。请立即保存到 Taku 后台的奖励和展示回调配置中。"
+      title="关闭窗口后无法再次查看。请立即保存到 Taku 和 Pangle 后台的回调配置中。"
       type="warning"
     />
     <el-form v-if="callbackReveal" label-width="150px">
@@ -394,6 +422,9 @@
       </el-form-item>
       <el-form-item label="展示回调 URL">
         <el-input :model-value="callbackReveal.impressionCallbackUrl" readonly />
+      </el-form-item>
+      <el-form-item label="Pangle 奖励回调 URL">
+        <el-input :model-value="callbackReveal.pangleRewardCallbackUrl" readonly />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="copyCallbackBundle">复制全部配置</el-button>
@@ -420,6 +451,7 @@ import {
   parseUnlockNetworkFirmIds,
   resolveTenantAdAccountId,
   sanitizeAdAccountResponse,
+  utf8ByteLength,
   validateAdAccountForm,
   type ManagementTenantTarget,
   type SafeAdAccountForm
@@ -489,6 +521,12 @@ const callbackReveal = ref<TenantApi.TenantCallbackKeyRotateVO>()
 const callbackRevealVisible = ref(false)
 let requestId = 0
 let saveId = 0
+let accountDraftVersion = 0
+let capabilitySaveId = 0
+let networkCapabilitySaveId = 0
+let rolloutTransitionId = 0
+let callbackRotationId = 0
+let rewardRotationId = 0
 
 const errorText = (error: unknown, fallback: string) =>
   error instanceof Error && error.message ? error.message : fallback
@@ -583,7 +621,16 @@ const loadReadiness = async (currentRequestId: number) => {
 const reload = () => {
   const currentRequestId = ++requestId
   ++saveId
+  ++capabilitySaveId
+  ++networkCapabilitySaveId
+  ++rolloutTransitionId
+  ++callbackRotationId
+  ++rewardRotationId
   saving.value = false
+  capabilitySaving.value = false
+  networkCapabilitySaving.value = false
+  callbackRotating.value = false
+  rewardRotating.value = false
   accountReason.value = ''
   rolloutReason.value = ''
   callbackRotation.reason = ''
@@ -610,8 +657,8 @@ const saveAccount = async () => {
   }
   const currentRequestId = requestId
   const currentSaveId = ++saveId
+  const currentDraftVersion = accountDraftVersion
   const target = { ...props.target }
-  const draftSignature = JSON.stringify({ form: current, reason: accountReason.value })
   saving.value = true
   try {
     const payload = buildAdAccountWritePayload(current, target)
@@ -620,10 +667,7 @@ const saveAccount = async () => {
       reason
     })
     if (currentRequestId !== requestId || currentSaveId !== saveId) return
-    if (
-      !accountForm.value ||
-      JSON.stringify({ form: accountForm.value, reason: accountReason.value }) !== draftSignature
-    ) {
+    if (!accountForm.value || currentDraftVersion !== accountDraftVersion) {
       ElMessage.warning('保存期间表单已变化，已保留当前编辑内容，请重新保存')
       return
     }
@@ -669,9 +713,12 @@ const saveNetworkCapability = async (enabled: boolean) => {
   }
   const reason = auditedReason(networkCapabilityForm.reason, '核验/停用原因')
   if (!reason) return
+  const currentRequestId = requestId
+  const currentSaveId = ++networkCapabilitySaveId
+  const target = { ...props.target }
   networkCapabilitySaving.value = true
   try {
-    await TenantApi.verifyTenantAdNetworkCapability(props.target, {
+    await TenantApi.verifyTenantAdNetworkCapability(target, {
       adAccountId,
       networkFirmId,
       rewardAuthority: networkCapabilityForm.rewardAuthority,
@@ -684,13 +731,17 @@ const saveNetworkCapability = async (enabled: boolean) => {
       expectedReadinessVersion: currentReadiness.readinessVersion,
       reason
     })
+    if (currentRequestId !== requestId || currentSaveId !== networkCapabilitySaveId) return
     networkCapabilityForm.reason = ''
     ElMessage.success(enabled ? '广告源能力已核验并启用' : '广告源能力已停用')
-    await loadReadiness(requestId)
+    await loadReadiness(currentRequestId)
   } catch (error) {
+    if (currentRequestId !== requestId || currentSaveId !== networkCapabilitySaveId) return
     ElMessage.error(errorText(error, enabled ? '广告源能力核验失败' : '广告源能力停用失败'))
   } finally {
-    networkCapabilitySaving.value = false
+    if (currentRequestId === requestId && currentSaveId === networkCapabilitySaveId) {
+      networkCapabilitySaving.value = false
+    }
   }
 }
 
@@ -715,9 +766,12 @@ const saveCapability = async () => {
   }
   const reason = auditedReason(form.reason, '配置变更原因')
   if (!reason) return
+  const currentRequestId = requestId
+  const currentSaveId = ++capabilitySaveId
+  const target = { ...props.target }
   capabilitySaving.value = true
   try {
-    const response = await TenantApi.configureTenantAdCapability(props.target, {
+    const response = await TenantApi.configureTenantAdCapability(target, {
       adAccountId,
       dedicatedUnlockPlacementId: form.dedicatedUnlockPlacementId.trim(),
       dedicatedPlacementVerified: form.dedicatedPlacementVerified,
@@ -730,12 +784,16 @@ const saveCapability = async () => {
       expectedReadinessVersion: currentReadiness.readinessVersion,
       reason
     })
+    if (currentRequestId !== requestId || currentSaveId !== capabilitySaveId) return
     ElMessage.success(`验奖配置已保存，当前就绪版本 v${response.readinessVersion}`)
-    await loadReadiness(requestId)
+    await loadReadiness(currentRequestId)
   } catch (error) {
+    if (currentRequestId !== requestId || currentSaveId !== capabilitySaveId) return
     ElMessage.error(capabilityErrorText(error))
   } finally {
-    capabilitySaving.value = false
+    if (currentRequestId === requestId && currentSaveId === capabilitySaveId) {
+      capabilitySaving.value = false
+    }
   }
 }
 
@@ -749,20 +807,25 @@ const transitionRollout = async (targetState: TenantApi.TenantAdRolloutState) =>
     ElMessage.warning('生产就绪门禁尚未全部通过，不能启用生产解锁')
     return
   }
+  const currentRequestId = requestId
+  const target = { ...props.target }
   await ElMessageBox.confirm(
     `确认将服务端验奖状态切换为 ${targetState} 吗？该操作会立即影响本租户 App 解锁。`,
     '切换验奖状态'
   )
-  const response = await TenantApi.transitionTenantAdRollout(props.target, {
+  if (currentRequestId !== requestId) return
+  const currentTransitionId = ++rolloutTransitionId
+  const response = await TenantApi.transitionTenantAdRollout(target, {
     targetState,
     minNativeVersion: form.minNativeVersion.trim(),
     minProtocolVersion: CURRENT_PROTOCOL_VERSION,
     expectedReadinessVersion: currentReadiness.readinessVersion,
     reason
   })
+  if (currentRequestId !== requestId || currentTransitionId !== rolloutTransitionId) return
   rolloutReason.value = ''
   ElMessage.success(`验奖状态已切换为 ${response.rolloutState}`)
-  await loadReadiness(requestId)
+  await loadReadiness(currentRequestId)
 }
 
 const rotateCallbackKey = async () => {
@@ -771,22 +834,31 @@ const rotateCallbackKey = async () => {
   if (!currentReadiness || !adAccountId) return
   const reason = auditedReason(callbackRotation.reason, '轮换原因')
   if (!reason) return
+  const currentRequestId = requestId
+  const target = { ...props.target }
   await ElMessageBox.confirm('新 Callback Key 只显示一次，确认现在轮换吗？', '轮换 Callback Key')
+  if (currentRequestId !== requestId) return
+  const currentRotationId = ++callbackRotationId
   callbackRotating.value = true
   try {
-    callbackReveal.value = await TenantApi.rotateTenantCallbackKey(props.target, {
+    const response = await TenantApi.rotateTenantCallbackKey(target, {
       adAccountId,
       expectedReadinessVersion: currentReadiness.readinessVersion,
       priorAcceptanceMinutes: callbackRotation.priorAcceptanceMinutes,
       reason
     })
+    if (currentRequestId !== requestId || currentRotationId !== callbackRotationId) return
+    callbackReveal.value = response
     callbackRotation.reason = ''
     callbackRevealVisible.value = true
-    await loadReadiness(requestId)
+    await loadReadiness(currentRequestId)
   } catch (error) {
+    if (currentRequestId !== requestId || currentRotationId !== callbackRotationId) return
     ElMessage.error(errorText(error, 'Callback Key 轮换失败'))
   } finally {
-    callbackRotating.value = false
+    if (currentRequestId === requestId && currentRotationId === callbackRotationId) {
+      callbackRotating.value = false
+    }
   }
 }
 
@@ -797,28 +869,37 @@ const rotateRewardSecret = async () => {
   const rewardSecret = rewardRotation.rewardSecret.trim()
   const reason = auditedReason(rewardRotation.reason, '轮换原因')
   if (!reason) return
-  if (rewardSecret.length < 8 || rewardSecret.length > 2048) {
-    ElMessage.warning('奖励回调密钥长度必须为 8–2048 个字符')
+  const rewardSecretBytes = utf8ByteLength(rewardSecret)
+  if (rewardSecretBytes < 8 || rewardSecretBytes > 2048) {
+    ElMessage.warning('奖励回调密钥的 UTF-8 编码必须为 8–2048 字节')
     return
   }
+  const currentRequestId = requestId
+  const target = { ...props.target }
   await ElMessageBox.confirm('新奖励回调密钥不会被服务端回显，确认现在轮换吗？', '轮换奖励回调密钥')
+  if (currentRequestId !== requestId) return
+  const currentRotationId = ++rewardRotationId
   rewardRotating.value = true
   try {
-    const response = await TenantApi.rotateTenantRewardSecret(props.target, {
+    const response = await TenantApi.rotateTenantRewardSecret(target, {
       adAccountId,
       expectedReadinessVersion: currentReadiness.readinessVersion,
       priorAcceptanceMinutes: rewardRotation.priorAcceptanceMinutes,
       rewardSecret,
       reason
     })
+    if (currentRequestId !== requestId || currentRotationId !== rewardRotationId) return
     rewardRotation.rewardSecret = ''
     rewardRotation.reason = ''
     ElMessage.success(`奖励回调密钥已轮换为 v${response.version}；输入框已清空`)
-    await loadReadiness(requestId)
+    await loadReadiness(currentRequestId)
   } catch (error) {
+    if (currentRequestId !== requestId || currentRotationId !== rewardRotationId) return
     ElMessage.error(errorText(error, '奖励回调密钥轮换失败'))
   } finally {
-    rewardRotating.value = false
+    if (currentRequestId === requestId && currentRotationId === rewardRotationId) {
+      rewardRotating.value = false
+    }
   }
 }
 
@@ -826,7 +907,7 @@ const copyCallbackBundle = async () => {
   const reveal = callbackReveal.value
   if (!reveal) return
   await copyToClipboard(
-    `Callback Key: ${reveal.callbackKey}\n奖励回调 URL: ${reveal.rewardCallbackUrl}\n展示回调 URL: ${reveal.impressionCallbackUrl}`
+    `Callback Key: ${reveal.callbackKey}\n奖励回调 URL: ${reveal.rewardCallbackUrl}\n展示回调 URL: ${reveal.impressionCallbackUrl}\nPangle 奖励回调 URL: ${reveal.pangleRewardCallbackUrl}`
   )
   ElMessage.success('回调配置已复制')
 }
@@ -836,5 +917,9 @@ function clearCallbackReveal() {
   callbackReveal.value = undefined
 }
 
+watch([accountForm, accountReason], () => ++accountDraftVersion, {
+  deep: true,
+  flush: 'sync'
+})
 watch(() => `${props.target.kind}:${props.target.tenantId}`, reload, { immediate: true })
 </script>

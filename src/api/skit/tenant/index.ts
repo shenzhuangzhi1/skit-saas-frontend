@@ -39,6 +39,7 @@ export interface TenantAgentVO {
   panglePlacementId?: string
   pangleEnabled?: boolean
   pangleSecretConfigured?: boolean
+  pangleRewardSecurityKeyConfigured?: boolean
   takuUsername?: string
   takuAppId?: string
   takuPlacementId?: string
@@ -62,6 +63,9 @@ export interface TenantInvitationVO {
 interface TenantAdAccountWriteFields {
   pangleAppId?: string
   pangleAppSecret?: string
+  panglePlacementId?: string
+  /** Write-only Pangle reward callback Security Key. */
+  pangleRewardSecurityKey?: string
   pangleEnabled: boolean
   takuAppId?: string
   takuAppKey?: string
@@ -107,6 +111,7 @@ export interface TenantAdAccountVO {
   panglePlacementId?: string
   pangleEnabled?: boolean
   pangleSecretConfigured?: boolean
+  pangleRewardSecurityKeyConfigured?: boolean
   takuUsername?: string
   takuAppId?: string
   takuPlacementId?: string
@@ -445,6 +450,8 @@ export interface TenantCallbackKeyRotateVO {
   callbackKey: string
   rewardCallbackUrl: string
   impressionCallbackUrl: string
+  /** Returned exactly once by the rotation endpoint. */
+  pangleRewardCallbackUrl: string
 }
 
 export interface TenantRewardSecretRotateReqVO {

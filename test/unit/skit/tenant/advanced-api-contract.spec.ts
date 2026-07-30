@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import tenantApiSource from '@/api/skit/tenant/index.ts?raw'
 
 const { get, post } = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }))
 
@@ -190,5 +191,9 @@ describe('tenant revenue management API client', () => {
       },
       skipErrorMessage: true
     })
+  })
+
+  it('models the Pangle one-time callback URL separately from the callback key', async () => {
+    expect(tenantApiSource).toContain('pangleRewardCallbackUrl: string')
   })
 })

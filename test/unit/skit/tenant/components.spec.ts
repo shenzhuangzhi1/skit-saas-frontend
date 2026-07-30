@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import AdAccessEditor from '@/views/skit/tenant/AdAccessEditor.vue'
 import adAccessEditorSource from '@/views/skit/tenant/AdAccessEditor.vue?raw'
 import agentFormSource from '@/views/skit/tenant/AgentForm.vue?raw'
@@ -43,14 +44,29 @@ describe('tenant revenue workspace components', () => {
     expect(agentFormSource).not.toContain('pangleAppSecret')
     expect(agentFormSource).not.toContain('takuAppKey')
     expect(adAccessEditorSource).toContain('Pangle Server Key')
+    expect(adAccessEditorSource).toContain('内容 Server Key')
+    expect(adAccessEditorSource).toContain('奖励 Security Key')
+    expect(adAccessEditorSource).toContain('Pangle 激励广告位')
+    expect(adAccessEditorSource).toContain('pangleRewardSecurityKeyConfigured')
     expect(adAccessEditorSource).not.toContain('label="账号"')
     expect(adAccessEditorSource).not.toContain('Taku App Secret')
+    expect(adAccessEditorSource).not.toContain(
+      'JSON.stringify({ form: current, reason: accountReason.value })'
+    )
   })
 
   it('does not encode a default rewarded network in the tenant workspace', () => {
     expect(workspaceModelSource).not.toContain('TAKU_ADX_UNLOCK_NETWORK_FIRM_IDS')
     expect(workspaceModelSource).not.toMatch(/\[\s*66\s*\]/)
     expect(adAccessEditorSource).not.toContain('TAKU_ADX_UNLOCK_NETWORK_FIRM_IDS')
+  })
+
+  it('reveals the Pangle callback URL only in the one-time dialog and clears it on close', () => {
+    expect(adAccessEditorSource).toContain('callbackReveal.pangleRewardCallbackUrl')
+    expect(adAccessEditorSource).toContain('Pangle 奖励回调 URL')
+    expect(adAccessEditorSource).toContain('Pangle 奖励回调 URL: ${reveal.pangleRewardCallbackUrl}')
+    expect(adAccessEditorSource).toContain('function clearCallbackReveal()')
+    expect(adAccessEditorSource).toContain('callbackReveal.value = undefined')
   })
 
   it('shows every readiness gate and prevents an unsafe production rollout', () => {
@@ -328,14 +344,20 @@ const {
   getManagedTenantAdAccount,
   getTenantAdReadiness,
   getTenantReportingConfiguration,
+  rotateTenantCallbackKey,
+  rotateTenantRewardSecret,
   saveManagedTenantAdAccount,
+  transitionTenantAdRollout,
   verifyTenantAdNetworkCapability
 } = vi.hoisted(() => ({
   configureTenantAdCapability: vi.fn(),
   getManagedTenantAdAccount: vi.fn(),
   getTenantAdReadiness: vi.fn(),
   getTenantReportingConfiguration: vi.fn(),
+  rotateTenantCallbackKey: vi.fn(),
+  rotateTenantRewardSecret: vi.fn(),
   saveManagedTenantAdAccount: vi.fn(),
+  transitionTenantAdRollout: vi.fn(),
   verifyTenantAdNetworkCapability: vi.fn()
 }))
 
@@ -344,9 +366,11 @@ vi.mock('@/api/skit/tenant', () => ({
   getManagedTenantAdAccount,
   getTenantAdReadiness,
   getTenantReportingConfiguration,
+  rotateTenantCallbackKey,
+  rotateTenantRewardSecret,
   saveManagedTenantAdAccount,
   saveTenantReportingConfiguration: vi.fn(),
-  transitionTenantAdRollout: vi.fn(),
+  transitionTenantAdRollout,
   verifyTenantAdNetworkCapability
 }))
 
@@ -356,7 +380,10 @@ describe('AdAccessEditor', () => {
     getManagedTenantAdAccount.mockReset()
     getTenantAdReadiness.mockReset()
     getTenantReportingConfiguration.mockReset()
+    rotateTenantCallbackKey.mockReset()
+    rotateTenantRewardSecret.mockReset()
     saveManagedTenantAdAccount.mockReset()
+    transitionTenantAdRollout.mockReset()
     verifyTenantAdNetworkCapability.mockReset()
   })
 
@@ -379,29 +406,27 @@ describe('AdAccessEditor', () => {
           resolveTenantASave = resolve
         })
     )
-    getManagedTenantAdAccount.mockImplementation(
-      ({ tenantId }: { tenantId: number }) =>
-        Promise.resolve({
-          takuAppId: `tenant-${tenantId}-app`,
-          takuPlacementId: `tenant-${tenantId}-reward`,
-          splashPlacementId: `tenant-${tenantId}-splash`,
-          checkInEntryInterstitialPlacementId: `tenant-${tenantId}-checkin`,
-          postCheckInDramaInterstitialPlacementId: `tenant-${tenantId}-drama`,
-          homeBannerPlacementId: `tenant-${tenantId}-banner`,
-          takuEnabled: true,
-          takuAppKeyConfigured: true
-        })
+    getManagedTenantAdAccount.mockImplementation(({ tenantId }: { tenantId: number }) =>
+      Promise.resolve({
+        takuAppId: `tenant-${tenantId}-app`,
+        takuPlacementId: `tenant-${tenantId}-reward`,
+        splashPlacementId: `tenant-${tenantId}-splash`,
+        checkInEntryInterstitialPlacementId: `tenant-${tenantId}-checkin`,
+        postCheckInDramaInterstitialPlacementId: `tenant-${tenantId}-drama`,
+        homeBannerPlacementId: `tenant-${tenantId}-banner`,
+        takuEnabled: true,
+        takuAppKeyConfigured: true
+      })
     )
-    getTenantAdReadiness.mockImplementation(
-      ({ tenantId }: { tenantId: number }) =>
-        Promise.resolve({
-          ...readiness,
-          tenantId,
-          adAccountId: tenantId,
-          unlockNetworkFirmIds: [],
-          availableNetworkCapabilities: [],
-          networkReadiness: []
-        })
+    getTenantAdReadiness.mockImplementation(({ tenantId }: { tenantId: number }) =>
+      Promise.resolve({
+        ...readiness,
+        tenantId,
+        adAccountId: tenantId,
+        unlockNetworkFirmIds: [],
+        availableNetworkCapabilities: [],
+        networkReadiness: []
+      })
     )
 
     const wrapper = mount(AdAccessEditor, {
@@ -466,6 +491,465 @@ describe('AdAccessEditor', () => {
 
     expect(vm.accountForm.takuAppId).toBe('tenant-24-app')
     expect(vm.accountForm.splashPlacementId).toBe('tenant-24-splash')
+    expect(getTenantAdReadiness).toHaveBeenCalledTimes(2)
+  })
+
+  it('never reveals a one-time callback key returned after the admin switches tenants', async () => {
+    let resolveTenantARotation:
+      | ((value: {
+          tenantId: number
+          adAccountId: number
+          version: number
+          configured: boolean
+          activatedAt: string
+          callbackKey: string
+          rewardCallbackUrl: string
+          impressionCallbackUrl: string
+          pangleRewardCallbackUrl: string
+        }) => void)
+      | undefined
+    rotateTenantCallbackKey.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveTenantARotation = resolve
+        })
+    )
+    getManagedTenantAdAccount.mockResolvedValue({
+      takuEnabled: true,
+      takuPlacementId: 'reward-placement'
+    })
+    getTenantAdReadiness.mockImplementation(({ tenantId }: { tenantId: number }) =>
+      Promise.resolve({
+        ...readiness,
+        tenantId,
+        adAccountId: tenantId,
+        unlockNetworkFirmIds: [],
+        availableNetworkCapabilities: [],
+        networkReadiness: []
+      })
+    )
+    const confirmSpy = vi.spyOn(ElMessageBox, 'confirm').mockResolvedValue(undefined as never)
+
+    try {
+      const wrapper = mount(AdAccessEditor, {
+        props: {
+          target: { kind: 'platform', tenantId: 23 },
+          roles: ['super_admin']
+        },
+        global: {
+          stubs: {
+            AsyncState: { template: '<div><slot /></div>' },
+            AdReadinessChecklist: { template: '<div>readiness</div>' },
+            InputPassword: true,
+            'el-form': { template: '<form><slot /></form>' },
+            'el-form-item': { template: '<label><slot /></label>' },
+            'el-input': { props: ['modelValue'], template: '<input :value="modelValue" />' },
+            'el-input-number': true,
+            'el-switch': true,
+            'el-button': { template: '<button><slot /></button>' },
+            'el-tag': { template: '<span><slot /></span>' },
+            'el-checkbox': { template: '<span><slot /></span>' },
+            'el-alert': true,
+            'el-divider': true,
+            'el-select': { template: '<div><slot /></div>' },
+            'el-option': true,
+            ContentWrap: { template: '<section><slot /></section>' },
+            Dialog: true
+          }
+        }
+      })
+      await flushPromises()
+
+      const vm = wrapper.vm as unknown as {
+        callbackRotation: { priorAcceptanceMinutes: number; reason: string }
+        callbackReveal?: { callbackKey: string }
+        callbackRevealVisible: boolean
+        rotateCallbackKey: () => Promise<void>
+      }
+      vm.callbackRotation.reason = '轮换租户 A 的一次性回调访问密钥'
+      const tenantARotation = vm.rotateCallbackKey()
+      await flushPromises()
+      expect(rotateTenantCallbackKey).toHaveBeenCalledWith(
+        { kind: 'platform', tenantId: 23 },
+        expect.objectContaining({ adAccountId: 23, reason: '轮换租户 A 的一次性回调访问密钥' })
+      )
+
+      await wrapper.setProps({ target: { kind: 'platform', tenantId: 24 } })
+      await flushPromises()
+      resolveTenantARotation?.({
+        tenantId: 23,
+        adAccountId: 23,
+        version: 5,
+        configured: true,
+        activatedAt: '2026-07-30T00:00:00Z',
+        callbackKey: 'tenant-a-one-time-callback-key',
+        rewardCallbackUrl: 'https://callback.example/taku/reward',
+        impressionCallbackUrl: 'https://callback.example/taku/impression',
+        pangleRewardCallbackUrl: 'https://callback.example/pangle/reward'
+      })
+      await tenantARotation
+      await flushPromises()
+
+      expect(vm.callbackReveal).toBeUndefined()
+      expect(vm.callbackRevealVisible).toBe(false)
+      expect(wrapper.html()).not.toContain('tenant-a-one-time-callback-key')
+      expect(getTenantAdReadiness).toHaveBeenCalledTimes(2)
+    } finally {
+      confirmSpy.mockRestore()
+    }
+  })
+
+  it('does not clear the new tenant reward secret draft when the old rotation returns', async () => {
+    let resolveTenantARotation:
+      | ((value: {
+          tenantId: number
+          adAccountId: number
+          version: number
+          configured: boolean
+          activatedAt: string
+        }) => void)
+      | undefined
+    rotateTenantRewardSecret.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveTenantARotation = resolve
+        })
+    )
+    getManagedTenantAdAccount.mockResolvedValue({
+      takuEnabled: true,
+      takuPlacementId: 'reward-placement'
+    })
+    getTenantAdReadiness.mockImplementation(({ tenantId }: { tenantId: number }) =>
+      Promise.resolve({
+        ...readiness,
+        tenantId,
+        adAccountId: tenantId,
+        unlockNetworkFirmIds: [],
+        availableNetworkCapabilities: [],
+        networkReadiness: []
+      })
+    )
+    const confirmSpy = vi.spyOn(ElMessageBox, 'confirm').mockResolvedValue(undefined as never)
+    const successSpy = vi.spyOn(ElMessage, 'success')
+
+    try {
+      const wrapper = mount(AdAccessEditor, {
+        props: {
+          target: { kind: 'platform', tenantId: 23 },
+          roles: ['super_admin']
+        },
+        global: {
+          stubs: {
+            AsyncState: { template: '<div><slot /></div>' },
+            AdReadinessChecklist: { template: '<div>readiness</div>' },
+            InputPassword: true,
+            'el-form': { template: '<form><slot /></form>' },
+            'el-form-item': { template: '<label><slot /></label>' },
+            'el-input': { props: ['modelValue'], template: '<input :value="modelValue" />' },
+            'el-input-number': true,
+            'el-switch': true,
+            'el-button': { template: '<button><slot /></button>' },
+            'el-tag': { template: '<span><slot /></span>' },
+            'el-checkbox': { template: '<span><slot /></span>' },
+            'el-alert': true,
+            'el-divider': true,
+            'el-select': { template: '<div><slot /></div>' },
+            'el-option': true,
+            ContentWrap: { template: '<section><slot /></section>' },
+            Dialog: true
+          }
+        }
+      })
+      await flushPromises()
+
+      const vm = wrapper.vm as unknown as {
+        rewardRotation: {
+          priorAcceptanceMinutes: number
+          rewardSecret: string
+          reason: string
+        }
+        rotateRewardSecret: () => Promise<void>
+      }
+      vm.rewardRotation.rewardSecret = 'tenant-a-reward-security-key'
+      vm.rewardRotation.reason = '轮换租户 A 的穿山甲奖励回调密钥'
+      const tenantARotation = vm.rotateRewardSecret()
+      await flushPromises()
+      expect(rotateTenantRewardSecret).toHaveBeenCalledWith(
+        { kind: 'platform', tenantId: 23 },
+        expect.objectContaining({
+          adAccountId: 23,
+          rewardSecret: 'tenant-a-reward-security-key',
+          reason: '轮换租户 A 的穿山甲奖励回调密钥'
+        })
+      )
+
+      await wrapper.setProps({ target: { kind: 'platform', tenantId: 24 } })
+      await flushPromises()
+      vm.rewardRotation.rewardSecret = 'tenant-b-unsaved-reward-security-key'
+      vm.rewardRotation.reason = '保留租户 B 正在填写的新奖励回调密钥'
+      resolveTenantARotation?.({
+        tenantId: 23,
+        adAccountId: 23,
+        version: 5,
+        configured: true,
+        activatedAt: '2026-07-30T00:00:00Z'
+      })
+      await tenantARotation
+      await flushPromises()
+
+      expect(vm.rewardRotation.rewardSecret).toBe('tenant-b-unsaved-reward-security-key')
+      expect(vm.rewardRotation.reason).toBe('保留租户 B 正在填写的新奖励回调密钥')
+      expect(successSpy).not.toHaveBeenCalled()
+      expect(getTenantAdReadiness).toHaveBeenCalledTimes(2)
+    } finally {
+      successSpy.mockRestore()
+      confirmSpy.mockRestore()
+    }
+  })
+
+  it('cancels a rollout transition when the admin switches tenants during confirmation', async () => {
+    getManagedTenantAdAccount.mockResolvedValue({
+      takuEnabled: true,
+      takuPlacementId: 'reward-placement'
+    })
+    getTenantAdReadiness.mockImplementation(({ tenantId }: { tenantId: number }) =>
+      Promise.resolve({
+        ...readiness,
+        tenantId,
+        adAccountId: tenantId,
+        unlockNetworkFirmIds: [],
+        availableNetworkCapabilities: [],
+        networkReadiness: []
+      })
+    )
+    let resolveConfirmation: (() => void) | undefined
+    const pendingConfirmation = new Promise<never>((resolve) => {
+      resolveConfirmation = () => resolve(undefined as never)
+    })
+    const confirmSpy = vi.spyOn(ElMessageBox, 'confirm').mockReturnValue(pendingConfirmation)
+
+    try {
+      const wrapper = mount(AdAccessEditor, {
+        props: {
+          target: { kind: 'platform', tenantId: 23 },
+          roles: ['super_admin']
+        },
+        global: {
+          stubs: {
+            AsyncState: { template: '<div><slot /></div>' },
+            AdReadinessChecklist: { template: '<div>readiness</div>' },
+            InputPassword: true,
+            'el-form': { template: '<form><slot /></form>' },
+            'el-form-item': { template: '<label><slot /></label>' },
+            'el-input': { props: ['modelValue'], template: '<input :value="modelValue" />' },
+            'el-input-number': true,
+            'el-switch': true,
+            'el-button': { template: '<button><slot /></button>' },
+            'el-tag': { template: '<span><slot /></span>' },
+            'el-checkbox': { template: '<span><slot /></span>' },
+            'el-alert': true,
+            'el-divider': true,
+            'el-select': { template: '<div><slot /></div>' },
+            'el-option': true,
+            ContentWrap: { template: '<section><slot /></section>' },
+            Dialog: true
+          }
+        }
+      })
+      await flushPromises()
+
+      const vm = wrapper.vm as unknown as {
+        rolloutReason: string
+        transitionRollout: (state: 'SHADOW_TEST_USERS') => Promise<void>
+      }
+      vm.rolloutReason = '将租户 A 切换到灰度会员验奖状态'
+      const transition = vm.transitionRollout('SHADOW_TEST_USERS')
+      await flushPromises()
+      expect(confirmSpy).toHaveBeenCalledOnce()
+
+      await wrapper.setProps({ target: { kind: 'platform', tenantId: 24 } })
+      await flushPromises()
+      resolveConfirmation?.()
+      await transition
+      await flushPromises()
+
+      expect(transitionTenantAdRollout).not.toHaveBeenCalled()
+      expect(getTenantAdReadiness).toHaveBeenCalledTimes(2)
+    } finally {
+      confirmSpy.mockRestore()
+    }
+  })
+
+  it('preserves the new tenant capability draft when the old save returns', async () => {
+    let resolveTenantASave: ((value: { readinessVersion: number }) => void) | undefined
+    configureTenantAdCapability.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveTenantASave = resolve
+        })
+    )
+    getManagedTenantAdAccount.mockResolvedValue({
+      takuEnabled: true,
+      takuPlacementId: 'reward-placement'
+    })
+    getTenantAdReadiness.mockImplementation(({ tenantId }: { tenantId: number }) =>
+      Promise.resolve({
+        ...readiness,
+        tenantId,
+        adAccountId: tenantId,
+        dedicatedUnlockPlacementId: 'reward-placement',
+        unlockNetworkFirmIds: [],
+        availableNetworkCapabilities: [],
+        networkReadiness: []
+      })
+    )
+
+    const wrapper = mount(AdAccessEditor, {
+      props: {
+        target: { kind: 'platform', tenantId: 23 },
+        roles: ['super_admin']
+      },
+      global: {
+        stubs: {
+          AsyncState: { template: '<div><slot /></div>' },
+          AdReadinessChecklist: { template: '<div>readiness</div>' },
+          InputPassword: true,
+          'el-form': { template: '<form><slot /></form>' },
+          'el-form-item': { template: '<label><slot /></label>' },
+          'el-input': { props: ['modelValue'], template: '<input :value="modelValue" />' },
+          'el-input-number': true,
+          'el-switch': true,
+          'el-button': { template: '<button><slot /></button>' },
+          'el-tag': { template: '<span><slot /></span>' },
+          'el-checkbox': { template: '<span><slot /></span>' },
+          'el-alert': true,
+          'el-divider': true,
+          'el-select': { template: '<div><slot /></div>' },
+          'el-option': true,
+          ContentWrap: { template: '<section><slot /></section>' },
+          Dialog: true
+        }
+      }
+    })
+    await flushPromises()
+
+    const vm = wrapper.vm as unknown as {
+      capabilityForm: { reason: string }
+      saveCapability: () => Promise<void>
+    }
+    vm.capabilityForm.reason = '保存租户 A 的验奖能力配置变更'
+    const tenantASave = vm.saveCapability()
+    await flushPromises()
+    expect(configureTenantAdCapability).toHaveBeenCalledWith(
+      { kind: 'platform', tenantId: 23 },
+      expect.objectContaining({ adAccountId: 23, reason: '保存租户 A 的验奖能力配置变更' })
+    )
+
+    await wrapper.setProps({ target: { kind: 'platform', tenantId: 24 } })
+    await flushPromises()
+    vm.capabilityForm.reason = '保留租户 B 正在填写的验奖能力配置'
+    resolveTenantASave?.({ readinessVersion: 5 })
+    await tenantASave
+    await flushPromises()
+
+    expect(vm.capabilityForm.reason).toBe('保留租户 B 正在填写的验奖能力配置')
+    expect(getTenantAdReadiness).toHaveBeenCalledTimes(2)
+  })
+
+  it('preserves the new tenant network draft when the old verification returns', async () => {
+    let resolveTenantASave:
+      | ((value: { networkFirmId: number; enabled: boolean }) => void)
+      | undefined
+    verifyTenantAdNetworkCapability.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveTenantASave = resolve
+        })
+    )
+    getManagedTenantAdAccount.mockResolvedValue({
+      takuEnabled: true,
+      takuPlacementId: 'reward-placement'
+    })
+    getTenantAdReadiness.mockImplementation(({ tenantId }: { tenantId: number }) =>
+      Promise.resolve({
+        ...readiness,
+        tenantId,
+        adAccountId: tenantId,
+        unlockNetworkFirmIds: [],
+        availableNetworkCapabilities: [],
+        networkReadiness: []
+      })
+    )
+
+    const wrapper = mount(AdAccessEditor, {
+      props: {
+        target: { kind: 'platform', tenantId: 23 },
+        roles: ['super_admin']
+      },
+      global: {
+        stubs: {
+          AsyncState: { template: '<div><slot /></div>' },
+          AdReadinessChecklist: { template: '<div>readiness</div>' },
+          InputPassword: true,
+          'el-form': { template: '<form><slot /></form>' },
+          'el-form-item': { template: '<label><slot /></label>' },
+          'el-input': { props: ['modelValue'], template: '<input :value="modelValue" />' },
+          'el-input-number': true,
+          'el-switch': true,
+          'el-button': { template: '<button><slot /></button>' },
+          'el-tag': { template: '<span><slot /></span>' },
+          'el-checkbox': { template: '<span><slot /></span>' },
+          'el-alert': true,
+          'el-divider': true,
+          'el-select': { template: '<div><slot /></div>' },
+          'el-option': true,
+          ContentWrap: { template: '<section><slot /></section>' },
+          Dialog: true
+        }
+      }
+    })
+    await flushPromises()
+
+    const vm = wrapper.vm as unknown as {
+      networkCapabilityForm: {
+        networkFirmId?: number
+        rewardAuthority: 'SIGNED_REWARD' | 'NONE'
+        supportsUserId: boolean
+        supportsCustomData: boolean
+        supportsStableTransaction: boolean
+        supportsImpressionRevenue: boolean
+        supportsReporting: boolean
+        reason: string
+      }
+      saveNetworkCapability: (enabled: boolean) => Promise<void>
+    }
+    Object.assign(vm.networkCapabilityForm, {
+      networkFirmId: 15,
+      rewardAuthority: 'SIGNED_REWARD',
+      supportsUserId: true,
+      supportsCustomData: true,
+      supportsStableTransaction: true,
+      supportsImpressionRevenue: true,
+      supportsReporting: true,
+      reason: '核验租户 A 的穿山甲奖励广告来源'
+    })
+    const tenantASave = vm.saveNetworkCapability(true)
+    await flushPromises()
+    expect(verifyTenantAdNetworkCapability).toHaveBeenCalledWith(
+      { kind: 'platform', tenantId: 23 },
+      expect.objectContaining({ adAccountId: 23, networkFirmId: 15 })
+    )
+
+    await wrapper.setProps({ target: { kind: 'platform', tenantId: 24 } })
+    await flushPromises()
+    vm.networkCapabilityForm.networkFirmId = 66
+    vm.networkCapabilityForm.reason = '保留租户 B 正在填写的广告来源能力'
+    resolveTenantASave?.({ networkFirmId: 15, enabled: true })
+    await tenantASave
+    await flushPromises()
+
+    expect(vm.networkCapabilityForm.networkFirmId).toBe(66)
+    expect(vm.networkCapabilityForm.reason).toBe('保留租户 B 正在填写的广告来源能力')
     expect(getTenantAdReadiness).toHaveBeenCalledTimes(2)
   })
 

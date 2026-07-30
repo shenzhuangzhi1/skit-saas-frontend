@@ -147,6 +147,8 @@ export interface AdAccountResponseLike {
   pangleAppId?: unknown
   pangleEnabled?: unknown
   pangleSecretConfigured?: unknown
+  panglePlacementId?: unknown
+  pangleRewardSecurityKeyConfigured?: unknown
   takuAppId?: unknown
   takuPlacementId?: unknown
   splashPlacementId?: unknown
@@ -160,8 +162,12 @@ export interface AdAccountResponseLike {
 export interface SafeAdAccountForm {
   pangleAppId: string
   pangleAppSecret: string
+  panglePlacementId: string
+  /** Client input only; response values are always discarded. */
+  pangleRewardSecurityKey: string
   pangleEnabled: boolean
   pangleSecretConfigured: boolean
+  pangleRewardSecurityKeyConfigured: boolean
   takuAppId: string
   takuAppKey: string
   takuPlacementId: string
@@ -180,6 +186,8 @@ export interface AdAccountWritePayload {
   tenantId?: number
   pangleAppId: string
   pangleAppSecret?: string
+  panglePlacementId: string
+  pangleRewardSecurityKey?: string
   pangleEnabled: boolean
   takuAppId: string
   takuAppKey?: string
@@ -289,8 +297,11 @@ export const sanitizeAdAccountResponse = (source: AdAccountResponseLike): SafeAd
   return {
     pangleAppId: safeString(source.pangleAppId),
     pangleAppSecret: '',
+    panglePlacementId: safeString(source.panglePlacementId),
+    pangleRewardSecurityKey: '',
     pangleEnabled: safeBoolean(source.pangleEnabled),
     pangleSecretConfigured: safeBoolean(source.pangleSecretConfigured),
+    pangleRewardSecurityKeyConfigured: safeBoolean(source.pangleRewardSecurityKeyConfigured),
     takuAppId: safeString(source.takuAppId),
     takuAppKey: '',
     takuPlacementId: safeString(source.takuPlacementId),
@@ -306,6 +317,8 @@ export const sanitizeAdAccountResponse = (source: AdAccountResponseLike): SafeAd
   }
 }
 
+export const utf8ByteLength = (value: string): number => new TextEncoder().encode(value).length
+
 export const validateAdAccountForm = (
   form: SafeAdAccountForm
 ): { valid: boolean; error: string } => {
@@ -315,6 +328,19 @@ export const validateAdAccountForm = (
     }
     if (!form.pangleSecretConfigured && !form.pangleAppSecret.trim()) {
       return { valid: false, error: '启用穿山甲时 Server Key 不能为空' }
+    }
+    if (!form.panglePlacementId.trim()) {
+      return { valid: false, error: '启用穿山甲时激励视频广告位不能为空' }
+    }
+  }
+  const pangleRewardSecurityKey = safeString(form.pangleRewardSecurityKey)
+  if (pangleRewardSecurityKey.trim()) {
+    const securityKeyBytes = utf8ByteLength(pangleRewardSecurityKey)
+    if (securityKeyBytes < 8 || securityKeyBytes > 2048) {
+      return {
+        valid: false,
+        error: '穿山甲奖励回调 Security Key 的 UTF-8 编码必须为 8–2048 字节'
+      }
     }
   }
   if (form.takuEnabled) {
@@ -452,6 +478,7 @@ export const buildAdAccountWritePayload = (
 ): AdAccountWritePayload => {
   const payload: Omit<AdAccountWritePayload, 'tenantId'> = {
     pangleAppId: form.pangleAppId.trim(),
+    panglePlacementId: form.panglePlacementId.trim(),
     pangleEnabled: form.pangleEnabled,
     takuAppId: form.takuAppId.trim(),
     takuPlacementId: form.takuPlacementId.trim(),
@@ -462,8 +489,10 @@ export const buildAdAccountWritePayload = (
     takuEnabled: form.takuEnabled
   }
   const pangleAppSecret = form.pangleAppSecret.trim()
+  const pangleRewardSecurityKey = safeString(form.pangleRewardSecurityKey)
   const takuAppKey = form.takuAppKey.trim()
   if (pangleAppSecret) payload.pangleAppSecret = pangleAppSecret
+  if (pangleRewardSecurityKey.trim()) payload.pangleRewardSecurityKey = pangleRewardSecurityKey
   if (takuAppKey) payload.takuAppKey = takuAppKey
   return managementTenantBody(target, payload)
 }

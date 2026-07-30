@@ -49,6 +49,7 @@ describe('tenant display-ad placement configuration', () => {
     expect(form.takuAppKey).toBe('')
     expect(buildAdAccountWritePayload(form, { kind: 'own', tenantId: 162 })).toEqual({
       pangleAppId: '',
+      panglePlacementId: '',
       pangleEnabled: false,
       takuAppId: 'taku-app',
       takuPlacementId: 'reward-slot',
@@ -57,6 +58,36 @@ describe('tenant display-ad placement configuration', () => {
       postCheckInDramaInterstitialPlacementId: 'post-checkin-slot',
       homeBannerPlacementId: 'home-banner-slot',
       takuEnabled: true
+    })
+  })
+
+  it('keeps the Pangle reward Security Key write-only while exposing its placement state', () => {
+    const form = sanitizeAdAccountResponse({
+      pangleAppId: 'pangle-app',
+      panglePlacementId: 'pangle-reward-placement',
+      pangleEnabled: true,
+      pangleSecretConfigured: true,
+      pangleRewardSecurityKeyConfigured: true,
+      pangleRewardSecurityKey: 'malicious-response-security-key'
+    })
+
+    expect(form).toMatchObject({
+      panglePlacementId: 'pangle-reward-placement',
+      pangleRewardSecurityKeyConfigured: true,
+      pangleRewardSecurityKey: ''
+    })
+    expect(JSON.stringify(form)).not.toContain('malicious-response-security-key')
+    expect(buildAdAccountWritePayload(form, { kind: 'own', tenantId: 162 })).not.toHaveProperty(
+      'pangleRewardSecurityKey'
+    )
+    expect(
+      buildAdAccountWritePayload(
+        { ...form, pangleRewardSecurityKey: ' newly-entered-security-key ' },
+        { kind: 'own', tenantId: 162 }
+      )
+    ).toMatchObject({
+      panglePlacementId: 'pangle-reward-placement',
+      pangleRewardSecurityKey: ' newly-entered-security-key '
     })
   })
 
@@ -129,5 +160,20 @@ describe('tenant display-ad placement configuration', () => {
     expect(api).toContain('checkInEntryInterstitialPlacementId?: string')
     expect(api).toContain('postCheckInDramaInterstitialPlacementId?: string')
     expect(api).toContain('homeBannerPlacementId?: string')
+    expect(editor).toContain('label="Pangle 激励广告位"')
+    expect(editor).toContain('accountForm.panglePlacementId')
+    expect(editor).toContain('pangleRewardSecurityKeyConfigured')
+    expect(editor).toContain('奖励 Security Key')
+    expect(api).toContain('pangleRewardSecurityKey?: string')
+    expect(api).toContain('pangleRewardSecurityKeyConfigured?: boolean')
+
+    const nginx = read('deploy/nginx.conf')
+    const pangleRoute = 'location ^~ /app-api/skit/ad-callback/pangle/ {'
+    const genericRoute =
+      'location ~ ^/(admin-api|app-api|infra/ws|druid|doc.html|swagger-ui|jmreport|drag|admin/applications) {'
+    expect(nginx).toContain(pangleRoute)
+    expect(nginx.indexOf(pangleRoute)).toBeLessThan(nginx.indexOf(genericRoute))
+    expect(nginx).toContain('access_log off;')
+    expect(nginx).toContain('error_log /dev/null crit;')
   })
 })
