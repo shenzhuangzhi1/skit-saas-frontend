@@ -172,6 +172,7 @@ describe('tenant revenue workspace model', () => {
       pangleEnabled: false,
       takuAppId: '',
       takuPlacementId: '',
+      splashPlacementId: '',
       checkInEntryInterstitialPlacementId: '',
       postCheckInDramaInterstitialPlacementId: '',
       homeBannerPlacementId: '',
@@ -206,6 +207,7 @@ describe('tenant revenue workspace model', () => {
         takuEnabled: true,
         takuAppId: 'taku-app',
         takuPlacementId: 'reward-placement',
+        splashPlacementId: 'splash-placement',
         checkInEntryInterstitialPlacementId: 'checkin-placement',
         postCheckInDramaInterstitialPlacementId: 'post-checkin-placement',
         homeBannerPlacementId: 'home-banner-placement',
@@ -222,6 +224,7 @@ describe('tenant revenue workspace model', () => {
         takuEnabled: true,
         takuAppId: 'taku-app',
         takuPlacementId: 'reward-placement',
+        splashPlacementId: 'splash-placement',
         checkInEntryInterstitialPlacementId: 'checkin-placement',
         postCheckInDramaInterstitialPlacementId: 'post-checkin-placement',
         homeBannerPlacementId: 'home-banner-placement'

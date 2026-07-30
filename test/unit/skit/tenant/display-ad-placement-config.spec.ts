@@ -17,6 +17,7 @@ const enabledForm = () => ({
   takuAppId: 'taku-app',
   takuAppKey: '',
   takuPlacementId: 'reward-slot',
+  splashPlacementId: 'splash-slot',
   checkInEntryInterstitialPlacementId: 'checkin-slot',
   postCheckInDramaInterstitialPlacementId: 'post-checkin-slot',
   homeBannerPlacementId: 'home-banner-slot',
@@ -25,10 +26,11 @@ const enabledForm = () => ({
 })
 
 describe('tenant display-ad placement configuration', () => {
-  it('sanitizes and writes all three display placements without credential leakage', () => {
+  it('sanitizes and writes splash plus all display placements without credential leakage', () => {
     const form = sanitizeAdAccountResponse({
       takuAppId: ' taku-app ',
       takuPlacementId: ' reward-slot ',
+      splashPlacementId: ' splash-slot ',
       checkInEntryInterstitialPlacementId: ' checkin-slot ',
       postCheckInDramaInterstitialPlacementId: ' post-checkin-slot ',
       homeBannerPlacementId: ' home-banner-slot ',
@@ -38,21 +40,35 @@ describe('tenant display-ad placement configuration', () => {
     })
 
     expect(form).toMatchObject({
+      splashPlacementId: ' splash-slot ',
       checkInEntryInterstitialPlacementId: ' checkin-slot ',
       postCheckInDramaInterstitialPlacementId: ' post-checkin-slot ',
       homeBannerPlacementId: ' home-banner-slot '
     })
     expect(form).not.toHaveProperty('takuAppSecret')
     expect(form.takuAppKey).toBe('')
-    expect(buildAdAccountWritePayload(form, { kind: 'own', tenantId: 162 })).toMatchObject({
+    expect(buildAdAccountWritePayload(form, { kind: 'own', tenantId: 162 })).toEqual({
+      pangleAppId: '',
+      pangleEnabled: false,
+      takuAppId: 'taku-app',
+      takuPlacementId: 'reward-slot',
+      splashPlacementId: 'splash-slot',
       checkInEntryInterstitialPlacementId: 'checkin-slot',
       postCheckInDramaInterstitialPlacementId: 'post-checkin-slot',
-      homeBannerPlacementId: 'home-banner-slot'
+      homeBannerPlacementId: 'home-banner-slot',
+      takuEnabled: true
     })
   })
 
   it('requires distinct real placements whenever Taku is enabled', () => {
     expect(validateAdAccountForm(enabledForm())).toEqual({ valid: true, error: '' })
+
+    const emptySplash = enabledForm()
+    emptySplash.splashPlacementId = ''
+    expect(validateAdAccountForm(emptySplash)).toEqual({
+      valid: false,
+      error: '启用 Taku 时开屏广告位不能为空'
+    })
 
     for (const field of [
       'checkInEntryInterstitialPlacementId',
@@ -68,7 +84,7 @@ describe('tenant display-ad placement configuration', () => {
     duplicate.homeBannerPlacementId = duplicate.takuPlacementId
     expect(validateAdAccountForm(duplicate)).toEqual({
       valid: false,
-      error: 'Taku 的 4 个广告位必须分别使用独立 ID'
+      error: 'Taku 的 5 个广告位必须分别使用独立 ID'
     })
 
     const invalidIdentifier = enabledForm()
@@ -79,7 +95,7 @@ describe('tenant display-ad placement configuration', () => {
     })
   })
 
-  it('allows an unchanged legacy enabled account but requires a complete display migration once edited', () => {
+  it('allows an unchanged legacy enabled account but requires a complete five-placement migration once edited', () => {
     const legacy = sanitizeAdAccountResponse({
       takuAppId: 'taku-app',
       takuPlacementId: 'reward-slot',
@@ -90,13 +106,14 @@ describe('tenant display-ad placement configuration', () => {
     expect(validateAdAccountForm(legacy)).toEqual({ valid: true, error: '' })
 
     legacy.checkInEntryInterstitialPlacementId = 'checkin-slot'
+    legacy.splashPlacementId = 'splash-slot'
     expect(validateAdAccountForm(legacy)).toEqual({
       valid: false,
       error: '启用 Taku 时签到后首播插屏广告位不能为空'
     })
   })
 
-  it('renders the three scene-specific inputs and exposes their API contract', () => {
+  it('renders splash after reward plus the three scene-specific inputs and exposes their API contract', () => {
     const editor = read('src/views/skit/tenant/AdAccessEditor.vue')
     const api = read('src/api/skit/tenant/index.ts')
 
@@ -104,8 +121,11 @@ describe('tenant display-ad placement configuration', () => {
     expect(editor).toContain('签到后首播插屏')
     expect(editor).toContain('首页 Banner 广告位')
     expect(editor).toContain('accountForm.checkInEntryInterstitialPlacementId')
+    expect(editor).toContain('label="开屏广告位" :required="accountForm.takuEnabled"')
+    expect(editor).toContain('accountForm.splashPlacementId')
     expect(editor).toContain('accountForm.postCheckInDramaInterstitialPlacementId')
     expect(editor).toContain('accountForm.homeBannerPlacementId')
+    expect((api.match(/splashPlacementId\?: string/g) || []).length).toBe(3)
     expect(api).toContain('checkInEntryInterstitialPlacementId?: string')
     expect(api).toContain('postCheckInDramaInterstitialPlacementId?: string')
     expect(api).toContain('homeBannerPlacementId?: string')

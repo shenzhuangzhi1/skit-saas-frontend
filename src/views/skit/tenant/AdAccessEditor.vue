@@ -71,6 +71,9 @@
           <el-form-item label="激励视频广告位" :required="accountForm.takuEnabled">
             <el-input v-model="accountForm.takuPlacementId" maxlength="128" />
           </el-form-item>
+          <el-form-item label="开屏广告位" :required="accountForm.takuEnabled">
+            <el-input v-model="accountForm.splashPlacementId" maxlength="128" />
+          </el-form-item>
           <el-form-item label="签到页插屏广告位" :required="accountForm.takuEnabled">
             <el-input v-model="accountForm.checkInEntryInterstitialPlacementId" maxlength="128" />
           </el-form-item>

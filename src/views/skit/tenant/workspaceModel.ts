@@ -149,6 +149,7 @@ export interface AdAccountResponseLike {
   pangleSecretConfigured?: unknown
   takuAppId?: unknown
   takuPlacementId?: unknown
+  splashPlacementId?: unknown
   checkInEntryInterstitialPlacementId?: unknown
   postCheckInDramaInterstitialPlacementId?: unknown
   homeBannerPlacementId?: unknown
@@ -164,13 +165,14 @@ export interface SafeAdAccountForm {
   takuAppId: string
   takuAppKey: string
   takuPlacementId: string
+  splashPlacementId: string
   checkInEntryInterstitialPlacementId: string
   postCheckInDramaInterstitialPlacementId: string
   homeBannerPlacementId: string
   takuEnabled: boolean
   takuAppKeyConfigured: boolean
   /** Client-only snapshot used to keep unrelated saves compatible with legacy enabled accounts. */
-  originalDisplayPlacementIds?: readonly [string, string, string]
+  originalDisplayPlacementIds?: readonly [string, string, string, string]
   legacyDisplayPlacementsIncomplete?: boolean
 }
 
@@ -182,6 +184,7 @@ export interface AdAccountWritePayload {
   takuAppId: string
   takuAppKey?: string
   takuPlacementId: string
+  splashPlacementId: string
   checkInEntryInterstitialPlacementId: string
   postCheckInDramaInterstitialPlacementId: string
   homeBannerPlacementId: string
@@ -277,6 +280,7 @@ const DISPLAY_PLACEMENT_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/
 /** Build a form from an allow-list. Raw credential-shaped response fields are never copied. */
 export const sanitizeAdAccountResponse = (source: AdAccountResponseLike): SafeAdAccountForm => {
   const displayPlacementIds = [
+    safeString(source.splashPlacementId),
     safeString(source.checkInEntryInterstitialPlacementId),
     safeString(source.postCheckInDramaInterstitialPlacementId),
     safeString(source.homeBannerPlacementId)
@@ -290,9 +294,10 @@ export const sanitizeAdAccountResponse = (source: AdAccountResponseLike): SafeAd
     takuAppId: safeString(source.takuAppId),
     takuAppKey: '',
     takuPlacementId: safeString(source.takuPlacementId),
-    checkInEntryInterstitialPlacementId: displayPlacementIds[0],
-    postCheckInDramaInterstitialPlacementId: displayPlacementIds[1],
-    homeBannerPlacementId: displayPlacementIds[2],
+    splashPlacementId: displayPlacementIds[0],
+    checkInEntryInterstitialPlacementId: displayPlacementIds[1],
+    postCheckInDramaInterstitialPlacementId: displayPlacementIds[2],
+    homeBannerPlacementId: displayPlacementIds[3],
     takuEnabled,
     takuAppKeyConfigured: safeBoolean(source.takuAppKeyConfigured),
     originalDisplayPlacementIds: displayPlacementIds,
@@ -320,6 +325,7 @@ export const validateAdAccountForm = (
       return { valid: false, error: '启用 Taku 时激励视频广告位不能为空' }
     }
     const displayPlacementIds = [
+      form.splashPlacementId,
       form.checkInEntryInterstitialPlacementId,
       form.postCheckInDramaInterstitialPlacementId,
       form.homeBannerPlacementId
@@ -333,12 +339,15 @@ export const validateAdAccountForm = (
       displayPlacementIds.every((value, index) => value === originalDisplayPlacementIds[index])
     if (!unchangedLegacyDisplayConfiguration) {
       if (!displayPlacementIds[0]) {
-        return { valid: false, error: '启用 Taku 时签到页插屏广告位不能为空' }
+        return { valid: false, error: '启用 Taku 时开屏广告位不能为空' }
       }
       if (!displayPlacementIds[1]) {
-        return { valid: false, error: '启用 Taku 时签到后首播插屏广告位不能为空' }
+        return { valid: false, error: '启用 Taku 时签到页插屏广告位不能为空' }
       }
       if (!displayPlacementIds[2]) {
+        return { valid: false, error: '启用 Taku 时签到后首播插屏广告位不能为空' }
+      }
+      if (!displayPlacementIds[3]) {
         return { valid: false, error: '启用 Taku 时首页 Banner 广告位不能为空' }
       }
     }
@@ -355,7 +364,7 @@ export const validateAdAccountForm = (
     if (!unchangedLegacyDisplayConfiguration) {
       const placementIds = [form.takuPlacementId.trim(), ...displayPlacementIds]
       if (new Set(placementIds).size !== placementIds.length) {
-        return { valid: false, error: 'Taku 的 4 个广告位必须分别使用独立 ID' }
+        return { valid: false, error: 'Taku 的 5 个广告位必须分别使用独立 ID' }
       }
     }
     if (!form.takuAppKeyConfigured && !form.takuAppKey.trim()) {
@@ -446,6 +455,7 @@ export const buildAdAccountWritePayload = (
     pangleEnabled: form.pangleEnabled,
     takuAppId: form.takuAppId.trim(),
     takuPlacementId: form.takuPlacementId.trim(),
+    splashPlacementId: form.splashPlacementId.trim(),
     checkInEntryInterstitialPlacementId: form.checkInEntryInterstitialPlacementId.trim(),
     postCheckInDramaInterstitialPlacementId: form.postCheckInDramaInterstitialPlacementId.trim(),
     homeBannerPlacementId: form.homeBannerPlacementId.trim(),

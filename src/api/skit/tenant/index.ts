@@ -42,6 +42,7 @@ export interface TenantAgentVO {
   takuUsername?: string
   takuAppId?: string
   takuPlacementId?: string
+  splashPlacementId?: string
   checkInEntryInterstitialPlacementId?: string
   postCheckInDramaInterstitialPlacementId?: string
   homeBannerPlacementId?: string
@@ -65,6 +66,7 @@ interface TenantAdAccountWriteFields {
   takuAppId?: string
   takuAppKey?: string
   takuPlacementId?: string
+  splashPlacementId?: string
   checkInEntryInterstitialPlacementId?: string
   postCheckInDramaInterstitialPlacementId?: string
   homeBannerPlacementId?: string
@@ -108,6 +110,7 @@ export interface TenantAdAccountVO {
   takuUsername?: string
   takuAppId?: string
   takuPlacementId?: string
+  splashPlacementId?: string
   checkInEntryInterstitialPlacementId?: string
   postCheckInDramaInterstitialPlacementId?: string
   homeBannerPlacementId?: string

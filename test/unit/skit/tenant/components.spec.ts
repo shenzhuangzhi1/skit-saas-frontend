@@ -364,6 +364,7 @@ describe('AdAccessEditor', () => {
     let resolveTenantASave:
       | ((value: {
           takuAppId: string
+          splashPlacementId: string
           takuPlacementId: string
           checkInEntryInterstitialPlacementId: string
           postCheckInDramaInterstitialPlacementId: string
@@ -383,6 +384,7 @@ describe('AdAccessEditor', () => {
         Promise.resolve({
           takuAppId: `tenant-${tenantId}-app`,
           takuPlacementId: `tenant-${tenantId}-reward`,
+          splashPlacementId: `tenant-${tenantId}-splash`,
           checkInEntryInterstitialPlacementId: `tenant-${tenantId}-checkin`,
           postCheckInDramaInterstitialPlacementId: `tenant-${tenantId}-drama`,
           homeBannerPlacementId: `tenant-${tenantId}-banner`,
@@ -432,7 +434,7 @@ describe('AdAccessEditor', () => {
     await flushPromises()
 
     const vm = wrapper.vm as unknown as {
-      accountForm: { takuAppId: string }
+      accountForm: { takuAppId: string; splashPlacementId: string }
       accountReason: string
       saveAccount: () => Promise<void>
     }
@@ -447,10 +449,12 @@ describe('AdAccessEditor', () => {
     await wrapper.setProps({ target: { kind: 'platform', tenantId: 24 } })
     await flushPromises()
     expect(vm.accountForm.takuAppId).toBe('tenant-24-app')
+    expect(vm.accountForm.splashPlacementId).toBe('tenant-24-splash')
 
     resolveTenantASave?.({
       takuAppId: 'stale-tenant-23-app',
       takuPlacementId: 'stale-tenant-23-reward',
+      splashPlacementId: 'stale-tenant-23-splash',
       checkInEntryInterstitialPlacementId: 'stale-tenant-23-checkin',
       postCheckInDramaInterstitialPlacementId: 'stale-tenant-23-drama',
       homeBannerPlacementId: 'stale-tenant-23-banner',
@@ -461,6 +465,7 @@ describe('AdAccessEditor', () => {
     await flushPromises()
 
     expect(vm.accountForm.takuAppId).toBe('tenant-24-app')
+    expect(vm.accountForm.splashPlacementId).toBe('tenant-24-splash')
     expect(getTenantAdReadiness).toHaveBeenCalledTimes(2)
   })
 
