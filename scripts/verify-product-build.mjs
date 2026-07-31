@@ -63,6 +63,11 @@ assert.ok(existsSync(manifestPath), `production manifest not found: ${manifestPa
 
 const buildInputs = [
   ...listFiles(resolve('src')),
+  ...listFiles(resolve('build')),
+  resolve('.env.prod'),
+  resolve('index.html'),
+  resolve('postcss.config.js'),
+  resolve('uno.config.ts'),
   resolve('vite.config.ts'),
   resolve('package.json'),
   resolve('pnpm-lock.yaml')
