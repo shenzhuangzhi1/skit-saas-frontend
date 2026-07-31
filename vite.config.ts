@@ -2,6 +2,7 @@ import {dirname, relative, resolve} from 'path'
 import type {ConfigEnv, UserConfig} from 'vite'
 import {loadEnv, normalizePath} from 'vite'
 import {createVitePlugins} from './build/vite'
+import {createProductBoundaryPlugin} from './build/productBoundaryPlugin.mjs'
 import {exclude, include} from "./build/vite/optimize"
 // 当前执行node命令时文件夹的地址(工作目录)
 const root = process.cwd()
@@ -46,7 +47,10 @@ export default ({command, mode}: ConfigEnv): UserConfig => {
             // },
         },
         // 项目使用的vite插件。 单独提取到build/vite/plugin中管理
-        plugins: createVitePlugins(isBuild, env),
+        plugins: [
+            ...createVitePlugins(isBuild, env),
+            ...(isBuild ? [createProductBoundaryPlugin({root, mode})] : [])
+        ],
         css: {
             lightningcss: {
                 // Preserve legacy star-hack declarations by stripping invalid syntax during minification.

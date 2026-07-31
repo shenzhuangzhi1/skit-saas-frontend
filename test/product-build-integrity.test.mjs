@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import test from 'node:test'
 import { build } from 'vite'
 
@@ -12,7 +12,7 @@ import {
 } from '../build/productBoundary.mjs'
 import { createProductBoundaryPlugin } from '../build/productBoundaryPlugin.mjs'
 
-const repositoryRoot = resolve(new URL('..', import.meta.url).pathname)
+const repositoryRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 
 const write = (root, relativePath, content) => {
   const path = join(root, relativePath)

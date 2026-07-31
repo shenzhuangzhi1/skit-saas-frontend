@@ -36,7 +36,7 @@ test('production build inventory verifier owns retained and banned view contract
   const verifier = read('scripts/verify-product-build.mjs')
   const viteConfig = read('vite.config.ts')
 
-  assert.match(verifier, /product-build\.json/)
+  assert.match(verifier, /PRODUCT_BUILD_STAMP_PATH/)
   assert.match(verifier, /moduleIds/)
   assert.match(verifier, /assertProductBuildStampFresh/)
   assert.match(viteConfig, /createProductBoundaryPlugin/)

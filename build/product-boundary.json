@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "retainedViewEntries": [
+    "src/views/Redirect/Redirect.vue",
+    "src/views/Home/Index.vue",
+    "src/views/skit/admin/AdminTable.vue",
+    "src/views/infra/apiErrorLog/index.vue",
+    "src/views/skit/ad-consumption/index.vue",
+    "src/views/skit/ad-monitor/index.vue",
+    "src/views/skit/tenant/index.vue",
+    "src/views/skit/user/index.vue",
+    "src/views/Profile/Index.vue",
+    "src/views/system/notify/my/index.vue",
+    "src/views/Login/Login.vue",
+    "src/views/Error/403.vue",
+    "src/views/Error/404.vue",
+    "src/views/Error/500.vue"
+  ],
+  "bannedViewPrefixes": [
+    "src/views/system/dict/",
+    "src/views/infra/codegen/",
+    "src/views/infra/job/",
+    "src/views/bpm/",
+    "src/views/mall/",
+    "src/views/member/",
+    "src/views/pay/",
+    "src/views/crm/",
+    "src/views/ai/",
+    "src/views/iot/",
+    "src/views/mes/",
+    "src/views/im/",
+    "src/views/erp/",
+    "src/views/mp/",
+    "src/views/report/",
+    "src/views/wms/"
+  ],
+  "budget": {
+    "outputFiles": 80,
+    "jsFiles": 48,
+    "cssFiles": 20,
+    "rawBytes": 9300000,
+    "rawJsBytes": 5600000,
+    "gzipJsBytes": 1800000
+  }
+}
