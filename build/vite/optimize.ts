@@ -21,8 +21,6 @@ const include = [
   'echarts/components',
   'echarts/renderers',
   'echarts-wordcloud',
-  '@wangeditor-next/editor',
-  '@wangeditor-next/editor-for-vue',
   '@microsoft/fetch-event-source',
   'markdown-it',
   'markmap-view',
