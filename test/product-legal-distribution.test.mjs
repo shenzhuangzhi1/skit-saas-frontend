@@ -24,7 +24,7 @@ test('the exact legal payload and upstream notices are release-ready', () => {
   assert.deepEqual(assertLegalDistribution({ root }), {
     files: 6,
     checksums: 5,
-    bytes: 40405
+    bytes: 40157
   })
 
   const notices = requireNotice()
@@ -61,6 +61,10 @@ test('the exact legal payload and upstream notices are release-ready', () => {
   assert.match(notices, /emojione-monotone:sun/)
   assert.match(notices, /No semantic\s+artwork changes were made/)
   assert.match(notices, /does not imply endorsement/)
+  assert.doesNotMatch(
+    requireFile(resolve(root, 'public/legal/licenses/OFL-1.1.txt')).toString('utf8'),
+    /Inter Project Authors/
+  )
 })
 
 function requireNotice() {
