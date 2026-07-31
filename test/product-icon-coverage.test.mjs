@@ -45,17 +45,34 @@ const createFixture = ({
   }
 }
 
+const addFixtureDomain = (
+  fixture,
+  {
+    exportName = 'FIXTURE_ICON_NAMES',
+    source = `export const ${exportName} = Object.freeze(['ep:view'] as const)\n`,
+    modulePath = 'src/iconDomains.ts'
+  } = {}
+) => {
+  write(fixture.root, modulePath, source)
+  fixture.options.moduleIds.push(modulePath)
+  return { domainFile: modulePath, domainExport: exportName }
+}
+
 test('accepts fully local literal and audited dynamic product icons', () => {
   const fixture = createFixture({
-    viewSource: `<template><Icon icon="ep:search" /><Icon :icon="row.icon" /></template>
-<script setup>const actions = [{ icon: 'ep:view' }]</script>\n`
+    viewSource: `<template><Icon icon="ep:search" /><Icon :icon="clampProductIcon(row.icon, FIXTURE_ICON_NAMES)" /></template>
+<script setup>
+import { clampProductIcon, FIXTURE_ICON_NAMES } from '@/iconDomains'
+const actions = [{ icon: 'ep:view' }]
+</script>\n`
   })
+  const domain = addFixtureDomain(fixture)
   fixture.options.approvedDynamicBindings = [
     {
       file: 'src/View.vue',
-      expression: 'row.icon',
+      expression: 'clampProductIcon(row.icon, FIXTURE_ICON_NAMES)',
       source: 'fixed fixture actions',
-      sourceFiles: ['src/View.vue']
+      ...domain
     }
   ]
 
@@ -63,7 +80,43 @@ test('accepts fully local literal and audited dynamic product icons', () => {
     const result = assertProductIconCoverage(fixture.options)
     assert.deepEqual(result.iconNames, ['ep:search', 'ep:view'])
     assert.deepEqual(result.prefixes, ['ep'])
-    assert.deepEqual(result.dynamicBindings, [{ file: 'src/View.vue', expression: 'row.icon' }])
+    assert.deepEqual(result.dynamicBindings, [
+      {
+        file: 'src/View.vue',
+        expression: 'clampProductIcon(row.icon, FIXTURE_ICON_NAMES)'
+      }
+    ])
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('accepts an exact policy import from a Vue TSX script', () => {
+  const fixture = createFixture({
+    viewSource: `<script lang="tsx" setup>
+import { clampProductIcon, FIXTURE_ICON_NAMES } from '@/iconDomains'
+const renderIcon = () => <Icon icon={clampProductIcon(row.icon, FIXTURE_ICON_NAMES)} />
+</script>\n`,
+    icons: ['view']
+  })
+  const domain = addFixtureDomain(fixture)
+  fixture.options.approvedDynamicBindings = [
+    {
+      file: 'src/View.vue',
+      expression: 'clampProductIcon(row.icon, FIXTURE_ICON_NAMES)',
+      source: 'Vue TSX bindings use the exact frozen policy',
+      ...domain
+    }
+  ]
+
+  try {
+    const result = assertProductIconCoverage(fixture.options)
+    assert.deepEqual(result.dynamicBindings, [
+      {
+        file: 'src/View.vue',
+        expression: 'clampProductIcon(row.icon, FIXTURE_ICON_NAMES)'
+      }
+    ])
   } finally {
     rmSync(fixture.root, { recursive: true, force: true })
   }
@@ -122,7 +175,7 @@ test('rejects an unbounded JSX Icon prop spread', () => {
   const fixture = createFixture({
     modulePath: 'src/View.tsx',
     viewSource:
-      "const serverProps = {}; export const View = () => <Icon icon=\"ep:view\" {...serverProps} />\n",
+      'const serverProps = {}; export const View = () => <Icon icon="ep:view" {...serverProps} />\n',
     icons: ['view']
   })
 
@@ -136,10 +189,82 @@ test('rejects an unbounded JSX Icon prop spread', () => {
   }
 })
 
-test('an unrelated static icon cannot approve an unclamped dynamic binding', () => {
+test('rejects an unbounded spread on an aliased product Icon import', () => {
+  const fixture = createFixture({
+    modulePath: 'src/View.tsx',
+    viewSource: `import { Icon as ProductIcon } from '@/components/Icon'
+const serverProps = {}
+export const View = () => <ProductIcon icon="ep:view" {...serverProps} />\n`,
+    icons: ['view']
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon prop spread:[\s\S]*\{\.\.\.serverProps\}/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects an unbounded spread on a local product Icon alias', () => {
+  const fixture = createFixture({
+    modulePath: 'src/View.tsx',
+    viewSource: `import { Icon } from '@/components/Icon'
+const ProductIcon = Icon
+const serverProps = {}
+export const View = () => <ProductIcon icon="ep:view" {...serverProps} />\n`,
+    icons: ['view']
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon prop spread:[\s\S]*\{\.\.\.serverProps\}/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects an unbounded Vue dynamic Icon prop name', () => {
   const fixture = createFixture({
     viewSource:
-      '<template><Icon :icon="serverRow.icon" /><Icon icon="ep:view" /></template>\n',
+      '<template><Icon v-bind:[serverKey]="serverValue" /></template><script setup>const serverKey = "icon"</script>\n',
+    icons: []
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon prop binding:[\s\S]*v-bind:\[serverKey\]="serverValue"/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('treats Vue same-name :icon shorthand as a dynamic icon expression', () => {
+  const fixture = createFixture({
+    viewSource:
+      '<template><Icon :icon /></template><script setup>const icon = serverRow.icon</script>\n',
+    icons: []
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unapproved dynamic icon binding:[\s\S]*src\/View\.vue: icon/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('an unrelated static icon cannot approve an unclamped dynamic binding', () => {
+  const fixture = createFixture({
+    viewSource: '<template><Icon :icon="serverRow.icon" /><Icon icon="ep:view" /></template>\n',
     icons: ['view']
   })
   fixture.options.approvedDynamicBindings = [
@@ -155,6 +280,92 @@ test('an unrelated static icon cannot approve an unclamped dynamic binding', () 
     assert.throws(
       () => assertProductIconCoverage(fixture.options),
       /approved dynamic icon binding must use clampProductIcon:[\s\S]*serverRow\.icon/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects a clamp and domain imported from the wrong module', () => {
+  const fixture = createFixture({
+    viewSource: `<template><Icon :icon="clampProductIcon(row.icon, FIXTURE_ICON_NAMES)" /></template>
+<script setup>
+import { clampProductIcon, FIXTURE_ICON_NAMES } from '@/wrongPolicy'
+</script>\n`,
+    icons: ['view']
+  })
+  const domain = addFixtureDomain(fixture)
+  fixture.options.approvedDynamicBindings = [
+    {
+      file: 'src/View.vue',
+      expression: 'clampProductIcon(row.icon, FIXTURE_ICON_NAMES)',
+      source: 'wrong imports must not establish the runtime policy',
+      ...domain
+    }
+  ]
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /must import clampProductIcon, FIXTURE_ICON_NAMES from @\/iconDomains/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects a locally shadowed product icon clamp', () => {
+  const fixture = createFixture({
+    modulePath: 'src/View.tsx',
+    viewSource: `import { clampProductIcon, FIXTURE_ICON_NAMES } from '@/iconDomains'
+export const View = (clampProductIcon) => (
+  <Icon icon={clampProductIcon(row.icon, FIXTURE_ICON_NAMES)} />
+)\n`,
+    icons: ['view']
+  })
+  const domain = addFixtureDomain(fixture)
+  fixture.options.approvedDynamicBindings = [
+    {
+      file: 'src/View.tsx',
+      expression: 'clampProductIcon(row.icon, FIXTURE_ICON_NAMES)',
+      source: 'lexical shadowing must not replace the audited helper',
+      ...domain
+    }
+  ]
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /shadows product icon policy:[\s\S]*clampProductIcon/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects a product icon clamp shadowed by a named function expression', () => {
+  const fixture = createFixture({
+    modulePath: 'src/View.tsx',
+    viewSource: `import { clampProductIcon, FIXTURE_ICON_NAMES } from '@/iconDomains'
+export const View = function clampProductIcon() {
+  return <Icon icon={clampProductIcon(row.icon, FIXTURE_ICON_NAMES)} />
+}\n`,
+    icons: ['view']
+  })
+  const domain = addFixtureDomain(fixture)
+  fixture.options.approvedDynamicBindings = [
+    {
+      file: 'src/View.tsx',
+      expression: 'clampProductIcon(row.icon, FIXTURE_ICON_NAMES)',
+      source: 'named runtime expressions must not shadow the audited helper',
+      ...domain
+    }
+  ]
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /shadows product icon policy:[\s\S]*clampProductIcon/
     )
   } finally {
     rmSync(fixture.root, { recursive: true, force: true })
@@ -362,22 +573,26 @@ test('rejects an alias whose parent cannot be resolved', () => {
 test('rejects stale or undocumented dynamic approvals', async (t) => {
   await t.test('stale approval', () => {
     const fixture = createFixture({
-      viewSource: '<template><Icon icon="ep:view" /></template>\n',
+      viewSource: `<template><Icon icon="ep:view" /></template>
+<script setup>
+import { clampProductIcon, FIXTURE_ICON_NAMES } from '@/iconDomains'
+</script>\n`,
       icons: ['view']
     })
+    const domain = addFixtureDomain(fixture)
     fixture.options.approvedDynamicBindings = [
       {
         file: 'src/View.vue',
-        expression: 'row.icon',
+        expression: 'clampProductIcon(row.icon, FIXTURE_ICON_NAMES)',
         source: 'fixture actions',
-        sourceFiles: ['src/View.vue']
+        ...domain
       }
     ]
 
     try {
       assert.throws(
         () => assertProductIconCoverage(fixture.options),
-        /stale approved dynamic icon binding:[\s\S]*row\.icon/
+        /stale approved dynamic icon binding:[\s\S]*clampProductIcon\(row\.icon/
       )
     } finally {
       rmSync(fixture.root, { recursive: true, force: true })
@@ -386,15 +601,17 @@ test('rejects stale or undocumented dynamic approvals', async (t) => {
 
   await t.test('empty source evidence', () => {
     const fixture = createFixture({
-      viewSource: '<template><Icon :icon="row.icon" /></template>\n',
-      icons: []
+      viewSource:
+        '<template><Icon :icon="clampProductIcon(row.icon, FIXTURE_ICON_NAMES)" /></template>\n',
+      icons: ['view']
     })
+    const domain = addFixtureDomain(fixture)
     fixture.options.approvedDynamicBindings = [
       {
         file: 'src/View.vue',
-        expression: 'row.icon',
+        expression: 'clampProductIcon(row.icon, FIXTURE_ICON_NAMES)',
         source: '',
-        sourceFiles: ['src/View.vue']
+        ...domain
       }
     ]
 
@@ -408,24 +625,26 @@ test('rejects stale or undocumented dynamic approvals', async (t) => {
     }
   })
 
-  await t.test('missing finite source files', () => {
+  await t.test('missing icon domain file', () => {
     const fixture = createFixture({
-      viewSource: '<template><Icon :icon="row.icon" /></template>\n',
-      icons: []
+      viewSource:
+        '<template><Icon :icon="clampProductIcon(row.icon, FIXTURE_ICON_NAMES)" /></template>\n',
+      icons: ['view']
     })
     fixture.options.approvedDynamicBindings = [
       {
         file: 'src/View.vue',
-        expression: 'row.icon',
+        expression: 'clampProductIcon(row.icon, FIXTURE_ICON_NAMES)',
         source: 'fixture actions',
-        sourceFiles: []
+        domainFile: '',
+        domainExport: 'FIXTURE_ICON_NAMES'
       }
     ]
 
     try {
       assert.throws(
         () => assertProductIconCoverage(fixture.options),
-        /approved dynamic icon binding requires finite source files:[\s\S]*row\.icon/
+        /approved dynamic icon binding requires a domain file:[\s\S]*row\.icon/
       )
     } finally {
       rmSync(fixture.root, { recursive: true, force: true })
@@ -434,48 +653,118 @@ test('rejects stale or undocumented dynamic approvals', async (t) => {
 
   await t.test('source outside the product graph', () => {
     const fixture = createFixture({
-      viewSource: '<template><Icon :icon="row.icon" /></template>\n',
-      icons: []
+      viewSource:
+        '<template><Icon :icon="clampProductIcon(row.icon, FIXTURE_ICON_NAMES)" /></template>\n',
+      icons: ['view']
     })
-    write(fixture.root, 'src/ServerSchema.ts', "export const icon = 'ep:view'\n")
+    write(
+      fixture.root,
+      'src/ServerSchema.ts',
+      "export const FIXTURE_ICON_NAMES = ['ep:view'] as const\n"
+    )
     fixture.options.approvedDynamicBindings = [
       {
         file: 'src/View.vue',
-        expression: 'row.icon',
+        expression: 'clampProductIcon(row.icon, FIXTURE_ICON_NAMES)',
         source: 'server schema',
-        sourceFiles: ['src/ServerSchema.ts']
+        domainFile: 'src/ServerSchema.ts',
+        domainExport: 'FIXTURE_ICON_NAMES'
       }
     ]
 
     try {
       assert.throws(
         () => assertProductIconCoverage(fixture.options),
-        /approved dynamic icon binding source is outside the product graph:[\s\S]*ServerSchema/
+        /approved dynamic icon binding domain is outside the product graph:[\s\S]*ServerSchema/
       )
     } finally {
       rmSync(fixture.root, { recursive: true, force: true })
     }
   })
 
-  await t.test('in-graph source without a finite static icon domain', () => {
+  await t.test('in-graph domain must be a finite static array', () => {
     const fixture = createFixture({
-      viewSource: `<template><Icon :icon="row.icon" /></template>
+      viewSource: `<template><Icon :icon="clampProductIcon(row.icon, FIXTURE_ICON_NAMES)" /></template>
 <script setup>const rows = []</script>\n`,
-      icons: []
+      icons: ['view']
+    })
+    const domain = addFixtureDomain(fixture, {
+      source: 'export const FIXTURE_ICON_NAMES = loadRemoteIcons()\n'
     })
     fixture.options.approvedDynamicBindings = [
       {
         file: 'src/View.vue',
-        expression: 'row.icon',
+        expression: 'clampProductIcon(row.icon, FIXTURE_ICON_NAMES)',
         source: 'empty rows',
-        sourceFiles: ['src/View.vue']
+        ...domain
       }
     ]
 
     try {
       assert.throws(
         () => assertProductIconCoverage(fixture.options),
-        /approved dynamic icon binding has no finite static icon domain:[\s\S]*row\.icon/
+        /product icon domain must be a static array frozen with Object\.freeze:[\s\S]*FIXTURE_ICON_NAMES/
+      )
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true })
+    }
+  })
+
+  await t.test('a compile-time readonly but runtime-mutable domain is rejected', () => {
+    const fixture = createFixture({
+      viewSource: `<template><Icon :icon="clampProductIcon(row.icon, FIXTURE_ICON_NAMES)" /></template>
+<script setup>
+import { clampProductIcon, FIXTURE_ICON_NAMES } from '@/iconDomains'
+</script>\n`,
+      icons: ['view']
+    })
+    const domain = addFixtureDomain(fixture, {
+      source: "export const FIXTURE_ICON_NAMES = ['ep:view'] as const\n"
+    })
+    fixture.options.approvedDynamicBindings = [
+      {
+        file: 'src/View.vue',
+        expression: 'clampProductIcon(row.icon, FIXTURE_ICON_NAMES)',
+        source: 'runtime domains must not be mutable through a cast',
+        ...domain
+      }
+    ]
+
+    try {
+      assert.throws(
+        () => assertProductIconCoverage(fixture.options),
+        /product icon domain must be a static array frozen with Object\.freeze/
+      )
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true })
+    }
+  })
+
+  await t.test('a reassignable exported domain is rejected', () => {
+    const fixture = createFixture({
+      viewSource: `<template><Icon :icon="clampProductIcon(row.icon, FIXTURE_ICON_NAMES)" /></template>
+<script setup>
+import { clampProductIcon, FIXTURE_ICON_NAMES } from '@/iconDomains'
+</script>\n`,
+      icons: ['view']
+    })
+    const domain = addFixtureDomain(fixture, {
+      source: `export let FIXTURE_ICON_NAMES = Object.freeze(['ep:view'] as const)
+FIXTURE_ICON_NAMES = getServerAllowlist() as any\n`
+    })
+    fixture.options.approvedDynamicBindings = [
+      {
+        file: 'src/View.vue',
+        expression: 'clampProductIcon(row.icon, FIXTURE_ICON_NAMES)',
+        source: 'live bindings must not replace the audited frozen domain',
+        ...domain
+      }
+    ]
+
+    try {
+      assert.throws(
+        () => assertProductIconCoverage(fixture.options),
+        /product icon domain must be a top-level export const/
       )
     } finally {
       rmSync(fixture.root, { recursive: true, force: true })

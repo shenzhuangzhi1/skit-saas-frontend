@@ -14,6 +14,10 @@ import { ElScrollbar } from 'element-plus'
 import { useScrollTo } from '@/hooks/event/useScrollTo'
 import { useTagsView } from '@/hooks/web/useTagsView'
 import { cloneDeep } from 'lodash-es'
+import {
+  PRODUCT_ROUTE_ICON_NAMES,
+  clampProductIcon
+} from '@/components/Icon/src/productIconDomains'
 
 defineOptions({ name: 'TagsView' })
 
@@ -374,7 +378,12 @@ watch(
                           item.matched[0] &&
                           item.matched[item.matched.length - 1].meta?.icon))
                     "
-                    :icon="item?.meta?.icon || item.matched[item.matched.length - 1].meta.icon"
+                    :icon="
+                      clampProductIcon(
+                        item?.meta?.icon || item.matched[item.matched.length - 1].meta.icon,
+                        PRODUCT_ROUTE_ICON_NAMES
+                      )
+                    "
                     :size="12"
                     class="mr-5px"
                   />

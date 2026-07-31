@@ -40,6 +40,28 @@ const apiError = {
   processStatus: 0
 }
 
+const attachmentRecord = {
+  id: 501,
+  pageKey: 'attachment',
+  rowKey: 'attachment-product-icon-smoke',
+  recordData: {
+    id: 501,
+    preview: 'fixture',
+    filename: 'smoke-attachment.png',
+    filesize: '12 KB',
+    imagewidth: 320,
+    imageheight: 180,
+    imagetype: 'png',
+    storage: 'fixture',
+    mimetype: 'image/png',
+    createtime: '2026-07-31T00:00:00.000Z'
+  },
+  status: 0,
+  sort: 0,
+  createTime: '2026-07-31T00:00:00.000Z',
+  updateTime: '2026-07-31T00:00:00.000Z'
+}
+
 const responseData = (url: URL) => {
   const path = url.pathname.replace(/^\/admin-api/, '')
 
@@ -54,6 +76,11 @@ const responseData = (url: URL) => {
   if (path === '/system/dict-data/simple-list') return []
   if (path === '/system/user/profile/get') return profile
   if (path === '/infra/api-error-log/page') return { list: [apiError], total: 1 }
+  if (path === '/skit/admin-record/page') {
+    return url.searchParams.get('pageKey') === 'attachment'
+      ? { list: [attachmentRecord], total: 1 }
+      : { list: [], total: 0 }
+  }
   if (path === '/system/notify-message/get-unread-list') return []
   if (path === '/system/notify-message/get-unread-count') return 0
   if (path.endsWith('/page') || path.endsWith('/my-page')) return { list: [], total: 0 }

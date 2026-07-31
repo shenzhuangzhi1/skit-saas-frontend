@@ -13,6 +13,10 @@ import { isHeaderNavLayout, isHorizontalMenuLayout, isTwoColumnLayout } from '@/
 import { cloneDeep } from 'lodash-es'
 import { pathResolve } from '@/utils/routerHelper'
 import {
+  PRODUCT_ROUTE_ICON_NAMES,
+  clampProductIcon
+} from '@/components/Icon/src/productIconDomains'
+import {
   findRouteByPath,
   getRootMenuActivePath,
   getRootMenuRoute,
@@ -88,7 +92,7 @@ export default defineComponent({
           ? route.meta
           : {
               ...route.meta,
-              icon: firstVisibleChild.meta?.icon,
+              icon: clampProductIcon(firstVisibleChild.meta?.icon, PRODUCT_ROUTE_ICON_NAMES),
               title: firstVisibleChild.meta?.title
             }
       return {

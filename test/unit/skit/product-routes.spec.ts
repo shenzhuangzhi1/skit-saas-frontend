@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import router, { resetRouter } from '@/router'
 import productRoutes from '@/router/productRoutes'
 import { PRODUCT_AD_MONITOR_ROUTE_NAME } from '@/router/productMenu'
+import { PRODUCT_ROUTE_ICON_NAMES } from '@/components/Icon/src/productIconDomains'
 
 const EXPECTED_ROUTE_CONTRACT = [
   {
@@ -345,6 +346,18 @@ describe('explicit Skit product route contract', () => {
     ).toEqual([])
   })
 
+  it('keeps every route metadata icon inside the frozen runtime route domain', () => {
+    const routeIcons = [
+      ...new Set(
+        flattenedRoutes
+          .map(({ route }) => route.meta?.icon)
+          .filter((icon): icon is string => typeof icon === 'string')
+      )
+    ].sort()
+
+    expect(routeIcons).toEqual([...PRODUCT_ROUTE_ICON_NAMES].sort())
+  })
+
   it('keeps the static product router intact when the legacy reset hook runs', () => {
     const before = router
       .getRoutes()
@@ -372,9 +385,7 @@ describe('explicit Skit product route contract', () => {
     const resolved = router.currentRoute.value
     const noFound = flattenRoutes(productRoutes).find((entry) => entry.name === 'NoFound')
     const catchAll = resolved.matched.at(-1)
-    const noFoundModule = await (
-      noFound?.route.component as () => Promise<{ default: unknown }>
-    )()
+    const noFoundModule = await (noFound?.route.component as () => Promise<{ default: unknown }>)()
 
     expect(catchAll?.path).toBe('/:pathMatch(.*)*')
     expect(catchAll?.components.default).toBe(noFoundModule.default)

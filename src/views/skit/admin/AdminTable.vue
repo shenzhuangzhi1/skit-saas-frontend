@@ -287,7 +287,10 @@
                       :aria-label="action.label"
                       @click="openEditor(action.mode, row)"
                     >
-                      <Icon v-if="action.icon" :icon="action.icon" />
+                      <Icon
+                        v-if="action.icon"
+                        :icon="clampProductIcon(action.icon, ADMIN_ACTION_ICON_NAMES)"
+                      />
                       <span v-if="action.text">{{ action.text }}</span>
                     </button>
                   </template>
@@ -442,6 +445,7 @@ import type { TenantScope, TenantScopeSelection } from '@/views/skit/shared/tena
 import { useTenantScope } from '@/views/skit/shared/useTenantScope'
 import { buildDramaMutationScope, buildDramaQueryScope } from './dramaTenantScope'
 import { skitPageConfigs, type SkitColumn, type SkitSearchField } from './pageConfig'
+import { ADMIN_ACTION_ICON_NAMES, clampProductIcon } from '@/components/Icon/src/productIconDomains'
 
 defineOptions({ name: 'SkitAdminTable' })
 

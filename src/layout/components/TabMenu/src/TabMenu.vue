@@ -4,6 +4,10 @@ import { useAppStore } from '@/store/modules/app'
 
 import { ElScrollbar } from 'element-plus'
 import { Icon } from '@/components/Icon'
+import {
+  PRODUCT_ROUTE_ICON_NAMES,
+  clampProductIcon
+} from '@/components/Icon/src/productIconDomains'
 import { Menu } from '@/layout/components/Menu'
 import { pathResolve } from '@/utils/routerHelper'
 import { cloneDeep } from 'lodash-es'
@@ -283,7 +287,9 @@ export default defineComponent({
                     }}
                   >
                     <div>
-                      <Icon icon={item?.meta?.icon}></Icon>
+                      <Icon
+                        icon={clampProductIcon(item?.meta?.icon, PRODUCT_ROUTE_ICON_NAMES)}
+                      ></Icon>
                     </div>
                     {!unref(showTitle) ? undefined : (
                       <p class="mt-5px break-words px-2px">{t(item.meta?.title)}</p>

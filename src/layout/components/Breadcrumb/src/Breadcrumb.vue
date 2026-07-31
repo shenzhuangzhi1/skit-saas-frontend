@@ -8,6 +8,10 @@ import { filter, treeToList } from '@/utils/tree'
 import type { RouteLocationNormalizedLoaded, RouteMeta } from 'vue-router'
 
 import { Icon } from '@/components/Icon'
+import {
+  PRODUCT_ROUTE_ICON_NAMES,
+  clampProductIcon
+} from '@/components/Icon/src/productIconDomains'
 import { useAppStore } from '@/store/modules/app'
 import { useDesign } from '@/hooks/web/useDesign'
 
@@ -53,7 +57,11 @@ export default defineComponent({
           <ElBreadcrumbItem to={{ path: disabled ? '' : v.path }} key={v.name}>
             {meta?.icon && breadcrumbIcon.value ? (
               <div class="flex items-center">
-                <Icon icon={meta.icon} class="mr-[2px]" svgClass="inline-block"></Icon>
+                <Icon
+                  icon={clampProductIcon(meta.icon, PRODUCT_ROUTE_ICON_NAMES)}
+                  class="mr-[2px]"
+                  svgClass="inline-block"
+                ></Icon>
                 {t(v?.meta?.title)}
               </div>
             ) : (

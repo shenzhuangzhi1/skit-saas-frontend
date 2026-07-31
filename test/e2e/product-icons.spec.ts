@@ -5,29 +5,55 @@ import { installProductApiFixture, seedAuthenticatedProductSession } from './fix
 const ICONIFY_HOSTS = new Set(['api.iconify.design', 'api.simplesvg.com', 'api.unisvg.com'])
 
 const retainedSurfaces = [
-  { name: 'Home', path: '/index' },
-  { name: 'Profile', path: '/user/profile' },
-  { name: 'API Error Log', path: '/skit/general/api-error-log' },
-  { name: 'Ad Consumption', path: '/skit/ad-consumption' },
-  { name: 'Ad Monitor', path: '/skit/ad-record' },
-  { name: 'Tenant Agents', path: '/skit/user-center/agents' },
-  { name: 'Application Users', path: '/skit/user-center/users' },
-  { name: 'Notifications', path: '/user/notify-message' }
+  {
+    name: 'Home',
+    path: '/index',
+    selector: '[class*="tags-view__item"].is-active svg.iconify[data-icon="ep:home-filled"]'
+  },
+  {
+    name: 'Profile',
+    path: '/user/profile',
+    selector: '.list-group-item svg.iconify[data-icon="fontisto:email"]'
+  },
+  {
+    name: 'API Error Log',
+    path: '/skit/general/api-error-log',
+    selector: '.el-form svg.iconify[data-icon="ep:download"]'
+  },
+  {
+    name: 'Ad Consumption',
+    path: '/skit/ad-consumption',
+    selector: '.consumption-page .filter-actions svg.iconify[data-icon="ep:refresh-left"]'
+  },
+  {
+    name: 'Ad Monitor',
+    path: '/skit/ad-record',
+    selector: '.ad-monitor-page .monitor-filters svg.iconify[data-icon="ep:refresh-left"]'
+  },
+  {
+    name: 'Tenant Agents',
+    path: '/skit/user-center/agents',
+    selector: 'button:has-text("新增代理商") svg.iconify[data-icon="ep:office-building"]'
+  },
+  {
+    name: 'Application Users',
+    path: '/skit/user-center/users',
+    selector: '.user-management-page .el-form svg.iconify[data-icon="ep:search"]'
+  },
+  {
+    name: 'Notifications',
+    path: '/user/notify-message',
+    selector: '.el-form svg.iconify[data-icon="ep:reading"]'
+  }
 ]
 
-const expectRenderedIcons = async (page: Page, surface: string) => {
+const expectRenderedIcon = async (page: Page, surface: string, selector: string) => {
   await expect(page.locator('#app')).not.toBeEmpty()
-  const icons = page.locator('svg.iconify')
-  await expect
-    .poll(() => icons.count(), { message: `${surface} must render product icons` })
-    .toBeGreaterThan(0)
-
-  const emptyIcons = await icons.evaluateAll((nodes) =>
-    nodes
-      .map((node, index) => ({ index, body: node.innerHTML.trim() }))
-      .filter(({ body }) => body.length === 0)
-  )
-  expect(emptyIcons, `${surface} contains an empty product SVG`).toEqual([])
+  const icon = page.locator(`${selector}:visible`).first()
+  await expect(icon, `${surface} must render its expected product icon`).toBeVisible({
+    timeout: 15_000
+  })
+  await expect.poll(() => icon.evaluate((node) => node.innerHTML.trim().length)).toBeGreaterThan(0)
 }
 
 test('retained product icons render locally with Iconify networks blocked', async ({ page }) => {
@@ -71,7 +97,11 @@ test('retained product icons render locally with Iconify networks blocked', asyn
   await page.goto('/login')
   const loginPassword = page.locator('#skit-login-password')
   await expect(loginPassword).toBeVisible({ timeout: 15_000 })
-  await expectRenderedIcons(page, 'Login')
+  await expectRenderedIcon(
+    page,
+    'Login security notice',
+    '.security-note svg.iconify[data-icon="ep:lock"]'
+  )
   await expect(loginPassword).toHaveAttribute('type', 'password')
   await loginPassword.fill('product-icon-smoke')
   await loginPassword.locator('xpath=../..').locator('.el-input__suffix .el-input__icon').click()
@@ -83,24 +113,54 @@ test('retained product icons render locally with Iconify networks blocked', asyn
     await page.goto(surface.path)
     await expect(page).toHaveURL(new RegExp(`${surface.path.replaceAll('/', '\\/')}(?:\\?.*)?$`))
     await expect(page.locator('.header-theme-toggle')).toBeVisible({ timeout: 15_000 })
-    await expectRenderedIcons(page, surface.name)
+    await expectRenderedIcon(page, surface.name, surface.selector)
   }
 
   await page.goto('/skit/general/api-error-log')
   await page.getByRole('button', { name: '详细' }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
-  await expectRenderedIcons(page, 'API Error Log dialog')
+  await expect(page.getByRole('dialog')).toContainText('ProductIconSmoke')
   await page.keyboard.press('Escape')
+
+  await page.goto('/skit/general/attachment')
+  await expect(page.getByText('smoke-attachment.png', { exact: true })).toBeVisible()
+  await expectRenderedIcon(
+    page,
+    'AdminTable view row action',
+    '.btn-operate svg.iconify[data-icon="ep:view"]'
+  )
+  await expectRenderedIcon(
+    page,
+    'AdminTable edit row action',
+    '.btn-operate svg.iconify[data-icon="ep:edit"]'
+  )
 
   await page.goto('/index')
   const themeToggle = page.locator('.header-theme-toggle')
   const initialThemeLabel = await themeToggle.getAttribute('aria-label')
+  const initialThemeIcon = await themeToggle
+    .locator('svg.iconify[data-icon]')
+    .getAttribute('data-icon')
   await themeToggle.click()
   await expect(themeToggle).not.toHaveAttribute('aria-label', initialThemeLabel || '')
+  await expect(themeToggle.locator('svg.iconify[data-icon]')).not.toHaveAttribute(
+    'data-icon',
+    initialThemeIcon || ''
+  )
 
   const screenfull = page.locator('.v-screenfull')
+  await expectRenderedIcon(
+    page,
+    'Fullscreen enter control',
+    '.v-screenfull svg.iconify[data-icon="zmdi:fullscreen"]'
+  )
   await screenfull.click()
   await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true)
+  await expectRenderedIcon(
+    page,
+    'Fullscreen exit control',
+    '.v-screenfull svg.iconify[data-icon="zmdi:fullscreen-exit"]'
+  )
   await screenfull.click()
   await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false)
 
@@ -109,15 +169,41 @@ test('retained product icons render locally with Iconify networks blocked', asyn
   const visibleContextMenu = page.locator('.v-context-menu-popper:visible')
   await expect(visibleContextMenu).toHaveCount(1)
   await expect(visibleContextMenu).toBeVisible()
-  await expectRenderedIcons(page, 'TagsView context menu')
+  const contextIcons = visibleContextMenu.locator('svg.iconify[data-icon]')
+  await expect(contextIcons).toHaveCount(6)
+  expect(
+    await contextIcons.evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute('data-icon')).sort()
+    )
+  ).toEqual(
+    [
+      'ep:close',
+      'ep:d-arrow-left',
+      'ep:d-arrow-right',
+      'ep:discount',
+      'ep:minus',
+      'ep:refresh'
+    ].sort()
+  )
+  expect(
+    await contextIcons.evaluateAll(
+      (nodes) => nodes.filter((node) => node.innerHTML.trim().length === 0).length
+    )
+  ).toBe(0)
 
   await page.goto('/user/profile')
   await page.getByRole('tab').nth(1).click()
   const profilePassword = page.locator('.v-input-password input').first()
+  const profilePasswordWrap = page.locator('.v-input-password').first()
   await expect(profilePassword).toHaveAttribute('type', 'password')
+  await expectRenderedIcon(
+    page,
+    'Profile hidden-password control',
+    '.v-input-password svg.iconify[data-icon="ep:hide"]'
+  )
   await page.locator('.v-input-password .el-input__icon').first().click()
   await expect(profilePassword).toHaveAttribute('type', 'text')
-  await expectRenderedIcons(page, 'Profile password controls')
+  await expect(profilePasswordWrap.locator('svg.iconify[data-icon="ep:view"]')).toBeVisible()
 
   expect(remoteIconRequests, 'Iconify remote APIs must remain unused').toEqual([])
   expect(missingIconMessages, 'console must not report missing product icons').toEqual([])

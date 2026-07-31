@@ -5,6 +5,7 @@ import { useDesign } from '@/hooks/web/useDesign'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { contextMenuSchema } from '@/types/contextMenu'
 import type { ElDropdown } from 'element-plus'
+import { CONTEXT_MENU_ICON_NAMES, clampProductIcon } from '@/components/Icon/src/productIconDomains'
 
 defineOptions({ name: 'ContextMenu' })
 
@@ -67,7 +68,7 @@ defineExpose({
           :disabled="item.disabled"
           :divided="item.divided"
         >
-          <Icon :icon="item.icon" />
+          <Icon :icon="clampProductIcon(item.icon, CONTEXT_MENU_ICON_NAMES)" />
           {{ t(item.label) }}
         </ElDropdownItem>
       </ElDropdownMenu>

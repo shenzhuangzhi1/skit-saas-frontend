@@ -41,7 +41,7 @@ const getSvgClass = computed(() => {
 
 <template>
   <ElIcon :class="prefixCls" :color="color" :size="size">
-    <svg v-if="isLocal" :class="getSvgClass">
+    <svg v-if="isLocal" :class="getSvgClass" :data-icon="symbolId">
       <use :xlink:href="symbolId" />
     </svg>
 
@@ -49,6 +49,7 @@ const getSvgClass = computed(() => {
       v-else-if="bundledIcon"
       :icon="bundledIcon"
       :class="getSvgClass"
+      :data-icon="symbolId"
       :style="{ fontSize: `${size}px`, color }"
     />
   </ElIcon>

@@ -4,6 +4,10 @@ import { useConfigGlobal } from '@/hooks/web/useConfigGlobal'
 import type { ZxcvbnResult } from '@zxcvbn-ts/core'
 import { zxcvbn } from '@zxcvbn-ts/core'
 import { useDesign } from '@/hooks/web/useDesign'
+import {
+  INPUT_PASSWORD_ICON_NAMES,
+  clampProductIcon
+} from '@/components/Icon/src/productIconDomains'
 
 defineOptions({ name: 'InputPassword' })
 
@@ -61,7 +65,11 @@ const getIconName = computed(() => (unref(textType) === 'password' ? 'ep:hide' :
   <div :class="[prefixCls, `${prefixCls}--${configGlobal?.size}`]">
     <ElInput v-model="valueRef" :type="textType" v-bind="$attrs">
       <template #suffix>
-        <Icon :icon="getIconName" class="el-input__icon cursor-pointer" @click="changeTextType" />
+        <Icon
+          :icon="clampProductIcon(getIconName, INPUT_PASSWORD_ICON_NAMES)"
+          class="el-input__icon cursor-pointer"
+          @click="changeTextType"
+        />
       </template>
     </ElInput>
     <div
