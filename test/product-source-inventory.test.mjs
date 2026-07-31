@@ -9,8 +9,8 @@ const repositoryRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const read = (relativePath) => readFileSync(resolve(repositoryRoot, relativePath), 'utf8')
 const inventory = JSON.parse(read('config/product-source-inventory.json'))
 
-const forbiddenRoots = [...inventory.forbidden.viewRoots, ...inventory.forbidden.apiRoots]
-const retainedRoots = [...inventory.retained.viewRoots, ...inventory.retained.apiRoots]
+const forbiddenRoots = Object.values(inventory.forbidden).flat()
+const retainedRoots = Object.values(inventory.retained).flat()
 const inventoryRoots = [...forbiddenRoots, ...retainedRoots]
 
 const trackedFiles = execFileSync('git', ['ls-files', '--', ...inventoryRoots], {
