@@ -4,8 +4,8 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${repo_root}"
 
-command -v node >/dev/null 2>&1 || { echo "Install Node.js 22+ before frontend verification." >&2; exit 1; }
-command -v pnpm >/dev/null 2>&1 || { echo "Install pnpm 10+ before frontend verification." >&2; exit 1; }
+command -v node >/dev/null 2>&1 || { echo "Install Node.js >=20.19.0 (Node.js 22 LTS recommended) before frontend verification." >&2; exit 1; }
+command -v pnpm >/dev/null 2>&1 || { echo "Enable Corepack and use the pinned pnpm@9.15.9 before frontend verification." >&2; exit 1; }
 
 stash_marker=""
 restore_worktree() {
