@@ -164,9 +164,6 @@ importers:
       vue-types:
         specifier: ^6.0.0
         version: 6.0.0(vue@3.5.34(typescript@6.0.3))
-      vue3-print-nb:
-        specifier: ^0.1.4
-        version: 0.1.4(typescript@6.0.3)
       vue3-signature:
         specifier: ^0.4.4
         version: 0.4.4(vue@3.5.34(typescript@6.0.3))
@@ -4908,9 +4905,6 @@ packages:
     peerDependenciesMeta:
       vue:
         optional: true
-
-  vue3-print-nb@0.1.4:
-    resolution: {integrity: sha512-LExI7viEzplR6ZKQ2b+V4U0cwGYbVD4fut/XHvk3UPGlT5CcvIGs6VlwGp107aKgk6P8Pgx4rco3Rehv2lti3A==}
 
   vue3-signature@0.4.4:
     resolution: {integrity: sha512-pXMQVjF7hz4gHXB9H0gmUUCmhHytL/00RasKjcTKd7K/46dhUhpl+eui3sLpCHDEqAt5XSRINJUFzXIU5/rBSw==}
@@ -10052,12 +10046,6 @@ snapshots:
   vue-types@6.0.0(vue@3.5.34(typescript@6.0.3)):
     optionalDependencies:
       vue: 3.5.34(typescript@6.0.3)
-
-  vue3-print-nb@0.1.4(typescript@6.0.3):
-    dependencies:
-      vue: 3.5.34(typescript@6.0.3)
-    transitivePeerDependencies:
-      - typescript
 
   vue3-signature@0.4.4(vue@3.5.34(typescript@6.0.3)):
     dependencies:
