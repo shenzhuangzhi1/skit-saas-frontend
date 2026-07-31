@@ -8,6 +8,8 @@ const PRODUCT_ICON_VARIABLE = 'productIconCollections'
 const ICON_PROPERTY_NAMES = new Set(['icon', 'preIcon'])
 const SOURCE_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.vue'])
 const ICON_NAME_PATTERN = /\b([a-z0-9]+(?:-[a-z0-9]+)*):([a-z0-9][a-z0-9_/-]*)\b/gi
+const ICON_PREFIX_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const ICON_RECORD_NAME_PATTERN = /^[a-z0-9][a-z0-9_-]*(?:\/[a-z0-9][a-z0-9_-]*)*$/
 
 const normalizePath = (path) => path.split(sep).join('/')
 const normalizeExpression = (expression) => expression.replace(/\s+/g, ' ').trim()
@@ -55,7 +57,7 @@ const objectValue = (node, label) => {
   return value
 }
 
-export const readProductIconManifest = ({ root, manifestPath }) => {
+const parseProductIconManifest = ({ root, manifestPath }) => {
   const absoluteManifestPath = resolve(root, manifestPath)
   const source = readFileSync(absoluteManifestPath, 'utf8')
   const sourceFile = ts.createSourceFile(
@@ -85,7 +87,9 @@ export const readProductIconManifest = ({ root, manifestPath }) => {
   }
 
   const iconNames = new Set()
+  const directIconNames = new Set()
   const prefixes = new Set()
+  const aliasParentByName = new Map()
   for (const [index, element] of initializer.elements.entries()) {
     const collection = objectValue(element, `collection ${index}`)
     const prefixProperty = objectProperty(collection, 'prefix')
@@ -98,11 +102,26 @@ export const readProductIconManifest = ({ root, manifestPath }) => {
     }
 
     const prefix = stringValue(prefixProperty.initializer, `collection ${index} prefix`)
+    if (!ICON_PREFIX_PATTERN.test(prefix)) {
+      throw new Error(`invalid product icon prefix: ${prefix}`)
+    }
+    if (prefixes.has(prefix)) {
+      throw new Error(`duplicate product icon prefix: ${prefix}`)
+    }
     const icons = objectValue(iconsProperty.initializer, `collection ${prefix} icons`)
     prefixes.add(prefix)
     for (const icon of icons.properties) {
       const name = propertyName(icon)
-      if (name) iconNames.add(`${prefix}:${name}`)
+      if (!name) throw new Error(`collection ${prefix} contains an invalid icon property`)
+      const fullName = `${prefix}:${name}`
+      if (!ICON_RECORD_NAME_PATTERN.test(name)) {
+        throw new Error(`invalid product icon name: ${fullName}`)
+      }
+      if (iconNames.has(fullName)) {
+        throw new Error(`duplicate product icon name: ${fullName}`)
+      }
+      iconNames.add(fullName)
+      directIconNames.add(fullName)
     }
 
     const aliasesProperty = objectProperty(collection, 'aliases')
@@ -110,14 +129,59 @@ export const readProductIconManifest = ({ root, manifestPath }) => {
       const aliases = objectValue(aliasesProperty.initializer, `collection ${prefix} aliases`)
       for (const alias of aliases.properties) {
         const name = propertyName(alias)
-        if (name) iconNames.add(`${prefix}:${name}`)
+        if (!name) throw new Error(`collection ${prefix} contains an invalid alias property`)
+        const fullName = `${prefix}:${name}`
+        if (!ICON_RECORD_NAME_PATTERN.test(name)) {
+          throw new Error(`invalid product icon name: ${fullName}`)
+        }
+        if (iconNames.has(fullName)) {
+          throw new Error(`duplicate product icon name: ${fullName}`)
+        }
+        if (!ts.isPropertyAssignment(alias)) {
+          throw new Error(`product icon alias must be a property assignment: ${fullName}`)
+        }
+        const aliasValue = objectValue(alias.initializer, `product icon alias ${fullName}`)
+        const parentProperty = objectProperty(aliasValue, 'parent')
+        if (!parentProperty || !ts.isPropertyAssignment(parentProperty)) {
+          throw new Error(`product icon alias is missing parent: ${fullName}`)
+        }
+        const parent = stringValue(
+          parentProperty.initializer,
+          `product icon alias ${fullName} parent`
+        )
+        const fullParent = `${prefix}:${parent}`
+        iconNames.add(fullName)
+        aliasParentByName.set(fullName, fullParent)
       }
+    }
+  }
+
+  for (const [aliasName, initialParent] of aliasParentByName) {
+    const visited = new Set([aliasName])
+    let parent = initialParent
+    while (!directIconNames.has(parent)) {
+      if (visited.has(parent) || !aliasParentByName.has(parent)) {
+        throw new Error(`unresolved product icon alias: ${aliasName} -> ${parent}`)
+      }
+      visited.add(parent)
+      parent = aliasParentByName.get(parent)
     }
   }
 
   return {
     iconNames,
-    prefixes
+    prefixes,
+    directIconNames,
+    aliasParentByName
+  }
+}
+
+export const readProductIconManifest = (options) => {
+  const manifest = parseProductIconManifest(options)
+  return {
+    iconNames: sortStrings(manifest.iconNames),
+    prefixes: sortStrings(manifest.prefixes),
+    aliasParents: sortStrings(new Set(manifest.aliasParentByName.values()))
   }
 }
 
@@ -144,8 +208,58 @@ const addDynamicBinding = (file, expression, state) => {
   state.dynamicBindings.set(`${file}\0${normalized}`, { file, expression: normalized })
 }
 
+const parseIconExpression = (expression) => {
+  const sourceFile = ts.createSourceFile(
+    'product-icon-expression.ts',
+    `const __productIcon = (${expression})`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX
+  )
+  const statement = sourceFile.statements[0]
+  if (
+    !statement ||
+    !ts.isVariableStatement(statement) ||
+    statement.declarationList.declarations.length !== 1
+  ) {
+    return undefined
+  }
+  return statement.declarationList.declarations[0].initializer
+}
+
+const collectStaticIconValueBranches = (node, state) => {
+  const value = unwrapExpression(node)
+  if (!value) return false
+
+  if (ts.isStringLiteralLike(value) || ts.isNoSubstitutionTemplateLiteral(value)) {
+    addIconNames(value.text, state)
+    return true
+  }
+
+  if (ts.isConditionalExpression(value)) {
+    const whenTrueIsStatic = collectStaticIconValueBranches(value.whenTrue, state)
+    const whenFalseIsStatic = collectStaticIconValueBranches(value.whenFalse, state)
+    return whenTrueIsStatic && whenFalseIsStatic
+  }
+
+  if (
+    ts.isBinaryExpression(value) &&
+    (value.operatorToken.kind === ts.SyntaxKind.BarBarToken ||
+      value.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken)
+  ) {
+    const leftIsStatic = collectStaticIconValueBranches(value.left, state)
+    const rightIsStatic = collectStaticIconValueBranches(value.right, state)
+    return leftIsStatic && rightIsStatic
+  }
+
+  return false
+}
+
 const scanIconExpression = (file, expression, state) => {
-  if (addIconNames(expression, state) === 0) addDynamicBinding(file, expression, state)
+  const parsed = parseIconExpression(expression)
+  if (!parsed || !collectStaticIconValueBranches(parsed, state)) {
+    addDynamicBinding(file, expression, state)
+  }
 }
 
 const scanTemplateNode = (node, file, state) => {
@@ -193,7 +307,18 @@ const scanScript = (source, file, state, scriptKind = ts.ScriptKind.TSX) => {
     }
 
     if (ts.isPropertyAssignment(node) && ICON_PROPERTY_NAMES.has(propertyName(node))) {
-      addIconNames(node.initializer.getText(sourceFile), state)
+      const isDefinePropsSchema =
+        ts.isObjectLiteralExpression(node.parent) &&
+        ts.isCallExpression(node.parent.parent) &&
+        ts.isIdentifier(node.parent.parent.expression) &&
+        node.parent.parent.expression.text === 'defineProps'
+      if (!isDefinePropsSchema) {
+        scanIconExpression(file, node.initializer.getText(sourceFile), state)
+      }
+    }
+
+    if (ts.isShorthandPropertyAssignment(node) && ICON_PROPERTY_NAMES.has(propertyName(node))) {
+      scanIconExpression(file, node.name.getText(sourceFile), state)
     }
 
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
@@ -242,53 +367,9 @@ const sourceModule = (root, moduleId) => {
   return { absolutePath, file }
 }
 
-export const APPROVED_PRODUCT_ICON_BINDINGS = [
-  {
-    file: 'src/components/InputPassword/src/InputPassword.vue',
-    expression: 'getIconName',
-    source: 'computed exclusively from ep:view and ep:hide literals'
-  },
-  {
-    file: 'src/layout/components/Breadcrumb/src/Breadcrumb.vue',
-    expression: 'meta.icon',
-    source: 'productRoutes route metadata'
-  },
-  {
-    file: 'src/layout/components/Menu/src/components/useRenderMenuTitle.tsx',
-    expression: 'meta.icon',
-    source: 'productRoutes route metadata'
-  },
-  {
-    file: 'src/layout/components/TabMenu/src/TabMenu.vue',
-    expression: 'item?.meta?.icon',
-    source: 'productRoutes route metadata'
-  },
-  {
-    file: 'src/layout/components/TagsView/src/TagsView.vue',
-    expression: 'item?.meta?.icon || item.matched[item.matched.length - 1].meta.icon',
-    source: 'visited routes derived from productRoutes'
-  },
-  {
-    file: 'src/layout/components/ContextMenu/src/ContextMenu.vue',
-    expression: 'item.icon',
-    source: 'fixed TagsView context-menu schemas'
-  },
-  {
-    file: 'src/views/skit/admin/AdminTable.vue',
-    expression: 'action.icon',
-    source: 'fixed ep:view and ep:edit table actions'
-  }
-]
-
-export const assertProductIconCoverage = ({
-  root = process.cwd(),
-  moduleIds,
-  manifestPath = 'src/plugins/svgIcon/productIconCollections.ts',
-  approvedDynamicBindings = APPROVED_PRODUCT_ICON_BINDINGS
-}) => {
-  const manifest = readProductIconManifest({ root, manifestPath })
+const collectProductIconUsageState = ({ root, moduleIds, manifestPrefixes }) => {
   const state = {
-    manifestPrefixes: manifest.prefixes,
+    manifestPrefixes,
     iconNames: new Set(),
     localSvgNames: new Set(),
     dynamicBindings: new Map()
@@ -298,12 +379,121 @@ export const assertProductIconCoverage = ({
     const module = sourceModule(root, moduleId)
     if (module) scanModule(module.absolutePath, module.file, state)
   }
+  return state
+}
+
+export const collectProductIconUsage = ({
+  root = process.cwd(),
+  moduleIds,
+  manifestPath = 'src/plugins/svgIcon/productIconCollections.ts'
+}) => {
+  const manifest = parseProductIconManifest({ root, manifestPath })
+  const state = collectProductIconUsageState({
+    root,
+    moduleIds,
+    manifestPrefixes: manifest.prefixes
+  })
+  return {
+    iconNames: sortStrings(state.iconNames),
+    dynamicBindings: [...state.dynamicBindings.values()].sort((left, right) =>
+      `${left.file}\0${left.expression}`.localeCompare(`${right.file}\0${right.expression}`)
+    ),
+    localSvgNames: sortStrings(state.localSvgNames)
+  }
+}
+
+export const APPROVED_PRODUCT_ICON_BINDINGS = [
+  {
+    file: 'src/components/InputPassword/src/InputPassword.vue',
+    expression: 'getIconName',
+    source: 'computed exclusively from ep:view and ep:hide literals',
+    sourceFiles: ['src/components/InputPassword/src/InputPassword.vue']
+  },
+  {
+    file: 'src/layout/components/Breadcrumb/src/Breadcrumb.vue',
+    expression: 'meta.icon',
+    source: 'productRoutes route metadata',
+    sourceFiles: ['src/router/productRoutes.ts']
+  },
+  {
+    file: 'src/layout/components/Menu/src/components/useRenderMenuTitle.tsx',
+    expression: 'meta.icon',
+    source: 'productRoutes route metadata',
+    sourceFiles: ['src/router/productRoutes.ts']
+  },
+  {
+    file: 'src/layout/components/Menu/src/Menu.vue',
+    expression: 'firstVisibleChild.meta?.icon',
+    source: 'first visible child from productRoutes route metadata',
+    sourceFiles: ['src/router/productRoutes.ts']
+  },
+  {
+    file: 'src/layout/components/TabMenu/src/TabMenu.vue',
+    expression: 'item?.meta?.icon',
+    source: 'productRoutes route metadata',
+    sourceFiles: ['src/router/productRoutes.ts']
+  },
+  {
+    file: 'src/layout/components/TagsView/src/TagsView.vue',
+    expression: 'item?.meta?.icon || item.matched[item.matched.length - 1].meta.icon',
+    source: 'visited routes derived from productRoutes',
+    sourceFiles: ['src/router/productRoutes.ts']
+  },
+  {
+    file: 'src/layout/components/ContextMenu/src/ContextMenu.vue',
+    expression: 'item.icon',
+    source: 'fixed TagsView context-menu schemas',
+    sourceFiles: ['src/layout/components/TagsView/src/TagsView.vue']
+  },
+  {
+    file: 'src/views/skit/admin/AdminTable.vue',
+    expression: 'action.icon',
+    source: 'fixed ep:view and ep:edit table actions',
+    sourceFiles: ['src/views/skit/admin/AdminTable.vue']
+  }
+]
+
+export const assertProductIconCoverage = ({
+  root = process.cwd(),
+  moduleIds,
+  manifestPath = 'src/plugins/svgIcon/productIconCollections.ts',
+  approvedDynamicBindings = APPROVED_PRODUCT_ICON_BINDINGS
+}) => {
+  const manifest = parseProductIconManifest({ root, manifestPath })
+  const state = collectProductIconUsageState({
+    root,
+    moduleIds,
+    manifestPrefixes: manifest.prefixes
+  })
 
   const missingIcons = sortStrings(
     [...state.iconNames].filter((name) => !manifest.iconNames.has(name))
   )
   if (missingIcons.length > 0) {
     throw new Error(`missing product icons:\n${missingIcons.join('\n')}`)
+  }
+
+  const requiredManifestIcons = new Set(state.iconNames)
+  for (const name of state.iconNames) {
+    let parent = manifest.aliasParentByName.get(name)
+    while (parent) {
+      requiredManifestIcons.add(parent)
+      parent = manifest.aliasParentByName.get(parent)
+    }
+  }
+  const extraIcons = sortStrings(
+    [...manifest.iconNames].filter((name) => !requiredManifestIcons.has(name))
+  )
+  const requiredPrefixes = new Set([...requiredManifestIcons].map((name) => name.split(':', 1)[0]))
+  const extraPrefixes = sortStrings(
+    [...manifest.prefixes]
+      .filter((prefix) => !requiredPrefixes.has(prefix))
+      .map((prefix) => `${prefix}:*`)
+  )
+  if (extraIcons.length > 0 || extraPrefixes.length > 0) {
+    throw new Error(
+      `extra product manifest icons:\n${[...extraIcons, ...extraPrefixes].join('\n')}`
+    )
   }
 
   const missingLocalSvgs = sortStrings(
@@ -316,17 +506,86 @@ export const assertProductIconCoverage = ({
     throw new Error(`missing local SVG:\n${missingLocalSvgs.join('\n')}`)
   }
 
-  const approvedKeys = new Set(
-    approvedDynamicBindings.map(
-      ({ file, expression }) => `${normalizePath(file)}\0${normalizeExpression(expression)}`
-    )
+  const normalizedModuleIds = new Set(
+    moduleIds
+      .map((moduleId) => sourceModule(root, moduleId)?.file)
+      .filter(Boolean)
+      .map(normalizePath)
   )
+  const approvedKeys = new Set()
+  const finiteSourceAudits = []
+  for (const approval of approvedDynamicBindings) {
+    const file = normalizePath(approval.file)
+    const expression = normalizeExpression(approval.expression)
+    const key = `${file}\0${expression}`
+    if (approvedKeys.has(key)) {
+      throw new Error(`duplicate approved dynamic icon binding: ${file}: ${expression}`)
+    }
+    if (typeof approval.source !== 'string' || !approval.source.trim()) {
+      throw new Error(
+        `approved dynamic icon binding requires source evidence: ${file}: ${expression}`
+      )
+    }
+    if (!Array.isArray(approval.sourceFiles) || approval.sourceFiles.length === 0) {
+      throw new Error(
+        `approved dynamic icon binding requires finite source files: ${file}: ${expression}`
+      )
+    }
+    for (const rawSourceFile of approval.sourceFiles) {
+      const sourceFile = normalizePath(rawSourceFile)
+      if (!normalizedModuleIds.has(sourceFile) || !existsSync(resolve(root, sourceFile))) {
+        throw new Error(
+          `approved dynamic icon binding source is outside the product graph: ${file}: ${expression} -> ${sourceFile}`
+        )
+      }
+    }
+    const sourceState = {
+      manifestPrefixes: manifest.prefixes,
+      iconNames: new Set(),
+      localSvgNames: new Set(),
+      dynamicBindings: new Map()
+    }
+    for (const rawSourceFile of approval.sourceFiles) {
+      const sourceFile = normalizePath(rawSourceFile)
+      scanModule(resolve(root, sourceFile), sourceFile, sourceState)
+    }
+    if (sourceState.iconNames.size === 0 && sourceState.localSvgNames.size === 0) {
+      throw new Error(
+        `approved dynamic icon binding has no finite static icon domain: ${file}: ${expression}`
+      )
+    }
+    finiteSourceAudits.push({ file, expression, sourceState })
+    approvedKeys.add(key)
+  }
+  const unapprovedSourceBindings = finiteSourceAudits.flatMap(({ file, expression, sourceState }) =>
+    [...sourceState.dynamicBindings]
+      .filter(([key]) => !approvedKeys.has(key))
+      .map(([, binding]) => `${file}: ${expression} -> ${binding.file}: ${binding.expression}`)
+  )
+  if (unapprovedSourceBindings.length > 0) {
+    throw new Error(
+      `approved icon source contains an unapproved dynamic binding:\n${sortStrings(
+        unapprovedSourceBindings
+      ).join('\n')}`
+    )
+  }
   const unapprovedBindings = [...state.dynamicBindings]
     .filter(([key]) => !approvedKeys.has(key))
     .map(([, binding]) => `${binding.file}: ${binding.expression}`)
     .sort((left, right) => left.localeCompare(right))
   if (unapprovedBindings.length > 0) {
     throw new Error(`unapproved dynamic icon binding:\n${unapprovedBindings.join('\n')}`)
+  }
+
+  const staleApprovals = [...approvedKeys]
+    .filter((key) => !state.dynamicBindings.has(key))
+    .map((key) => {
+      const [file, expression] = key.split('\0')
+      return `${file}: ${expression}`
+    })
+    .sort((left, right) => left.localeCompare(right))
+  if (staleApprovals.length > 0) {
+    throw new Error(`stale approved dynamic icon binding:\n${staleApprovals.join('\n')}`)
   }
 
   return {

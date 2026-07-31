@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { propTypes } from '@/utils/propTypes'
-import { Icon as IconifyIcon } from '@iconify/vue'
+import { getIcon, Icon as IconifyIcon } from '@iconify/vue'
 import { useDesign } from '@/hooks/web/useDesign'
 
 defineOptions({ name: 'Icon' })
@@ -26,6 +26,13 @@ const symbolId = computed(() => {
   return unref(isLocal) ? `#icon-${props.icon.split('svg-icon:')[1]}` : props.icon
 })
 
+// Pass bundled icon data rather than a name. Unknown names therefore render
+// nothing locally and can never activate Iconify's remote API loader.
+const bundledIcon = computed(() => {
+  const name = unref(symbolId)
+  return !unref(isLocal) && typeof name === 'string' ? getIcon(name) : null
+})
+
 const getSvgClass = computed(() => {
   const { svgClass } = props
   return `iconify ${svgClass}`
@@ -39,8 +46,8 @@ const getSvgClass = computed(() => {
     </svg>
 
     <IconifyIcon
-      v-else
-      :icon="symbolId"
+      v-else-if="bundledIcon"
+      :icon="bundledIcon"
       :class="getSvgClass"
       :style="{ fontSize: `${size}px`, color }"
     />
