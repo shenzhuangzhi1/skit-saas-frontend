@@ -12,7 +12,12 @@ const write = (root, relativePath, content) => {
   writeFileSync(path, content)
 }
 
-const createFixture = ({ viewSource, icons = ['search', 'view'] }) => {
+const createFixture = ({
+  viewSource,
+  icons = ['search', 'view'],
+  manifestSource,
+  modulePath = 'src/View.vue'
+}) => {
   const root = mkdtempSync(join(tmpdir(), 'skit-product-icons-'))
   const manifestPath = 'src/plugins/svgIcon/productIconCollections.ts'
   const iconEntries = icons
@@ -22,15 +27,16 @@ const createFixture = ({ viewSource, icons = ['search', 'view'] }) => {
   write(
     root,
     manifestPath,
-    `export const productIconCollections = [{ "prefix": "ep", "icons": { ${iconEntries} } }]\n`
+    manifestSource ||
+      `export const productIconCollections = [{ "prefix": "ep", "icons": { ${iconEntries} } }]\n`
   )
-  write(root, 'src/View.vue', viewSource)
+  write(root, modulePath, viewSource)
 
   return {
     root,
     options: {
       root,
-      moduleIds: ['src/View.vue'],
+      moduleIds: [modulePath],
       manifestPath,
       approvedDynamicBindings: []
     }
@@ -102,4 +108,168 @@ test('rejects a local svg-icon name without a matching file', () => {
   } finally {
     rmSync(fixture.root, { recursive: true, force: true })
   }
+})
+
+test('rejects a mixed literal and unbounded dynamic icon expression', () => {
+  const fixture = createFixture({
+    viewSource: `<template><Icon :icon="ok ? 'ep:view' : serverRow.icon" /></template>\n`
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unapproved dynamic icon binding:[\s\S]*serverRow\.icon/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects an unbounded icon value in a script object', () => {
+  const fixture = createFixture({
+    viewSource: '<script setup>const action = { icon: serverRow.icon }</script>\n'
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unapproved dynamic icon binding:[\s\S]*serverRow\.icon/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects manifest icons that are not required by the product graph', () => {
+  const fixture = createFixture({
+    viewSource: '<template><Icon icon="ep:view" /></template>\n',
+    icons: ['view', 'warning']
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /extra product icons:[\s\S]*ep:warning/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects duplicate collection prefixes', () => {
+  const fixture = createFixture({
+    viewSource: '<template><Icon icon="ep:view" /></template>\n',
+    manifestSource: `export const productIconCollections = [
+      { prefix: 'ep', icons: { view: { body: '<path/>' } } },
+      { prefix: 'ep', icons: { search: { body: '<path/>' } } }
+    ]\n`
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /duplicate product icon prefix:[\s\S]*ep/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects duplicate and invalid icon names', async (t) => {
+  await t.test('duplicate icon name', () => {
+    const fixture = createFixture({
+      viewSource: '<template><Icon icon="ep:view" /></template>\n',
+      manifestSource: `export const productIconCollections = [{
+        prefix: 'ep',
+        icons: { view: { body: '<path/>' }, view: { body: '<path/>' } }
+      }]\n`
+    })
+
+    try {
+      assert.throws(
+        () => assertProductIconCoverage(fixture.options),
+        /duplicate product icon name:[\s\S]*ep:view/
+      )
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true })
+    }
+  })
+
+  await t.test('invalid icon name', () => {
+    const fixture = createFixture({
+      viewSource: '<template><Icon icon="ep:view" /></template>\n',
+      manifestSource: `export const productIconCollections = [{
+        prefix: 'ep',
+        icons: { view: { body: '<path/>' }, 'Bad Name': { body: '<path/>' } }
+      }]\n`
+    })
+
+    try {
+      assert.throws(
+        () => assertProductIconCoverage(fixture.options),
+        /invalid product icon name:[\s\S]*ep:Bad Name/
+      )
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true })
+    }
+  })
+})
+
+test('rejects an alias whose parent cannot be resolved', () => {
+  const fixture = createFixture({
+    viewSource: '<template><Icon icon="ep:visible" /></template>\n',
+    manifestSource: `export const productIconCollections = [{
+      prefix: 'ep',
+      icons: { view: { body: '<path/>' } },
+      aliases: { visible: { parent: 'missing' } }
+    }]\n`
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unresolved product icon alias:[\s\S]*ep:visible[\s\S]*ep:missing/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects stale or undocumented dynamic approvals', async (t) => {
+  await t.test('stale approval', () => {
+    const fixture = createFixture({
+      viewSource: '<template><Icon icon="ep:view" /></template>\n',
+      icons: ['view']
+    })
+    fixture.options.approvedDynamicBindings = [
+      { file: 'src/View.vue', expression: 'row.icon', source: 'fixture actions' }
+    ]
+
+    try {
+      assert.throws(
+        () => assertProductIconCoverage(fixture.options),
+        /stale approved dynamic icon binding:[\s\S]*row\.icon/
+      )
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true })
+    }
+  })
+
+  await t.test('empty source evidence', () => {
+    const fixture = createFixture({
+      viewSource: '<template><Icon :icon="row.icon" /></template>\n'
+    })
+    fixture.options.approvedDynamicBindings = [
+      { file: 'src/View.vue', expression: 'row.icon', source: '' }
+    ]
+
+    try {
+      assert.throws(
+        () => assertProductIconCoverage(fixture.options),
+        /approved dynamic icon binding requires source evidence:[\s\S]*row\.icon/
+      )
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true })
+    }
+  })
 })
