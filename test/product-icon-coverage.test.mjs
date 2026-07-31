@@ -101,6 +101,66 @@ test('rejects an unapproved dynamic icon binding', () => {
   }
 })
 
+test('rejects an unbounded Vue Icon prop spread', () => {
+  const fixture = createFixture({
+    viewSource:
+      '<template><Icon icon="ep:view" v-bind="serverProps" /></template><script setup>const serverProps = {}</script>\n',
+    icons: ['view']
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon prop spread:[\s\S]*v-bind="serverProps"/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects an unbounded JSX Icon prop spread', () => {
+  const fixture = createFixture({
+    modulePath: 'src/View.tsx',
+    viewSource:
+      "const serverProps = {}; export const View = () => <Icon icon=\"ep:view\" {...serverProps} />\n",
+    icons: ['view']
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon prop spread:[\s\S]*\{\.\.\.serverProps\}/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('an unrelated static icon cannot approve an unclamped dynamic binding', () => {
+  const fixture = createFixture({
+    viewSource:
+      '<template><Icon :icon="serverRow.icon" /><Icon icon="ep:view" /></template>\n',
+    icons: ['view']
+  })
+  fixture.options.approvedDynamicBindings = [
+    {
+      file: 'src/View.vue',
+      expression: 'serverRow.icon',
+      source: 'unrelated literal must not establish a finite runtime domain',
+      sourceFiles: ['src/View.vue']
+    }
+  ]
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /approved dynamic icon binding must use clampProductIcon:[\s\S]*serverRow\.icon/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
 test('rejects a local svg-icon name without a matching file', () => {
   const fixture = createFixture({
     viewSource: '<template><Icon icon="svg-icon:missing" /></template>\n',
