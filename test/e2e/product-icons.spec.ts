@@ -17,7 +17,7 @@ const retainedSurfaces = [
 
 const expectRenderedIcons = async (page: Page, surface: string) => {
   await expect(page.locator('#app')).not.toBeEmpty()
-  const icons = page.locator('svg')
+  const icons = page.locator('svg.iconify')
   await expect
     .poll(() => icons.count(), { message: `${surface} must render product icons` })
     .toBeGreaterThan(0)
