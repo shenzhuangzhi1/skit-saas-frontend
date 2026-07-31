@@ -23,7 +23,6 @@ declare global {
 
   interface Window {
     _hmt?: any[]
-    bpmnInstances?: any
   }
 
   type SummaryMethodProps<T extends Recordable = Recordable> = Parameters<

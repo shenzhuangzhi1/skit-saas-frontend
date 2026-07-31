@@ -78,6 +78,8 @@
       "src/api/infra/redis",
       "src/api/infra/websocket",
       "src/api/system/loginLog",
+      "src/api/system/area",
+      "src/api/system/dept",
       "src/api/system/mail",
       "src/api/system/menu",
       "src/api/system/notice",
@@ -111,10 +113,6 @@
       "src/api/system/notify",
       "src/api/infra/file",
       "src/api/infra/apiErrorLog"
-    ],
-    "phaseATemporaryApiRoots": [
-      "src/api/system/area",
-      "src/api/system/dept"
     ]
   },
   "productRouteContract": {

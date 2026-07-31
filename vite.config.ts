@@ -100,7 +100,6 @@ export default ({command, mode}: ConfigEnv): UserConfig => {
                     },
                     codeSplitting: {
                         groups: [
-                            { name: 'echarts', test: /node_modules[\\/]echarts[\\/]/ }, // 将 echarts 单独打包，参考 https://gitee.com/yudaocode/yudao-ui-admin-vue3/issues/IAB1SX 讨论
                             { name: 'vendor', test: /node_modules[\\/]/ }
                         ]
                     }
