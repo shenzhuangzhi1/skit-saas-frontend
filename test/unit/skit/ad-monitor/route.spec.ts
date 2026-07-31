@@ -6,7 +6,7 @@ const readSource = (path: string) => readFileSync(resolve(process.cwd(), path), 
 
 describe('advertising monitoring route', () => {
   it('replaces the editable sample ad record page with the dedicated read-only monitor', () => {
-    const source = readSource('src/router/modules/remaining.ts')
+    const source = readSource('src/router/productRoutes.ts')
     const routeStart = source.indexOf("path: '/skit/ad-record'")
     const nextRouteStart = source.indexOf("path: 'withdraw'", routeStart)
 

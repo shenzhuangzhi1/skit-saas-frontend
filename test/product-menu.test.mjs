@@ -24,7 +24,7 @@ test('product navigation keeps only Home, Skit SaaS, and hidden utility routes',
 
 test('Skit SaaS user management exposes agent and app user left submenus', () => {
   const source = readFileSync(
-    new URL('../src/router/modules/remaining.ts', import.meta.url),
+    new URL('../src/router/productRoutes.ts', import.meta.url),
     'utf8'
   )
   assert.equal(source.match(/name:\s*'SkitUserCenter'/g)?.length, 1)
@@ -54,7 +54,7 @@ test('local push verification runs the same Node product tests as CI', () => {
 
 test('Skit general management exposes API error logs only to super administrators', () => {
   const source = readFileSync(
-    new URL('../src/router/modules/remaining.ts', import.meta.url),
+    new URL('../src/router/productRoutes.ts', import.meta.url),
     'utf8'
   )
   const routeStart = source.indexOf("path: 'api-error-log'")
@@ -100,7 +100,7 @@ test('advertising monitor keeps the stable route name used by dashboard links', 
 
 test('product routes do not retain duplicate dashboard or legacy Douyin management', () => {
   const source = readFileSync(
-    new URL('../src/router/modules/remaining.ts', import.meta.url),
+    new URL('../src/router/productRoutes.ts', import.meta.url),
     'utf8'
   )
 
@@ -130,7 +130,7 @@ test('legacy sample configuration no longer exposes a second commission editor',
 
 test('legacy generic dashboard and system configuration sources are removed', () => {
   const routes = readFileSync(
-    new URL('../src/router/modules/remaining.ts', import.meta.url),
+    new URL('../src/router/productRoutes.ts', import.meta.url),
     'utf8'
   )
   const api = readFileSync(new URL('../src/api/skit/adminRecord/index.ts', import.meta.url), 'utf8')

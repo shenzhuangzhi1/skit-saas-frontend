@@ -64,7 +64,7 @@ describe('advertising consumption management contract', () => {
   })
 
   it('places consumption details under the advertising center without removing monitoring', () => {
-    const source = readSource('src/router/modules/remaining.ts')
+    const source = readSource('src/router/productRoutes.ts')
     const adCenterStart = source.indexOf("name: 'SkitAdCenter'")
     const withdrawStart = source.indexOf("path: 'withdraw'", adCenterStart)
     const route = source.slice(adCenterStart, withdrawStart)

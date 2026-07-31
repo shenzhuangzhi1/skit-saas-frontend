@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { store } from '@/store'
 import { cloneDeep } from 'lodash-es'
-import remainingRouter from '@/router/modules/remaining'
+import productRoutes from '@/router/productRoutes'
 import { flatMultiLevelRoutes } from '@/utils/routerHelper'
 import { CACHE_KEY, useCache } from '@/hooks/web/useCache'
 import { hasAnyRole } from '@/utils/role'
@@ -47,7 +47,7 @@ export const usePermissionStore = defineStore('permission', {
   actions: {
     async generateRoutes(): Promise<unknown> {
       return new Promise<void>(async (resolve) => {
-        // 产品路由全部由 remainingRouter 提供；不注册框架返回的会员、商城、CRM 等菜单。
+        // 产品路由全部由 productRoutes 提供；不注册框架返回的会员、商城、CRM 等菜单。
         this.addRouters = [
           {
             path: '/:path(.*)*',
@@ -63,7 +63,7 @@ export const usePermissionStore = defineStore('permission', {
         // 侧栏只展示首页和短剧 SaaS；隐藏工具路由继续保留。
         const userInfo = wsCache.get(CACHE_KEY.USER)
         const roles = (userInfo?.roles || []) as string[]
-        const roleFilteredRoutes = filterRoutesByRole(cloneDeep(remainingRouter), roles)
+        const roleFilteredRoutes = filterRoutesByRole(cloneDeep(productRoutes), roles)
         this.routers = selectProductTopLevelRoutes(roleFilteredRoutes)
         resolve()
       })

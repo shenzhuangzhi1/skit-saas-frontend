@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const routes = readFileSync(resolve(process.cwd(), 'src/router/modules/remaining.ts'), 'utf8')
+const routes = readFileSync(resolve(process.cwd(), 'src/router/productRoutes.ts'), 'utf8')
 const pageConfig = readFileSync(
   resolve(process.cwd(), 'src/views/skit/admin/pageConfig.ts'),
   'utf8'
