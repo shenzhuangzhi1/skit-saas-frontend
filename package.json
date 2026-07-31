@@ -27,6 +27,7 @@
     "lint:style": "stylelint --fix \"./src/**/*.{vue,less,postcss,css,scss}\" --cache --cache-location node_modules/.cache/stylelint/",
     "lint:style:check": "stylelint \"./src/**/*.{vue,less,postcss,css,scss}\" --cache --cache-location node_modules/.cache/stylelint/",
     "test:unit": "vitest run",
+    "verify:product-build": "node scripts/verify-product-build.mjs dist-prod",
     "lint:lint-staged": "lint-staged"
   },
   "dependencies": {

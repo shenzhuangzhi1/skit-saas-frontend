@@ -83,6 +83,7 @@ export default ({command, mode}: ConfigEnv): UserConfig => {
             chunkSizeWarningLimit: 2000,
             minify: 'oxc',
             outDir: env.VITE_OUT_DIR || 'dist',
+            manifest: true,
             reportCompressedSize: false,
             sourcemap: env.VITE_SOURCEMAP === 'true' ? 'inline' : false,
             rollupOptions: {
