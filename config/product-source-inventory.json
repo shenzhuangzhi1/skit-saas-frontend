@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "forbidden": {
+    "viewRoots": [
+      "src/views/ai",
+      "src/views/bpm",
+      "src/views/crm",
+      "src/views/erp",
+      "src/views/im",
+      "src/views/iot",
+      "src/views/mall",
+      "src/views/member",
+      "src/views/mes",
+      "src/views/mp",
+      "src/views/pay",
+      "src/views/report",
+      "src/views/wms",
+      "src/views/IFrame"
+    ],
+    "apiRoots": [
+      "src/api/ai",
+      "src/api/bpm",
+      "src/api/crm",
+      "src/api/erp",
+      "src/api/im",
+      "src/api/iot",
+      "src/api/mall",
+      "src/api/member",
+      "src/api/mes",
+      "src/api/mp",
+      "src/api/pay",
+      "src/api/wms"
+    ]
+  },
+  "retained": {
+    "viewRoots": [
+      "src/views/Home",
+      "src/views/Login",
+      "src/views/Profile",
+      "src/views/Redirect",
+      "src/views/Error",
+      "src/views/skit",
+      "src/views/infra/apiErrorLog",
+      "src/views/system/notify/my"
+    ],
+    "apiRoots": [
+      "src/api/skit",
+      "src/api/login",
+      "src/api/system/dict",
+      "src/api/system/user",
+      "src/api/system/notify",
+      "src/api/infra/file",
+      "src/api/infra/apiErrorLog"
+    ]
+  },
+  "productRouteContract": {
+    "source": "src/router/productRoutes.ts",
+    "recordCount": 32
+  }
+}
