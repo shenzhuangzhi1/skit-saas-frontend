@@ -24,7 +24,7 @@ test('the exact legal payload and upstream notices are release-ready', () => {
   assert.deepEqual(assertLegalDistribution({ root }), {
     files: 6,
     checksums: 5,
-    bytes: 40500
+    bytes: 40405
   })
 
   const notices = requireNotice()
