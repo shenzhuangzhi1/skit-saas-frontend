@@ -93,9 +93,7 @@ describe('explicit Skit product route contract', () => {
     }
     expect(byName.get('SkitAttachment')?.props).toEqual({ pageKey: 'attachment' })
     expect(byName.get('SkitDrama')?.props).toEqual({ pageKey: 'drama' })
-    expect(byName.get('SkitAdConsumptionLegacyRedirect')?.redirect).toBe(
-      '/skit/ad-consumption'
-    )
+    expect(byName.get('SkitAdConsumptionLegacyRedirect')?.redirect).toBe('/skit/ad-consumption')
     expect(byName.get('SkitAdRecordLegacyRedirect')?.redirect).toBe('/skit/ad-record')
     expect(byName.get('SkitUserLegacyRedirect')?.redirect).toBe('/skit/user-center/agents')
   })
@@ -125,23 +123,35 @@ describe('explicit Skit product route contract', () => {
   })
 
   it('keeps the static product router intact when an authenticated session resets', () => {
-    const before = router.getRoutes().map((route) => String(route.name ?? '')).sort()
+    const before = router
+      .getRoutes()
+      .map((route) => String(route.name ?? ''))
+      .sort()
 
     resetRouter()
 
-    expect(router.getRoutes().map((route) => String(route.name ?? '')).sort()).toEqual(before)
+    expect(
+      router
+        .getRoutes()
+        .map((route) => String(route.name ?? ''))
+        .sort()
+    ).toEqual(before)
     expect(router.hasRoute('SkitSaas')).toBe(true)
     expect(router.hasRoute('Login')).toBe(true)
   })
 
-  it.each(REMOVED_DEEP_LINKS)('resolves authenticated removed deep link %s to 404', (path) => {
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: productRoutes
-    })
-    const resolved = router.resolve(path)
+  it.each(REMOVED_DEEP_LINKS)(
+    'navigates authenticated removed deep link %s to 404',
+    async (path) => {
+      const router = createRouter({
+        history: createMemoryHistory(),
+        routes: productRoutes
+      })
+      await router.push(path)
+      const resolved = router.currentRoute.value
 
-    expect(resolved.matched.at(-1)?.path).toBe('/:pathMatch(.*)*')
-    expect(resolved.matched.at(-1)?.components.default).toBeDefined()
-  })
+      expect(resolved.matched.at(-1)?.path).toBe('/:pathMatch(.*)*')
+      expect(resolved.matched.at(-1)?.components.default).toBeDefined()
+    }
+  )
 })
