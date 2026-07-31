@@ -2,9 +2,6 @@ import { FormSchema } from '@/types/form'
 
 export interface PlaceholderModel {
   placeholder?: string
-  startPlaceholder?: string
-  endPlaceholder?: string
-  rangeSeparator?: string
 }
 
 export type FormProps = {

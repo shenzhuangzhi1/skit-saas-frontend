@@ -1,5 +1,3 @@
-import type { Slots } from 'vue'
-import { getSlot } from '@/utils/tsxHelper'
 import { PlaceholderModel } from './types'
 import { FormSchema } from '@/types/form'
 import { ColProps } from '@/types/components'
@@ -12,30 +10,9 @@ import { ColProps } from '@/types/components'
  */
 export const setTextPlaceholder = (schema: FormSchema): PlaceholderModel => {
   const { t } = useI18n()
-  const textMap = ['Input', 'Autocomplete', 'InputNumber', 'InputPassword']
-  const selectMap = ['Select', 'SelectV2', 'TimePicker', 'DatePicker', 'TimeSelect', 'TimeSelect']
-  if (textMap.includes(schema?.component as string)) {
+  if (schema.component === 'Input' || schema.component === 'InputNumber') {
     return {
       placeholder: t('common.inputText') + schema.label
-    }
-  }
-  if (selectMap.includes(schema?.component as string)) {
-    // 一些范围选择器
-    const twoTextMap = ['datetimerange', 'daterange', 'monthrange', 'datetimerange', 'daterange']
-    if (
-      twoTextMap.includes(
-        (schema?.componentProps?.type || schema?.componentProps?.isRange) as string
-      )
-    ) {
-      return {
-        startPlaceholder: t('common.startTimeText'),
-        endPlaceholder: t('common.endTimeText'),
-        rangeSeparator: '-'
-      }
-    } else {
-      return {
-        placeholder: t('common.selectText') + schema.label
-      }
     }
   }
   return {}
@@ -70,39 +47,13 @@ export const setGridProp = (col: ColProps = {}): ColProps => {
  * @returns 默认添加 clearable 属性
  */
 export const setComponentProps = (item: FormSchema): Recordable => {
-  const notNeedClearable = ['ColorPicker']
-  const componentProps: Recordable = notNeedClearable.includes(item.component as string)
-    ? { ...item.componentProps }
-    : {
-        clearable: true,
-        ...item.componentProps
-      }
+  const componentProps: Recordable = {
+    clearable: true,
+    ...item.componentProps
+  }
   // 需要删除额外的属性
   delete componentProps?.slots
   return componentProps
-}
-
-/**
- *
- * @param slots 插槽
- * @param slotsProps 插槽属性
- * @param field 字段名
- */
-export const setItemComponentSlots = (
-  slots: Slots,
-  slotsProps: Recordable = {},
-  field: string
-): Recordable => {
-  const slotObj: Recordable = {}
-  for (const key in slotsProps) {
-    if (slotsProps[key]) {
-      // 由于组件有可能重复，需要有一个唯一的前缀
-      slotObj[key] = (data: Recordable) => {
-        return getSlot(slots, `${field}-${key}`, data)
-      }
-    }
-  }
-  return slotObj
 }
 
 /**
@@ -118,31 +69,11 @@ export const initModel = (schema: FormSchema[], formModel: Recordable) => {
     // 如果是hidden，就删除对应的值
     if (v.hidden) {
       delete model[v.field]
-    } else if (v.component && v.component !== 'Divider') {
+    } else if (v.component) {
       const hasField = Reflect.has(model, v.field)
       // 如果先前已经有值存在，则不进行重新赋值，而是采用现有的值
       model[v.field] = hasField ? model[v.field] : v.value !== void 0 ? v.value : ''
     }
   })
   return model
-}
-
-/**
- * @param slots 插槽
- * @param field 字段名
- * @returns 返回FormIiem插槽
- */
-export const setFormItemSlots = (slots: Slots, field: string): Recordable => {
-  const slotObj: Recordable = {}
-  if (slots[`${field}-error`]) {
-    slotObj['error'] = (data: Recordable) => {
-      return getSlot(slots, `${field}-error`, data)
-    }
-  }
-  if (slots[`${field}-label`]) {
-    slotObj['label'] = (data: Recordable) => {
-      return getSlot(slots, `${field}-label`, data)
-    }
-  }
-  return slotObj
 }

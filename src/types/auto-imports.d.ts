@@ -58,7 +58,6 @@ declare global {
   const triggerRef: typeof import('vue').triggerRef
   const unref: typeof import('vue').unref
   const useAttrs: typeof import('vue').useAttrs
-  const useCrudSchemas: typeof import('@/hooks/web/useCrudSchemas').useCrudSchemas
   const useCssModule: typeof import('vue').useCssModule
   const useCssVars: typeof import('vue').useCssVars
   const useI18n: typeof import('@/hooks/web/useI18n').useI18n
@@ -69,7 +68,6 @@ declare global {
   const useRoute: typeof import('vue-router').useRoute
   const useRouter: typeof import('vue-router').useRouter
   const useSlots: typeof import('vue').useSlots
-  const useTable: typeof import('@/hooks/web/useTable').useTable
   const useTemplateRef: typeof import('vue').useTemplateRef
   const watch: typeof import('vue').watch
   const watchEffect: typeof import('vue').watchEffect

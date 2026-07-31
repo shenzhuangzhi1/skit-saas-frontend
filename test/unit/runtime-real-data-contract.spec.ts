@@ -47,11 +47,10 @@ describe('runtime real-data contract', () => {
     )
   })
 
-  it('starts shared tables at a truthful empty total', () => {
-    expect(readSource('src/hooks/web/useTable.ts')).toMatch(/total:\s*0/)
-    expect(readSource('src/hooks/web/useTable.ts')).not.toMatch(/total:\s*10/)
-    expect(readSource('src/components/Table/src/Table.vue')).toMatch(/total:\s*0/)
-    expect(readSource('src/components/Table/src/Table.vue')).not.toMatch(/total:\s*10/)
+  it('does not retain the disconnected legacy shared-table stack', () => {
+    expect(existsSync(projectPath('src/hooks/web/useTable.ts'))).toBe(false)
+    expect(existsSync(projectPath('src/components/Table/src/Table.vue'))).toBe(false)
+    expect(existsSync(projectPath('src/components/Search/src/Search.vue'))).toBe(false)
   })
 
   it('does not turn malformed tenant paging responses into fake empty lists', () => {

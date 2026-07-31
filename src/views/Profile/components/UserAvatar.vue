@@ -14,7 +14,7 @@ import { propTypes } from '@/utils/propTypes'
 import { updateUserProfile } from '@/api/system/user/profile'
 import { CropperAvatar } from '@/components/Cropper'
 import { useUserStore } from '@/store/modules/user'
-import { useUpload } from '@/components/UploadFile/src/useUpload'
+import { useUpload } from '@/hooks/web/useUpload'
 import { UploadRequestOptions } from 'element-plus/es/components/upload/src/upload'
 
 defineOptions({ name: 'UserAvatar' })
