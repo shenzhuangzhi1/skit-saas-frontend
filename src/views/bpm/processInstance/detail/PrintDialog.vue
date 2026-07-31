@@ -14,7 +14,7 @@ import {
   getStrDictOptions
 } from '@/utils/dict'
 import { decodeFields } from '@/utils/formCreate'
-import { registerComponent } from '@/utils/routerHelper'
+import { resolveBusinessFormComponent } from './businessFormResolver'
 
 interface FormFieldItem {
   html: string
@@ -79,7 +79,9 @@ defineExpose({ open })
 const initBusinessFormComponent = () => {
   const businessFormPath =
     printData.value?.processInstance?.processDefinition?.formCustomViewPath || ''
-  BusinessFormComponent.value = businessFormPath ? registerComponent(businessFormPath) : undefined
+  BusinessFormComponent.value = businessFormPath
+    ? resolveBusinessFormComponent(businessFormPath)
+    : undefined
 }
 
 const parseFormFields = async () => {
