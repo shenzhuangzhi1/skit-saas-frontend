@@ -41,6 +41,13 @@ const productIconModuleKind = (file, specifier) => {
 
 const moduleExportKey = (module, exportName) => `${module}\0${exportName}`
 
+const addIconComponentIdentity = (identities, name) => {
+  identities.add(name)
+  if (/^[A-Za-z_$][\w$]*$/.test(name)) {
+    identities.add(name.replace(/\B([A-Z])/g, '-$1').toLowerCase())
+  }
+}
+
 const unwrapExpression = (node) => {
   let current = node
   while (
@@ -274,6 +281,13 @@ const hasBoundedRenderProps = (node) => {
   })
 }
 
+const hasBoundedForwarderArgument = (node) => {
+  const argument = unwrapExpression(node)
+  return Boolean(
+    argument && ts.isObjectLiteralExpression(argument) && hasBoundedRenderProps(argument)
+  )
+}
+
 const parseIconExpression = (expression) => {
   const sourceFile = ts.createSourceFile(
     'product-icon-expression.ts',
@@ -411,7 +425,9 @@ const scanScript = (source, file, state, iconComponentNames, scriptKind = ts.Scr
           importClause.name.text,
           moduleExportKey(importedModule, 'default')
         )
-        if (iconModuleKind === 'component') iconComponentNames.add(importClause.name.text)
+        if (iconModuleKind === 'component') {
+          addIconComponentIdentity(iconComponentNames, importClause.name.text)
+        }
       }
 
       if (importClause?.namedBindings && ts.isNamedImports(importClause.namedBindings)) {
@@ -425,7 +441,7 @@ const scanScript = (source, file, state, iconComponentNames, scriptKind = ts.Scr
             rendererExpressions.add(element.name.text)
           }
           if (iconModuleKind && exportedName === 'Icon') {
-            iconComponentNames.add(element.name.text)
+            addIconComponentIdentity(iconComponentNames, element.name.text)
           }
         }
       }
@@ -438,7 +454,9 @@ const scanScript = (source, file, state, iconComponentNames, scriptKind = ts.Scr
             rendererExpressions.add(`${namespace}.${renderer}`)
           }
         }
-        if (iconModuleKind === 'index') iconComponentNames.add(`${namespace}.Icon`)
+        if (iconModuleKind === 'index') {
+          addIconComponentIdentity(iconComponentNames, `${namespace}.Icon`)
+        }
       }
     }
 
@@ -473,7 +491,7 @@ const scanScript = (source, file, state, iconComponentNames, scriptKind = ts.Scr
       (ts.isIdentifier(aliasInitializer) || ts.isPropertyAccessExpression(aliasInitializer)) &&
       iconComponentNames.has(aliasInitializer.getText(sourceFile))
     ) {
-      iconComponentNames.add(node.name.text)
+      addIconComponentIdentity(iconComponentNames, node.name.text)
     }
     ts.forEachChild(node, collectIconComponentAliases)
   }
@@ -615,7 +633,7 @@ const scanScript = (source, file, state, iconComponentNames, scriptKind = ts.Scr
         calls.push({
           file,
           expression: callExpression,
-          boundedArguments: node.arguments.map(hasBoundedRenderProps)
+          boundedArguments: node.arguments.map(hasBoundedForwarderArgument)
         })
         state.renderPropForwarderCalls.set(callableKey, calls)
       }
@@ -628,7 +646,8 @@ const scanScript = (source, file, state, iconComponentNames, scriptKind = ts.Scr
 
 const scanModule = (absolutePath, file, state) => {
   const source = readFileSync(absolutePath, 'utf8')
-  const iconComponentNames = new Set(['Icon'])
+  const iconComponentNames = new Set()
+  addIconComponentIdentity(iconComponentNames, 'Icon')
   if (file.endsWith('.vue')) {
     const { descriptor, errors } = parse(source, { filename: file })
     if (errors.length > 0) {
