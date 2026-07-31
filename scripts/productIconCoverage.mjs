@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { isAbsolute, relative, resolve, sep } from 'node:path'
+import { isAbsolute, posix, relative, resolve, sep } from 'node:path'
 
 import ts from 'typescript'
 import { parse } from 'vue/compiler-sfc'
@@ -11,10 +11,35 @@ const ICON_NAME_PATTERN = /\b([a-z0-9]+(?:-[a-z0-9]+)*):([a-z0-9][a-z0-9_/-]*)\b
 const ICON_PREFIX_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const ICON_RECORD_NAME_PATTERN = /^[a-z0-9][a-z0-9_-]*(?:\/[a-z0-9][a-z0-9_-]*)*$/
 const PRODUCT_ICON_CLAMP = 'clampProductIcon'
+const VUE_ICON_RENDERERS = new Set(['h', 'createVNode'])
 
 const normalizePath = (path) => path.split(sep).join('/')
 const normalizeExpression = (expression) => expression.replace(/\s+/g, ' ').trim()
 const sortStrings = (values) => [...values].sort((left, right) => left.localeCompare(right))
+
+const withoutSourceExtension = (path) => path.replace(/\.(?:vue|[cm]?[jt]sx?)$/i, '')
+
+const canonicalSourceModule = (path) => {
+  const module = withoutSourceExtension(normalizePath(path))
+  return module.endsWith('/index') ? module.slice(0, -'/index'.length) : module
+}
+
+const importedSourceModule = (file, specifier) => {
+  if (specifier.startsWith('@/')) return canonicalSourceModule(`src/${specifier.slice(2)}`)
+  if (specifier.startsWith('.')) {
+    return canonicalSourceModule(posix.normalize(posix.join(posix.dirname(file), specifier)))
+  }
+  return specifier
+}
+
+const productIconModuleKind = (file, specifier) => {
+  const module = importedSourceModule(file, specifier)
+  if (module === 'src/components/Icon') return 'index'
+  if (module === 'src/components/Icon/src/Icon') return 'component'
+  return undefined
+}
+
+const moduleExportKey = (module, exportName) => `${module}\0${exportName}`
 
 const unwrapExpression = (node) => {
   let current = node
@@ -221,6 +246,34 @@ const addUnsafePropBinding = (file, expression, state) => {
   state.unsafePropBindings.set(key, { file, expression: normalized })
 }
 
+const addUnsafeRenderProps = (file, expression, state) => {
+  const normalized = normalizeExpression(expression)
+  const key = `${file}\0${normalized}`
+  state.unsafeRenderProps.set(key, { file, expression: normalized })
+}
+
+const hasBoundedRenderProps = (node) => {
+  const props = unwrapExpression(node)
+  if (!props) return true
+  if (
+    props.kind === ts.SyntaxKind.NullKeyword ||
+    (ts.isIdentifier(props) && props.text === 'undefined')
+  ) {
+    return true
+  }
+  if (!ts.isObjectLiteralExpression(props)) return false
+  return props.properties.every((property) => {
+    if (
+      ts.isSpreadAssignment(property) ||
+      (property.name && ts.isComputedPropertyName(property.name))
+    ) {
+      return false
+    }
+    if (!ICON_PROPERTY_NAMES.has(propertyName(property))) return true
+    return ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property)
+  })
+}
+
 const parseIconExpression = (expression) => {
   const sourceFile = ts.createSourceFile(
     'product-icon-expression.ts',
@@ -341,24 +394,59 @@ const scanTemplateNode = (node, file, state, iconComponentNames) => {
 
 const scanScript = (source, file, state, iconComponentNames, scriptKind = ts.ScriptKind.TSX) => {
   const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, scriptKind)
+  const ownModule = canonicalSourceModule(file)
+  const rendererExpressions = new Set()
+  const callableKeysByLocalName = new Map()
+  const callableNamespaceModules = new Map()
 
-  const collectIconComponentAliases = (node) => {
-    if (
-      ts.isImportDeclaration(node) &&
-      ts.isStringLiteralLike(node.moduleSpecifier) &&
-      (node.moduleSpecifier.text === '@/components/Icon' ||
-        node.moduleSpecifier.text.startsWith('@/components/Icon/'))
-    ) {
-      if (node.moduleSpecifier.text !== '@/components/Icon' && node.importClause?.name) {
-        iconComponentNames.add(node.importClause.name.text)
+  const collectBindings = (node) => {
+    if (ts.isImportDeclaration(node) && ts.isStringLiteralLike(node.moduleSpecifier)) {
+      const specifier = node.moduleSpecifier.text
+      const importedModule = importedSourceModule(file, specifier)
+      const iconModuleKind = productIconModuleKind(file, specifier)
+      const importClause = node.importClause
+
+      if (importClause?.name) {
+        callableKeysByLocalName.set(
+          importClause.name.text,
+          moduleExportKey(importedModule, 'default')
+        )
+        if (iconModuleKind === 'component') iconComponentNames.add(importClause.name.text)
       }
-      if (node.importClause?.namedBindings && ts.isNamedImports(node.importClause.namedBindings)) {
-        for (const element of node.importClause.namedBindings.elements) {
+
+      if (importClause?.namedBindings && ts.isNamedImports(importClause.namedBindings)) {
+        for (const element of importClause.namedBindings.elements) {
           const exportedName = element.propertyName?.text || element.name.text
-          if (exportedName === 'Icon') iconComponentNames.add(element.name.text)
+          callableKeysByLocalName.set(
+            element.name.text,
+            moduleExportKey(importedModule, exportedName)
+          )
+          if (specifier === 'vue' && VUE_ICON_RENDERERS.has(exportedName)) {
+            rendererExpressions.add(element.name.text)
+          }
+          if (iconModuleKind && exportedName === 'Icon') {
+            iconComponentNames.add(element.name.text)
+          }
         }
       }
+
+      if (importClause?.namedBindings && ts.isNamespaceImport(importClause.namedBindings)) {
+        const namespace = importClause.namedBindings.name.text
+        callableNamespaceModules.set(namespace, importedModule)
+        if (specifier === 'vue') {
+          for (const renderer of VUE_ICON_RENDERERS) {
+            rendererExpressions.add(`${namespace}.${renderer}`)
+          }
+        }
+        if (iconModuleKind === 'index') iconComponentNames.add(`${namespace}.Icon`)
+      }
     }
+
+    ts.forEachChild(node, collectBindings)
+  }
+  collectBindings(sourceFile)
+
+  const collectIconComponentAliases = (node) => {
     const aliasInitializer = ts.isVariableDeclaration(node)
       ? unwrapExpression(node.initializer)
       : undefined
@@ -366,8 +454,8 @@ const scanScript = (source, file, state, iconComponentNames, scriptKind = ts.Scr
       ts.isVariableDeclaration(node) &&
       ts.isIdentifier(node.name) &&
       aliasInitializer &&
-      ts.isIdentifier(aliasInitializer) &&
-      iconComponentNames.has(aliasInitializer.text)
+      (ts.isIdentifier(aliasInitializer) || ts.isPropertyAccessExpression(aliasInitializer)) &&
+      iconComponentNames.has(aliasInitializer.getText(sourceFile))
     ) {
       iconComponentNames.add(node.name.text)
     }
@@ -377,6 +465,66 @@ const scanScript = (source, file, state, iconComponentNames, scriptKind = ts.Scr
   while (previousAliasCount !== iconComponentNames.size) {
     previousAliasCount = iconComponentNames.size
     collectIconComponentAliases(sourceFile)
+  }
+
+  const callableKeyForExpression = (expression) => {
+    const callee = unwrapExpression(expression)
+    if (ts.isIdentifier(callee)) return callableKeysByLocalName.get(callee.text)
+    if (
+      ts.isPropertyAccessExpression(callee) &&
+      ts.isIdentifier(unwrapExpression(callee.expression))
+    ) {
+      const namespace = unwrapExpression(callee.expression).text
+      const importedModule = callableNamespaceModules.get(namespace)
+      if (importedModule) return moduleExportKey(importedModule, callee.name.text)
+    }
+    return undefined
+  }
+
+  const enclosingFunctionForwarder = (call, props) => {
+    const forwardedProps = unwrapExpression(props)
+    if (!forwardedProps || !ts.isIdentifier(forwardedProps)) return undefined
+
+    let current = call.parent
+    while (current && !ts.isSourceFile(current)) {
+      const isFunction =
+        ts.isFunctionDeclaration(current) ||
+        ts.isFunctionExpression(current) ||
+        ts.isArrowFunction(current)
+      if (isFunction) {
+        const parameterIndex = current.parameters.findIndex(
+          (parameter) =>
+            ts.isIdentifier(parameter.name) && parameter.name.text === forwardedProps.text
+        )
+        if (parameterIndex < 0) return undefined
+
+        let name
+        if (
+          ts.isFunctionDeclaration(current) &&
+          current.name &&
+          ts.isIdentifier(current.name) &&
+          ts.isSourceFile(current.parent)
+        ) {
+          name = current.name.text
+        } else if (
+          (ts.isArrowFunction(current) || ts.isFunctionExpression(current)) &&
+          ts.isVariableDeclaration(current.parent) &&
+          ts.isIdentifier(current.parent.name) &&
+          ts.isVariableDeclarationList(current.parent.parent) &&
+          ts.isVariableStatement(current.parent.parent.parent) &&
+          ts.isSourceFile(current.parent.parent.parent.parent)
+        ) {
+          name = current.parent.name.text
+        }
+        if (!name) return undefined
+        return {
+          callableKey: moduleExportKey(ownModule, name),
+          parameterIndex
+        }
+      }
+      current = current.parent
+    }
+    return undefined
   }
 
   const visit = (node) => {
@@ -420,6 +568,43 @@ const scanScript = (source, file, state, iconComponentNames, scriptKind = ts.Scr
       }
     }
 
+    if (ts.isCallExpression(node)) {
+      const callExpression = node.getText(sourceFile)
+      const rendererExpression = unwrapExpression(node.expression).getText(sourceFile)
+      const iconComponent = unwrapExpression(node.arguments[0])
+      if (
+        rendererExpressions.has(rendererExpression) &&
+        iconComponent &&
+        iconComponentNames.has(iconComponent.getText(sourceFile))
+      ) {
+        const props = node.arguments[1]
+        if (!hasBoundedRenderProps(props)) {
+          const forwarder = enclosingFunctionForwarder(node, props)
+          if (forwarder) {
+            const key = `${forwarder.callableKey}\0${forwarder.parameterIndex}`
+            state.renderPropForwarders.set(key, {
+              ...forwarder,
+              file,
+              expression: callExpression
+            })
+          } else {
+            addUnsafeRenderProps(file, callExpression, state)
+          }
+        }
+      }
+
+      const callableKey = callableKeyForExpression(node.expression)
+      if (callableKey) {
+        const calls = state.renderPropForwarderCalls.get(callableKey) || []
+        calls.push({
+          file,
+          expression: callExpression,
+          boundedArguments: node.arguments.map(hasBoundedRenderProps)
+        })
+        state.renderPropForwarderCalls.set(callableKey, calls)
+      }
+    }
+
     ts.forEachChild(node, visit)
   }
   visit(sourceFile)
@@ -443,6 +628,21 @@ const scanModule = (absolutePath, file, state) => {
     return
   }
   scanScript(source, file, state, iconComponentNames)
+}
+
+const finalizeRenderPropForwarders = (state) => {
+  for (const forwarder of state.renderPropForwarders.values()) {
+    const calls = state.renderPropForwarderCalls.get(forwarder.callableKey) || []
+    if (calls.length === 0) {
+      addUnsafeRenderProps(forwarder.file, forwarder.expression, state)
+      continue
+    }
+    for (const call of calls) {
+      if (call.boundedArguments[forwarder.parameterIndex] !== true) {
+        addUnsafeRenderProps(call.file, call.expression, state)
+      }
+    }
+  }
 }
 
 const sourceModule = (root, moduleId) => {
@@ -662,13 +862,17 @@ const collectProductIconUsageState = ({ root, moduleIds, manifestPrefixes }) => 
     localSvgNames: new Set(),
     dynamicBindings: new Map(),
     unsafePropSpreads: new Map(),
-    unsafePropBindings: new Map()
+    unsafePropBindings: new Map(),
+    unsafeRenderProps: new Map(),
+    renderPropForwarders: new Map(),
+    renderPropForwarderCalls: new Map()
   }
 
   for (const moduleId of moduleIds) {
     const module = sourceModule(root, moduleId)
     if (module) scanModule(module.absolutePath, module.file, state)
   }
+  finalizeRenderPropForwarders(state)
   return state
 }
 
@@ -782,6 +986,12 @@ export const assertProductIconCoverage = ({
     .sort((left, right) => left.localeCompare(right))
   if (unsafePropBindings.length > 0) {
     throw new Error(`unbounded Icon prop binding:\n${unsafePropBindings.join('\n')}`)
+  }
+  const unsafeRenderProps = [...state.unsafeRenderProps.values()]
+    .map(({ file, expression }) => `${file}: ${expression}`)
+    .sort((left, right) => left.localeCompare(right))
+  if (unsafeRenderProps.length > 0) {
+    throw new Error(`unbounded Icon render props:\n${unsafeRenderProps.join('\n')}`)
   }
 
   const approvedKeys = new Set()

@@ -228,6 +228,214 @@ export const View = () => <ProductIcon icon="ep:view" {...serverProps} />\n`,
   }
 })
 
+test('rejects an unbounded JSX spread on a relative default product Icon import', () => {
+  const fixture = createFixture({
+    modulePath: 'src/View.tsx',
+    viewSource: `import ProductIcon from './components/Icon/src/Icon.vue'
+const serverProps = {}
+export const View = () => <><Icon icon="ep:view" /><ProductIcon {...serverProps} /></>
+`,
+    icons: ['view']
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon prop spread:[\s\S]*\{\.\.\.serverProps\}/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects an unbounded Vue spread on a relative default product Icon import', () => {
+  const fixture = createFixture({
+    viewSource: `<script setup>
+import ProductIcon from './components/Icon/src/Icon.vue'
+const serverProps = {}
+</script>
+<template><Icon icon="ep:view" /><ProductIcon v-bind="serverProps" /></template>
+`,
+    icons: ['view']
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon prop spread:[\s\S]*v-bind="serverProps"/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects an unbounded JSX spread on a namespace product Icon member', () => {
+  const fixture = createFixture({
+    modulePath: 'src/View.tsx',
+    viewSource: `import * as Icons from '@/components/Icon'
+const serverProps = {}
+export const View = () => <><Icon icon="ep:view" /><Icons.Icon {...serverProps} /></>
+`,
+    icons: ['view']
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon prop spread:[\s\S]*\{\.\.\.serverProps\}/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects an unbounded Vue spread on a namespace product Icon member', () => {
+  const fixture = createFixture({
+    viewSource: `<script setup>
+import * as Icons from '@/components/Icon'
+const serverProps = {}
+</script>
+<template><Icon icon="ep:view" /><Icons.Icon v-bind="serverProps" /></template>
+`,
+    icons: ['view']
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon prop spread:[\s\S]*v-bind="serverProps"/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects unbounded props passed to h for a product Icon', () => {
+  const fixture = createFixture({
+    modulePath: 'src/View.ts',
+    viewSource: `import { h } from 'vue'
+import { Icon } from '@/components/Icon'
+export const safe = () => h(Icon, { icon: 'ep:view' })
+export const render = (serverProps) => h(Icon, serverProps)
+`,
+    icons: ['view']
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon render props:[\s\S]*h\(Icon, serverProps\)/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects unbounded props passed through an aliased createVNode renderer', () => {
+  const fixture = createFixture({
+    modulePath: 'src/View.ts',
+    viewSource: `import { createVNode as renderVNode } from 'vue'
+import ProductIcon from './components/Icon/src/Icon.vue'
+export const safe = () => renderVNode(ProductIcon, { icon: 'ep:view' })
+export const render = (serverProps) => renderVNode(ProductIcon, serverProps)
+`,
+    icons: ['view']
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon render props:[\s\S]*renderVNode\(ProductIcon, serverProps\)/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('accepts static object calls through a transparent product Icon wrapper', () => {
+  const fixture = createFixture({
+    modulePath: 'src/View.ts',
+    viewSource: `import { useIcon } from '@/hooks/web/useIcon'
+export const viewIcon = useIcon({ icon: 'ep:view' })
+`,
+    icons: ['view']
+  })
+  write(
+    fixture.root,
+    'src/hooks/web/useIcon.ts',
+    `import { h } from 'vue'
+import { Icon } from '@/components/Icon'
+export const useIcon = (props) => h(Icon, props)
+`
+  )
+  fixture.options.moduleIds.push('src/hooks/web/useIcon.ts')
+
+  try {
+    assert.doesNotThrow(() => assertProductIconCoverage(fixture.options))
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects unbounded calls through a transparent product Icon wrapper', () => {
+  const fixture = createFixture({
+    modulePath: 'src/View.ts',
+    viewSource: `import { useIcon } from '@/hooks/web/useIcon'
+const serverProps = getServerProps()
+const retainedIcon = 'ep:view'
+export const viewIcon = useIcon(serverProps)
+`,
+    icons: ['view']
+  })
+  write(
+    fixture.root,
+    'src/hooks/web/useIcon.ts',
+    `import { h } from 'vue'
+import { Icon } from '@/components/Icon'
+export const useIcon = (props) => h(Icon, props)
+`
+  )
+  fixture.options.moduleIds.push('src/hooks/web/useIcon.ts')
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon render props:[\s\S]*useIcon\(serverProps\)/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('rejects spread calls through a transparent product Icon wrapper', () => {
+  const fixture = createFixture({
+    modulePath: 'src/View.ts',
+    viewSource: `import { useIcon } from '@/hooks/web/useIcon'
+const serverProps = getServerProps()
+export const viewIcon = useIcon({ icon: 'ep:view', ...serverProps })
+`,
+    icons: ['view']
+  })
+  write(
+    fixture.root,
+    'src/hooks/web/useIcon.ts',
+    `import { h } from 'vue'
+import { Icon } from '@/components/Icon'
+export const useIcon = (props) => h(Icon, props)
+`
+  )
+  fixture.options.moduleIds.push('src/hooks/web/useIcon.ts')
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon render props:[\s\S]*useIcon\(\{ icon: 'ep:view', \.\.\.serverProps \}\)/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
 test('rejects an unbounded Vue dynamic Icon prop name', () => {
   const fixture = createFixture({
     viewSource:
