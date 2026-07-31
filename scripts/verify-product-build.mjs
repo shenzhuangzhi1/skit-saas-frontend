@@ -7,6 +7,7 @@ import {
   assertProductBuildStampFresh,
   loadProductBoundaryContract
 } from '../build/productBoundary.mjs'
+import { assertProductIconCoverage } from './productIconCoverage.mjs'
 
 const outputDirectory = resolve(process.argv[2] || 'dist')
 const manifestPath = join(outputDirectory, '.vite', 'manifest.json')
@@ -28,6 +29,10 @@ assertProductBuildStampFresh(buildStamp, process.cwd(), 'prod')
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
 const manifestEntries = Object.keys(manifest)
 const moduleIds = buildStamp.moduleIds || []
+const iconCoverage = assertProductIconCoverage({
+  root: process.cwd(),
+  moduleIds
+})
 
 for (const retainedView of contract.retainedViewEntries) {
   assert.ok(
@@ -69,7 +74,11 @@ const metrics = {
   manifestEntries: manifestEntries.length,
   moduleIds: moduleIds.length,
   retainedViewModules: contract.retainedViewEntries.length,
-  bannedViewModules
+  bannedViewModules,
+  productIcons: iconCoverage.iconNames.length,
+  productIconPrefixes: iconCoverage.prefixes.length,
+  dynamicIconBindings: iconCoverage.dynamicBindings.length,
+  localSvgIcons: iconCoverage.localSvgNames.length
 }
 
 for (const [metric, ceiling] of Object.entries(contract.budget)) {

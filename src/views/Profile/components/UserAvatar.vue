@@ -2,7 +2,6 @@
   <div class="change-avatar">
     <CropperAvatar
       ref="cropperRef"
-      :btnProps="{ preIcon: 'ant-design:cloud-upload-outlined' }"
       :showBtn="false"
       :value="img"
       width="120px"

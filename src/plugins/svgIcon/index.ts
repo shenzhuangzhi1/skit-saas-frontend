@@ -1,10 +1,10 @@
 import 'virtual:svg-icons-register'
 
 import { addCollection } from '@iconify/vue'
-import epIcons from '@iconify/json/json/ep.json'
-import faIcons from '@iconify/json/json/fa.json'
-import faSolidIcons from '@iconify/json/json/fa-solid.json'
+import { productIconCollections } from './productIconCollections'
 
-addCollection(epIcons)
-addCollection(faIcons)
-addCollection(faSolidIcons)
+for (const collection of productIconCollections) {
+  if (!addCollection(collection)) {
+    throw new Error(`Failed to register bundled Iconify collection: ${collection.prefix}`)
+  }
+}
