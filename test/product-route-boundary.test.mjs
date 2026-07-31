@@ -59,7 +59,11 @@ test('production build inventory verifier owns retained and banned view contract
     'views/ai/',
     'views/iot/',
     'views/mes/',
-    'views/im/'
+    'views/im/',
+    'views/erp/',
+    'views/mp/',
+    'views/report/',
+    'views/wms/'
   ]) {
     assert.ok(verifier.includes(bannedPrefix), `missing banned view inventory: ${bannedPrefix}`)
   }

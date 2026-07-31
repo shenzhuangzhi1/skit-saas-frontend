@@ -32,7 +32,11 @@ const BANNED_VIEW_PREFIXES = [
   'views/ai/',
   'views/iot/',
   'views/mes/',
-  'views/im/'
+  'views/im/',
+  'views/erp/',
+  'views/mp/',
+  'views/report/',
+  'views/wms/'
 ]
 
 // Audited Task 3 output with modest headroom for normal product evolution.
