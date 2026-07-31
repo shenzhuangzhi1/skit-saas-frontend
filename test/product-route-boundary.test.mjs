@@ -17,11 +17,13 @@ test('Router, menu permissions, and route contracts share productRoutes', () => 
 })
 
 test('static production routing has no backend component registry or broad views glob', () => {
+  const main = read('src/main.ts')
   const routerHelper = read('src/utils/routerHelper.ts')
   const permission = read('src/store/modules/permission.ts')
   const guard = read('src/permission.ts')
   const tagsView = read('src/layout/components/TagsView/src/TagsView.vue')
 
+  assert.doesNotMatch(main, /views\/bpm|setupWangEditorPlugin|ProcessRecordMenu/)
   assert.doesNotMatch(routerHelper, /import\.meta\.glob\(\s*\[?\s*['"]\.\.\/views\/\*\*\/\*/)
   assert.doesNotMatch(routerHelper, /\bregisterComponent\b/)
   assert.doesNotMatch(routerHelper, /\bgenerateRoute\b/)
@@ -32,39 +34,10 @@ test('static production routing has no backend component registry or broad views
 
 test('production build inventory verifier owns retained and banned view contracts', () => {
   const verifier = read('scripts/verify-product-build.mjs')
+  const viteConfig = read('vite.config.ts')
 
-  for (const retainedView of [
-    'views/Home/Index.vue',
-    'views/skit/admin/AdminTable.vue',
-    'views/infra/apiErrorLog/index.vue',
-    'views/skit/ad-consumption/index.vue',
-    'views/skit/ad-monitor/index.vue',
-    'views/skit/tenant/index.vue',
-    'views/skit/user/index.vue',
-    'views/Profile/Index.vue',
-    'views/system/notify/my/index.vue'
-  ]) {
-    assert.ok(verifier.includes(retainedView), `missing retained view inventory: ${retainedView}`)
-  }
-
-  for (const bannedPrefix of [
-    'views/system/dict/',
-    'views/infra/codegen/',
-    'views/infra/job/',
-    'views/bpm/',
-    'views/mall/',
-    'views/member/',
-    'views/pay/',
-    'views/crm/',
-    'views/ai/',
-    'views/iot/',
-    'views/mes/',
-    'views/im/',
-    'views/erp/',
-    'views/mp/',
-    'views/report/',
-    'views/wms/'
-  ]) {
-    assert.ok(verifier.includes(bannedPrefix), `missing banned view inventory: ${bannedPrefix}`)
-  }
+  assert.match(verifier, /product-build\.json/)
+  assert.match(verifier, /moduleIds/)
+  assert.match(verifier, /assertProductBuildStampFresh/)
+  assert.match(viteConfig, /createProductBoundaryPlugin/)
 })
