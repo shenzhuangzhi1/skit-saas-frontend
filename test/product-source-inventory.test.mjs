@@ -104,7 +104,7 @@ const expectedForbidden = {
   ],
   supportRoots: [
     'src/assets/ai',
-    'src/assets/audio',
+    'src/assets/audio/im',
     'src/assets/imgs/diy',
     'src/assets/imgs/iot',
     'src/assets/map',
@@ -143,20 +143,36 @@ const expectedForbidden = {
     'src/styles/FormCreate'
   ],
   supportFiles: [
+    'src/assets/imgs/avatar.jpg',
     'src/assets/imgs/profile.jpg',
+    'src/assets/imgs/skit/avatar.png',
+    'src/assets/imgs/skit/login-head.png',
     'src/assets/imgs/wechat.png',
+    'src/assets/svgs/icon.svg',
+    'src/assets/svgs/login-bg.svg',
+    'src/assets/svgs/login-box-bg.svg',
+    'src/assets/svgs/member_balance.svg',
+    'src/assets/svgs/member_expenditure_balance.svg',
+    'src/assets/svgs/member_level.svg',
+    'src/assets/svgs/member_point.svg',
+    'src/assets/svgs/member_recharge_balance.svg',
+    'src/assets/svgs/message.svg',
+    'src/assets/svgs/money.svg',
+    'src/assets/svgs/peoples.svg',
+    'src/assets/svgs/send.svg',
+    'src/assets/svgs/shopping.svg',
     'src/components/Icon/src/IconSelect.vue',
     'src/components/Icon/src/data.ts',
     'src/hooks/web/useEmitt.ts',
     'src/hooks/web/useGuide.ts',
     'src/types/qrcode.d.ts',
-    'src/types/wangeditor-types.d.ts',
     'src/utils/cron.ts',
     'src/utils/file.ts',
     'src/utils/formCreate.ts',
     'src/utils/formatter.ts',
     'src/utils/url.ts',
-    'src/utils/websocketTicket.ts'
+    'src/utils/websocketTicket.ts',
+    'types/wangeditor-types.d.ts'
   ]
 }
 
@@ -196,19 +212,10 @@ const expectedRetained = {
     'src/store/modules/permission.ts',
     'src/store/modules/user.ts',
     'src/utils/auth.ts',
-    'src/utils/dict.ts'
+    'src/utils/dict.ts',
+    'src/utils/role.ts'
   ]
 }
-
-test('the source inventory schema and exact product boundaries stay pinned', () => {
-  assert.equal(inventory.schemaVersion, 2)
-  assert.deepEqual(inventory.forbidden, expectedForbidden)
-  assert.deepEqual(inventory.retained, expectedRetained)
-  assert.deepEqual(inventory.productRouteContract, {
-    source: 'src/router/productRoutes.ts',
-    recordCount: 32
-  })
-})
 
 const forbiddenRoots = [
   ...expectedForbidden.viewRoots,
@@ -218,40 +225,65 @@ const forbiddenRoots = [
   ...expectedForbidden.supportRoots
 ]
 const retainedRoots = [...expectedRetained.viewRoots, ...expectedRetained.apiRoots]
-const inventoryPaths = [
-  ...forbiddenRoots,
-  ...expectedForbidden.supportFiles,
-  ...retainedRoots,
-  ...expectedRetained.requiredFiles
-]
-
-const trackedFiles = execFileSync('git', ['ls-files', '--', ...inventoryPaths], {
+const trackedFiles = execFileSync('git', ['ls-files', '-z'], {
   cwd: repositoryRoot,
   encoding: 'utf8'
 })
-  .trim()
-  .split('\n')
+  .split('\0')
   .filter(Boolean)
 
-const trackedFilesUnder = (root) =>
-  trackedFiles.filter((path) => path === root || path.startsWith(`${root}/`))
+const trackedFileSet = new Set(trackedFiles)
+const filesUnder = (tracked, root) =>
+  [...tracked].filter((path) => path === root || path.startsWith(`${root}/`))
+
+const assertInventoryContract = (candidate, tracked) => {
+  assert.equal(candidate.schemaVersion, 2)
+  assert.deepEqual(candidate.forbidden, expectedForbidden)
+  assert.deepEqual(candidate.retained, expectedRetained)
+  assert.deepEqual(candidate.productRouteContract, {
+    source: 'src/router/productRoutes.ts',
+    recordCount: 32
+  })
+
+  const rootViolations = forbiddenRoots
+    .map((root) => ({ root, trackedFiles: filesUnder(tracked, root) }))
+    .filter(({ trackedFiles: files }) => files.length > 0)
+  const fileViolations = expectedForbidden.supportFiles.filter((path) => tracked.has(path))
+  assert.deepEqual(
+    rootViolations,
+    [],
+    `quarantined roots contain source: ${rootViolations.map(({ root }) => root).join(', ')}`
+  )
+  assert.deepEqual(fileViolations, [], `quarantined files returned: ${fileViolations.join(', ')}`)
+
+  const missingRoots = retainedRoots.filter((root) => filesUnder(tracked, root).length === 0)
+  const missingFiles = expectedRetained.requiredFiles.filter((path) => !tracked.has(path))
+  assert.deepEqual(missingRoots, [], `retained roots disappeared: ${missingRoots.join(', ')}`)
+  assert.deepEqual(
+    missingFiles,
+    [],
+    `protected product files disappeared: ${missingFiles.join(', ')}`
+  )
+}
+
+test('the source inventory schema and exact product boundaries stay pinned', () => {
+  assertInventoryContract(inventory, trackedFileSet)
+})
 
 test('quarantined domain and support source stays absent', () => {
   const rootViolations = forbiddenRoots
-    .map((root) => ({ root, trackedFiles: trackedFilesUnder(root) }))
+    .map((root) => ({ root, trackedFiles: filesUnder(trackedFileSet, root) }))
     .filter(({ trackedFiles: files }) => files.length > 0)
-  const fileViolations = expectedForbidden.supportFiles.filter((path) =>
-    trackedFiles.includes(path)
-  )
+  const fileViolations = expectedForbidden.supportFiles.filter((path) => trackedFileSet.has(path))
 
   assert.deepEqual(rootViolations, [])
   assert.deepEqual(fileViolations, [])
 })
 
 test('every retained product root and protected file still exists', () => {
-  const missingRoots = retainedRoots.filter((root) => trackedFilesUnder(root).length === 0)
+  const missingRoots = retainedRoots.filter((root) => filesUnder(trackedFileSet, root).length === 0)
   const missingFiles = expectedRetained.requiredFiles.filter(
-    (path) => !trackedFiles.includes(path) || !existsSync(resolve(repositoryRoot, path))
+    (path) => !trackedFileSet.has(path) || !existsSync(resolve(repositoryRoot, path))
   )
 
   assert.deepEqual(missingRoots, [])
@@ -261,9 +293,64 @@ test('every retained product root and protected file still exists', () => {
 test('the static product route source still declares exactly 32 records', () => {
   const { source, recordCount } = inventory.productRouteContract
   const routeSource = read(source)
-  const declaredRouteNames = routeSource.match(
-    /^\s*name:\s*(?:'[^']*'|PRODUCT_[A-Z0-9_]+),?\s*$/gm
-  )
+  const declaredRouteNames = routeSource.match(/^\s*name:\s*(?:'[^']*'|PRODUCT_[A-Z0-9_]+),?\s*$/gm)
 
   assert.equal(declaredRouteNames?.length ?? 0, recordCount)
+})
+
+test('negative inventory fixtures reject every protected deletion and retired return path', () => {
+  for (const requiredFile of expectedRetained.requiredFiles) {
+    const tracked = new Set(trackedFileSet)
+    tracked.delete(requiredFile)
+    assert.throws(
+      () => assertInventoryContract(inventory, tracked),
+      /(?:retained roots|protected product files) disappeared/,
+      requiredFile
+    )
+  }
+
+  for (const forbiddenRoot of forbiddenRoots) {
+    const tracked = new Set(trackedFileSet)
+    tracked.add(`${forbiddenRoot}/__fixture__.ts`)
+    assert.throws(
+      () => assertInventoryContract(inventory, tracked),
+      /quarantined roots contain source/,
+      forbiddenRoot
+    )
+  }
+
+  for (const forbiddenFile of expectedForbidden.supportFiles) {
+    const tracked = new Set(trackedFileSet)
+    tracked.add(forbiddenFile)
+    assert.throws(
+      () => assertInventoryContract(inventory, tracked),
+      /quarantined files returned/,
+      forbiddenFile
+    )
+  }
+})
+
+test('same-change weakening of the canonical inventory cannot pass', () => {
+  const mutations = [
+    (candidate) => {
+      candidate.forbidden.mixedViewRoots = []
+    },
+    (candidate) => {
+      candidate.forbidden.mixedApiRoots = []
+    },
+    (candidate) => {
+      candidate.retained.apiRoots = candidate.retained.apiRoots.filter(
+        (root) => root !== 'src/api/system/user'
+      )
+    },
+    (candidate) => {
+      candidate.forbidden.viewRoots[0] = 'src/views/not-a-real-retired-domain'
+    }
+  ]
+
+  for (const mutate of mutations) {
+    const candidate = structuredClone(inventory)
+    mutate(candidate)
+    assert.throws(() => assertInventoryContract(candidate, trackedFileSet))
+  }
 })
