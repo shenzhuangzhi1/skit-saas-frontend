@@ -442,6 +442,22 @@ const scanScript = (source, file, state, iconComponentNames, scriptKind = ts.Scr
       }
     }
 
+    if (ts.isFunctionDeclaration(node) && node.name && ts.isSourceFile(node.parent)) {
+      callableKeysByLocalName.set(node.name.text, moduleExportKey(ownModule, node.name.text))
+    }
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      (ts.isArrowFunction(unwrapExpression(node.initializer)) ||
+        ts.isFunctionExpression(unwrapExpression(node.initializer))) &&
+      ts.isVariableDeclarationList(node.parent) &&
+      ts.isVariableStatement(node.parent.parent) &&
+      ts.isSourceFile(node.parent.parent.parent)
+    ) {
+      callableKeysByLocalName.set(node.name.text, moduleExportKey(ownModule, node.name.text))
+    }
+
     ts.forEachChild(node, collectBindings)
   }
   collectBindings(sourceFile)

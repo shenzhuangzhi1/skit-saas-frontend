@@ -436,6 +436,36 @@ export const useIcon = (props) => h(Icon, props)
   }
 })
 
+test('rejects an unbounded same-module call hidden by a bounded imported wrapper call', () => {
+  const fixture = createFixture({
+    modulePath: 'src/View.ts',
+    viewSource: `import { useIcon } from '@/hooks/web/useIcon'
+export const viewIcon = useIcon({ icon: 'ep:view' })
+`,
+    icons: ['view']
+  })
+  write(
+    fixture.root,
+    'src/hooks/web/useIcon.ts',
+    `import { h } from 'vue'
+import { Icon } from '@/components/Icon'
+export const useIcon = (props) => h(Icon, props)
+const serverProps = getServerProps()
+export const unsafeIcon = useIcon(serverProps)
+`
+  )
+  fixture.options.moduleIds.push('src/hooks/web/useIcon.ts')
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon render props:[\s\S]*useIcon\(serverProps\)/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
 test('rejects an unbounded Vue dynamic Icon prop name', () => {
   const fixture = createFixture({
     viewSource:
