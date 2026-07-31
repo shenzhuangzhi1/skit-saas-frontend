@@ -69,19 +69,15 @@ describe('runtime real-data contract', () => {
 
   it('does not bundle unused sample datasets', () => {
     expect(existsSync(projectPath('src/views/mp/draft/mock.js'))).toBe(false)
-    expect(readSource('src/views/mp/draft/index.vue')).not.toContain("from './mock'")
     expect(existsSync(projectPath('src/views/Home/Index2.vue'))).toBe(false)
     expect(existsSync(projectPath('src/views/Home/echarts-data.ts'))).toBe(false)
   })
 
   it('does not bundle the disconnected AI music sample experience', () => {
-    expect(existsSync(projectPath('src/views/ai/music/index/index.vue'))).toBe(true)
-    expect(readSource('src/views/ai/music/index/index.vue')).toContain(
-      '音乐生成服务尚未接入真实接口'
-    )
+    expect(existsSync(projectPath('src/views/ai/music/index/index.vue'))).toBe(false)
     expect(existsSync(projectPath('src/views/ai/music/index/list'))).toBe(false)
     expect(existsSync(projectPath('src/views/ai/music/index/mode'))).toBe(false)
     expect(existsSync(projectPath('src/assets/audio/response.mp3'))).toBe(false)
-    expect(existsSync(projectPath('src/views/ai/music/manager/index.vue'))).toBe(true)
+    expect(existsSync(projectPath('src/views/ai/music/manager/index.vue'))).toBe(false)
   })
 })

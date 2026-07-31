@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import { build } from 'vite'
 
@@ -83,24 +83,24 @@ test('content build stamp rejects changes to every production input family', asy
 })
 
 test('actual Vite module graph rejects an injected banned static import', async () => {
-  const fixtureRoot = mkdtempSync(join(tmpdir(), 'skit-product-boundary-'))
-  const bannedModule = join(
-    repositoryRoot,
-    'src/views/bpm/model/form/PrintTemplate/module/elem-to-html.ts'
+  const fixtureRoot = realpathSync(mkdtempSync(join(tmpdir(), 'skit-product-boundary-')))
+  write(fixtureRoot, 'src/views/bpm/fixture.ts', 'export const bannedFixture = true\n')
+  write(
+    fixtureRoot,
+    'entry.ts',
+    "import './src/views/bpm/fixture.ts'\nexport const entry = true\n"
   )
-  const entry = join(fixtureRoot, 'entry.ts')
-  writeFileSync(entry, `import ${JSON.stringify(pathToFileURL(bannedModule).href)}\n`)
 
   try {
     await assert.rejects(
       build({
-        root: repositoryRoot,
+        root: fixtureRoot,
         configFile: false,
         logLevel: 'silent',
-        plugins: [createProductBoundaryPlugin({ root: repositoryRoot, mode: 'prod' })],
+        plugins: [createProductBoundaryPlugin({ root: fixtureRoot, mode: 'prod' })],
         build: {
           write: false,
-          rollupOptions: { input: entry }
+          rollupOptions: { input: join(fixtureRoot, 'entry.ts') }
         }
       }),
       /banned production modules[\s\S]*src\/views\/bpm\//
