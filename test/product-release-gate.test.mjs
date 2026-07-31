@@ -32,19 +32,22 @@ test('CI and the local release gate build, verify, then run blocked-network icon
   assertOrdered(verifyLocal, releaseSequence, 'verify-local.sh')
   assert.equal(
     packageJson.scripts['test:icons:browser'],
-    'node scripts/product-icon-browser-smoke.mjs dist-prod'
+    'playwright test test/e2e/product-icons.spec.ts --project=chromium'
   )
-  assert.ok(existsSync(resolve(root, 'scripts/product-icon-browser-smoke.mjs')))
+  assert.ok(existsSync(resolve(root, 'playwright.config.ts')))
+  assert.ok(existsSync(resolve(root, 'test/e2e/product-icons.spec.ts')))
+  assert.match(workflow, /pnpm exec playwright install --with-deps chromium/)
+  assert.match(verifyLocal, /pnpm exec playwright install chromium/)
 })
 
 test('all agreed Task 4 build ceilings are executable product budgets', () => {
-  assert.equal(boundary.budget.transformedModules, 3500)
-  assert.equal(boundary.budget.peakRssBytes, 2.5 * 1024 * 1024 * 1024)
+  assert.equal(boundary.buildBudget.transformedModules, 3500)
+  assert.equal(boundary.buildBudget.peakBuildRssBytes, 2.5 * 1024 * 1024 * 1024)
   assert.ok(boundary.budget.gzipJsBytes <= 3.5 * 1024 * 1024)
 
   const plugin = read('build/productBoundaryPlugin.mjs')
   const verifier = read('scripts/verify-product-build.mjs')
-  for (const metric of ['transformedModules', 'peakRssBytes']) {
+  for (const metric of ['transformedModules', 'peakBuildRssBytes']) {
     assert.ok(plugin.includes(metric), `build stamp must persist ${metric}`)
     assert.ok(verifier.includes(metric), `product verifier must enforce ${metric}`)
   }
@@ -53,6 +56,7 @@ test('all agreed Task 4 build ceilings are executable product budgets', () => {
 
 test('third-party icon notices and full license texts ship in dist-prod and Docker', () => {
   const requiredReleaseFiles = [
+    'public/legal/SHA256SUMS',
     'public/legal/THIRD_PARTY_NOTICES.txt',
     'public/legal/licenses/APACHE-2.0.txt',
     'public/legal/licenses/CC-BY-4.0.txt',
@@ -72,7 +76,7 @@ test('third-party icon notices and full license texts ship in dist-prod and Dock
     'Ionic',
     'WorkOS',
     'IBM',
-    'ByteDance',
+    'Bytedance',
     'Pictogrammers',
     'Vaadin',
     'EmojiTwo',
@@ -82,10 +86,11 @@ test('third-party icon notices and full license texts ship in dist-prod and Dock
   }
 
   const repositoryNotice = read('THIRD_PARTY_NOTICES.md')
-  assert.ok(repositoryNotice.includes('public/legal/THIRD_PARTY_NOTICES.txt'))
+  assert.ok(repositoryNotice.includes('public/legal/'))
+  const legalVerifier = read('scripts/legalDistribution.mjs')
   for (const path of requiredReleaseFiles.map((path) => path.replace(/^public\//, ''))) {
     assert.ok(
-      read('scripts/verify-product-build.mjs').includes(path),
+      legalVerifier.includes(path.replace(/^legal\//, '')),
       `product verifier must require ${path} in the release output`
     )
   }

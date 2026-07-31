@@ -42,6 +42,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Verify callback log safety
         run: |
           bash deploy/test-callback-log-safety.sh
@@ -61,7 +64,20 @@ jobs:
         env:
           VITE_BASE_URL: ''
           VITE_API_URL: /admin-api
-        run: pnpm build:prod
+        run: |
+          pnpm build:prod
+          pnpm verify:product-build
+          pnpm test:icons:browser
+
+      - name: Upload product icon browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: product-icon-e2e
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
 
       - name: Login to GHCR
         run: echo "${GITHUB_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin

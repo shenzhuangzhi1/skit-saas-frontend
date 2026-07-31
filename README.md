@@ -76,6 +76,8 @@ pnpm ts:check
 pnpm lint
 pnpm build:prod
 pnpm verify:product-build
+pnpm exec playwright install chromium
+pnpm test:icons:browser
 ```
 
 仓库还提供统一入口：
@@ -85,7 +87,7 @@ pnpm verify:product-build
 ./scripts/verify-local.sh
 ```
 
-`install-local-hooks.sh` 配置本仓库的 pre-push 门禁。`verify-local.sh` 会安装锁定依赖并执行测试、类型检查、代码风格检查和生产构建。
+`install-local-hooks.sh` 配置本仓库的 pre-push 门禁。`verify-local.sh` 会安装锁定依赖，执行测试、类型检查和代码风格检查，随后验证生产构建的模块、体积、峰值内存、离线图标与许可证边界，并用 Chromium 在屏蔽 Iconify 网络的条件下巡检保留页面。
 
 生产构建及产物审计：
 

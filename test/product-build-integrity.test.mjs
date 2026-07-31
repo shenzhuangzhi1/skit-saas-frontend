@@ -7,8 +7,10 @@ import test from 'node:test'
 import { build } from 'vite'
 
 import {
+  assertProductBuildMetrics,
   assertProductBuildStampFresh,
-  calculateProductBuildFingerprint
+  calculateProductBuildFingerprint,
+  loadProductBoundaryContract
 } from '../build/productBoundary.mjs'
 import { createProductBoundaryPlugin } from '../build/productBoundaryPlugin.mjs'
 
@@ -40,13 +42,58 @@ const createFingerprintFixture = () => {
 test('content build stamp accepts unchanged production inputs', () => {
   const root = createFingerprintFixture()
   try {
+    const { schemaVersion } = loadProductBoundaryContract()
     const inputFingerprint = calculateProductBuildFingerprint(root, 'prod').fingerprint
     assert.doesNotThrow(() =>
-      assertProductBuildStampFresh({ schemaVersion: 1, mode: 'prod', inputFingerprint }, root)
+      assertProductBuildStampFresh({ schemaVersion, mode: 'prod', inputFingerprint }, root)
     )
   } finally {
     rmSync(root, { recursive: true, force: true })
   }
+})
+
+test('Task 4 build telemetry is required and uses inclusive ceilings', () => {
+  const { buildBudget } = loadProductBoundaryContract()
+  assert.deepEqual(buildBudget, {
+    transformedModules: 3500,
+    peakBuildRssBytes: 2684354560
+  })
+
+  assert.doesNotThrow(() =>
+    assertProductBuildMetrics(
+      {
+        transformedModules: buildBudget.transformedModules,
+        peakBuildRssBytes: buildBudget.peakBuildRssBytes
+      },
+      buildBudget
+    )
+  )
+  assert.throws(
+    () =>
+      assertProductBuildMetrics(
+        {
+          transformedModules: buildBudget.transformedModules + 1,
+          peakBuildRssBytes: buildBudget.peakBuildRssBytes
+        },
+        buildBudget
+      ),
+    /transformedModules/
+  )
+  assert.throws(
+    () =>
+      assertProductBuildMetrics(
+        {
+          transformedModules: buildBudget.transformedModules,
+          peakBuildRssBytes: buildBudget.peakBuildRssBytes + 1
+        },
+        buildBudget
+      ),
+    /peakBuildRssBytes/
+  )
+  assert.throws(
+    () => assertProductBuildMetrics({ transformedModules: 1 }, buildBudget),
+    /peakBuildRssBytes/
+  )
 })
 
 test('content build stamp rejects changes to every production input family', async (t) => {
@@ -65,14 +112,12 @@ test('content build stamp rejects changes to every production input family', asy
     await t.test(label, () => {
       const root = createFingerprintFixture()
       try {
+        const { schemaVersion } = loadProductBoundaryContract()
         const inputFingerprint = calculateProductBuildFingerprint(root, 'prod').fingerprint
         write(root, relativePath, `changed ${label}\n`)
         assert.throws(
           () =>
-            assertProductBuildStampFresh(
-              { schemaVersion: 1, mode: 'prod', inputFingerprint },
-              root
-            ),
+            assertProductBuildStampFresh({ schemaVersion, mode: 'prod', inputFingerprint }, root),
           /stale/i
         )
       } finally {
@@ -85,11 +130,7 @@ test('content build stamp rejects changes to every production input family', asy
 test('actual Vite module graph rejects an injected banned static import', async () => {
   const fixtureRoot = realpathSync(mkdtempSync(join(tmpdir(), 'skit-product-boundary-')))
   write(fixtureRoot, 'src/views/bpm/fixture.ts', 'export const bannedFixture = true\n')
-  write(
-    fixtureRoot,
-    'entry.ts',
-    "import './src/views/bpm/fixture.ts'\nexport const entry = true\n"
-  )
+  write(fixtureRoot, 'entry.ts', "import './src/views/bpm/fixture.ts'\nexport const entry = true\n")
 
   try {
     await assert.rejects(

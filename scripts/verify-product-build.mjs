@@ -4,12 +4,14 @@ import { extname, join, relative, resolve } from 'node:path'
 import { gzipSync } from 'node:zlib'
 import {
   PRODUCT_BUILD_STAMP_PATH,
+  assertProductBuildMetrics,
   assertProductBuildStampFresh,
   loadProductBoundaryContract
 } from '../build/productBoundary.mjs'
 import { assertProductIconCoverage } from './productIconCoverage.mjs'
+import { assertLegalDistribution } from './legalDistribution.mjs'
 
-const outputDirectory = resolve(process.argv[2] || 'dist')
+const outputDirectory = resolve(process.argv[2] || 'dist-prod')
 const manifestPath = join(outputDirectory, '.vite', 'manifest.json')
 const buildStampPath = join(outputDirectory, PRODUCT_BUILD_STAMP_PATH)
 
@@ -25,6 +27,7 @@ assert.ok(existsSync(buildStampPath), `product build stamp not found: ${buildSta
 const contract = loadProductBoundaryContract()
 const buildStamp = JSON.parse(readFileSync(buildStampPath, 'utf8'))
 assertProductBuildStampFresh(buildStamp, process.cwd(), 'prod')
+assertProductBuildMetrics(buildStamp.buildMetrics, contract.buildBudget)
 
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
 const manifestEntries = Object.keys(manifest)
@@ -56,6 +59,7 @@ assert.deepEqual(
 assert.deepEqual(buildStamp.bannedModuleIds, [])
 
 const files = listFiles(outputDirectory)
+const legalDistribution = assertLegalDistribution({ outputDirectory })
 const jsFiles = files.filter((file) => extname(file) === '.js')
 const cssFiles = files.filter((file) => extname(file) === '.css')
 const sumFileBytes = (paths) => paths.reduce((sum, file) => sum + statSync(file).size, 0)
@@ -73,12 +77,16 @@ const metrics = {
   ),
   manifestEntries: manifestEntries.length,
   moduleIds: moduleIds.length,
+  transformedModules: buildStamp.buildMetrics.transformedModules,
+  peakBuildRssBytes: buildStamp.buildMetrics.peakBuildRssBytes,
   retainedViewModules: contract.retainedViewEntries.length,
   bannedViewModules,
   productIcons: iconCoverage.iconNames.length,
   productIconPrefixes: iconCoverage.prefixes.length,
   dynamicIconBindings: iconCoverage.dynamicBindings.length,
-  localSvgIcons: iconCoverage.localSvgNames.length
+  localSvgIcons: iconCoverage.localSvgNames.length,
+  legalFiles: legalDistribution.files,
+  legalBytes: legalDistribution.bytes
 }
 
 for (const [metric, ceiling] of Object.entries(contract.budget)) {
@@ -93,7 +101,8 @@ console.log(
     {
       ...metrics,
       outputDirectory: relative(process.cwd(), metrics.outputDirectory) || '.',
-      budget: contract.budget
+      budget: contract.budget,
+      buildBudget: contract.buildBudget
     },
     null,
     2

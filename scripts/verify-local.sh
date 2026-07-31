@@ -25,4 +25,7 @@ node --test test/*.test.mjs
 pnpm ts:check
 pnpm lint
 pnpm build:prod
+pnpm verify:product-build
+pnpm exec playwright install chromium
+pnpm test:icons:browser
 echo "Frontend local verification passed."

@@ -72,6 +72,20 @@ export const assertProductBuildStampFresh = (stamp, root, mode = 'prod') => {
   return current
 }
 
+export const assertProductBuildMetrics = (buildMetrics, buildBudget) => {
+  for (const [metric, ceiling] of Object.entries(buildBudget)) {
+    const value = buildMetrics?.[metric]
+    if (!Number.isSafeInteger(value) || value <= 0) {
+      throw new Error(`production build stamp is missing ${metric}`)
+    }
+    if (value > ceiling) {
+      throw new Error(
+        `${metric} must remain at or below product-build ceiling ${ceiling}; received ${value}`
+      )
+    }
+  }
+}
+
 export const normalizeProjectModuleId = (rawId, root) => {
   const withoutQuery = String(rawId).replace(/^\0/, '').split('?')[0]
   const path = withoutQuery.startsWith('/@fs/') ? withoutQuery.slice('/@fs'.length) : withoutQuery

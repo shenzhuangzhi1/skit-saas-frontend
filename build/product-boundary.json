@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "retainedViewEntries": [
     "src/views/Redirect/Redirect.vue",
     "src/views/Home/Index.vue",
@@ -41,5 +41,9 @@
     "rawBytes": 9300000,
     "rawJsBytes": 5600000,
     "gzipJsBytes": 1800000
+  },
+  "buildBudget": {
+    "transformedModules": 3500,
+    "peakBuildRssBytes": 2684354560
   }
 }
