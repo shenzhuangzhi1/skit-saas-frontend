@@ -395,7 +395,7 @@ const scanTemplateNode = (node, file, state, iconComponentNames) => {
 const scanScript = (source, file, state, iconComponentNames, scriptKind = ts.ScriptKind.TSX) => {
   const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, scriptKind)
   const ownModule = canonicalSourceModule(file)
-  const rendererExpressions = new Set()
+  const rendererExpressions = new Set(['h'])
   const callableKeysByLocalName = new Map()
   const callableNamespaceModules = new Map()
 

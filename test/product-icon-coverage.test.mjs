@@ -331,6 +331,26 @@ export const render = (serverProps) => h(Icon, serverProps)
   }
 })
 
+test('rejects unbounded props passed to the project auto-imported h renderer', () => {
+  const fixture = createFixture({
+    modulePath: 'src/View.ts',
+    viewSource: `import { Icon } from '@/components/Icon'
+export const safe = () => h(Icon, { icon: 'ep:view' })
+export const render = (serverProps) => h(Icon, serverProps)
+`,
+    icons: ['view']
+  })
+
+  try {
+    assert.throws(
+      () => assertProductIconCoverage(fixture.options),
+      /unbounded Icon render props:[\s\S]*h\(Icon, serverProps\)/
+    )
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
 test('rejects unbounded props passed through an aliased createVNode renderer', () => {
   const fixture = createFixture({
     modulePath: 'src/View.ts',
