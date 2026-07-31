@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { store } from '@/store'
 import { cloneDeep } from 'lodash-es'
 import productRoutes from '@/router/productRoutes'
-import { flatMultiLevelRoutes } from '@/utils/routerHelper'
 import { CACHE_KEY, useCache } from '@/hooks/web/useCache'
 import { hasAnyRole } from '@/utils/role'
 import { selectProductTopLevelRoutes } from '@/router/productMenu'
@@ -18,7 +17,6 @@ const filterRoutesByRole = (routes: AppRouteRecordRaw[], roles: string[]): AppRo
 
 export interface PermissionState {
   routers: AppRouteRecordRaw[]
-  addRouters: AppRouteRecordRaw[]
   menuTabRouters: AppRouteRecordRaw[]
   menuRootPath: string
 }
@@ -26,16 +24,12 @@ export interface PermissionState {
 export const usePermissionStore = defineStore('permission', {
   state: (): PermissionState => ({
     routers: [],
-    addRouters: [],
     menuTabRouters: [],
     menuRootPath: ''
   }),
   getters: {
     getRouters(): AppRouteRecordRaw[] {
       return this.routers
-    },
-    getAddRouters(): AppRouteRecordRaw[] {
-      return flatMultiLevelRoutes(cloneDeep(this.addRouters))
     },
     getMenuTabRouters(): AppRouteRecordRaw[] {
       return this.menuTabRouters
@@ -45,28 +39,12 @@ export const usePermissionStore = defineStore('permission', {
     }
   },
   actions: {
-    async generateRoutes(): Promise<unknown> {
-      return new Promise<void>(async (resolve) => {
-        // 产品路由全部由 productRoutes 提供；不注册框架返回的会员、商城、CRM 等菜单。
-        this.addRouters = [
-          {
-            path: '/:path(.*)*',
-            // redirect: '/404',
-            component: () => import('@/views/Error/404.vue'),
-            name: '404Page',
-            meta: {
-              hidden: true,
-              breadcrumb: false
-            }
-          }
-        ]
-        // 侧栏只展示首页和短剧 SaaS；隐藏工具路由继续保留。
-        const userInfo = wsCache.get(CACHE_KEY.USER)
-        const roles = (userInfo?.roles || []) as string[]
-        const roleFilteredRoutes = filterRoutesByRole(cloneDeep(productRoutes), roles)
-        this.routers = selectProductTopLevelRoutes(roleFilteredRoutes)
-        resolve()
-      })
+    async generateRoutes(): Promise<void> {
+      // The Router already owns the full static product tree. Permission state is menu-only.
+      const userInfo = wsCache.get(CACHE_KEY.USER)
+      const roles = (userInfo?.roles || []) as string[]
+      const roleFilteredRoutes = filterRoutesByRole(cloneDeep(productRoutes), roles)
+      this.routers = selectProductTopLevelRoutes(roleFilteredRoutes)
     },
     setMenuTabRouters(routers: AppRouteRecordRaw[]): void {
       this.menuTabRouters = routers

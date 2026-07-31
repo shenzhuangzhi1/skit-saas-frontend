@@ -30,13 +30,8 @@ router.onError((error, to) => {
 })
 
 export const resetRouter = (): void => {
-  const resetWhiteNameList = ['Redirect', 'RedirectRoot', 'Login', 'NoFound', 'Home']
-  router.getRoutes().forEach((route) => {
-    const { name } = route
-    if (name && !resetWhiteNameList.includes(name as string)) {
-      router.hasRoute(name) && router.removeRoute(name)
-    }
-  })
+  // Product routes are immutable and registered exactly once at startup.
+  // Session resets clear auth/menu state; there are no dynamic routes to remove.
 }
 
 export const setupRouter = (app: App<Element>) => {

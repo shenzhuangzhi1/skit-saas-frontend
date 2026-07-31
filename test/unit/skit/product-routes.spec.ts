@@ -1,5 +1,6 @@
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { describe, expect, it } from 'vitest'
+import router, { resetRouter } from '@/router'
 import productRoutes from '@/router/productRoutes'
 import { PRODUCT_AD_MONITOR_ROUTE_NAME } from '@/router/productMenu'
 
@@ -121,6 +122,16 @@ describe('explicit Skit product route contract', () => {
         bannedPrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
       )
     ).toEqual([])
+  })
+
+  it('keeps the static product router intact when an authenticated session resets', () => {
+    const before = router.getRoutes().map((route) => String(route.name ?? '')).sort()
+
+    resetRouter()
+
+    expect(router.getRoutes().map((route) => String(route.name ?? '')).sort()).toEqual(before)
+    expect(router.hasRoute('SkitSaas')).toBe(true)
+    expect(router.hasRoute('Login')).toBe(true)
   })
 
   it.each(REMOVED_DEEP_LINKS)('resolves authenticated removed deep link %s to 404', (path) => {

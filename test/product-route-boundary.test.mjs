@@ -20,12 +20,14 @@ test('static production routing has no backend component registry or broad views
   const routerHelper = read('src/utils/routerHelper.ts')
   const permission = read('src/store/modules/permission.ts')
   const guard = read('src/permission.ts')
+  const tagsView = read('src/layout/components/TagsView/src/TagsView.vue')
 
   assert.doesNotMatch(routerHelper, /import\.meta\.glob\(\s*\[?\s*['"]\.\.\/views\/\*\*\/\*/)
   assert.doesNotMatch(routerHelper, /\bregisterComponent\b/)
   assert.doesNotMatch(routerHelper, /\bgenerateRoute\b/)
   assert.doesNotMatch(permission, /\baddRouters\b|\bgetAddRouters\b|\bROLE_ROUTERS\b/)
   assert.doesNotMatch(guard, /router\.addRoute|\bgetAddRouters\b/)
+  assert.doesNotMatch(tagsView, /\bgetAddRouters\b/)
 })
 
 test('production build inventory verifier owns retained and banned view contracts', () => {

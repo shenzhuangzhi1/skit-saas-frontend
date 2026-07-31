@@ -39,6 +39,8 @@ const affixTagArr = ref<RouteLocationNormalizedLoaded[]>([])
 
 const selectedTag = computed(() => tagsViewStore.getSelectedTag)
 
+const PRODUCT_HOME_ROUTE_NAME = 'Index'
+
 const setSelectTag = tagsViewStore.setSelectedTag
 
 const appStore = useAppStore()
@@ -83,15 +85,11 @@ const toLastView = () => {
   if (latestView) {
     push(latestView)
   } else {
-    if (
-      unref(currentRoute).path === permissionStore.getAddRouters[0].path ||
-      unref(currentRoute).path === permissionStore.getAddRouters[0].redirect
-    ) {
+    if (unref(currentRoute).name === PRODUCT_HOME_ROUTE_NAME) {
       addTags()
       return
     }
-    // You can set another route
-    push(permissionStore.getAddRouters[0].path)
+    push({ name: PRODUCT_HOME_ROUTE_NAME })
   }
 }
 
