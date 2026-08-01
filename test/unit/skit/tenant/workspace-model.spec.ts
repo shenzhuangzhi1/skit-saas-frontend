@@ -168,6 +168,7 @@ describe('tenant revenue workspace model', () => {
     const base = sanitizeAdAccountResponse({
       pangleEnabled: false,
       takuEnabled: true,
+      takuUsername: 'taku-operator',
       takuAppKeyConfigured: true
     })
 
@@ -175,6 +176,7 @@ describe('tenant revenue workspace model', () => {
       pangleAppId: '',
       panglePlacementId: '',
       pangleEnabled: false,
+      takuUsername: 'taku-operator',
       takuAppId: '',
       takuPlacementId: '',
       splashPlacementId: '',
@@ -218,6 +220,7 @@ describe('tenant revenue workspace model', () => {
       validateAdAccountForm({
         ...base,
         takuEnabled: true,
+        takuUsername: 'taku-operator',
         takuAppId: 'taku-app',
         takuPlacementId: 'reward-placement',
         splashPlacementId: 'splash-placement',
@@ -246,6 +249,7 @@ describe('tenant revenue workspace model', () => {
       validateAdAccountForm({
         ...base,
         takuEnabled: true,
+        takuUsername: 'taku-operator',
         takuAppId: 'taku-app',
         takuPlacementId: 'reward-placement',
         splashPlacementId: 'splash-placement',

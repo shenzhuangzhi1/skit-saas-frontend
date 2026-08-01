@@ -271,7 +271,10 @@
         <el-tab-pane :disabled="selectedAgentArchived" label="App 发布" name="app-release" lazy>
           <AppBuildMaterialEditor :tenant-id="selectedAgent.tenantId" />
           <el-divider />
-          <AppReleaseEditor :tenant-id="selectedAgent.tenantId" />
+          <AppReleaseEditor
+            :tenant-code="selectedAgent.tenantCode"
+            :tenant-id="selectedAgent.tenantId"
+          />
         </el-tab-pane>
       </el-tabs>
     </ContentWrap>

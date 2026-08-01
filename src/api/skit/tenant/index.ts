@@ -67,6 +67,7 @@ interface TenantAdAccountWriteFields {
   /** Write-only Pangle reward callback Security Key. */
   pangleRewardSecurityKey?: string
   pangleEnabled: boolean
+  takuUsername?: string
   takuAppId?: string
   takuAppKey?: string
   takuPlacementId?: string
@@ -779,6 +780,7 @@ export interface MemberSubtreeSummaryVO {
 
 export interface TenantAppReleaseProfileVO {
   tenantId: number
+  tenantCode?: string
   profileCode: string
   channel: 'production' | 'staging'
   minNativeVersion: string

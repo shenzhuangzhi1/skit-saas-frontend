@@ -14,6 +14,7 @@ const enabledForm = () => ({
   pangleAppSecret: '',
   pangleEnabled: false,
   pangleSecretConfigured: false,
+  takuUsername: 'taku-operator',
   takuAppId: 'taku-app',
   takuAppKey: '',
   takuPlacementId: 'reward-slot',
@@ -28,6 +29,7 @@ const enabledForm = () => ({
 describe('tenant display-ad placement configuration', () => {
   it('sanitizes and writes splash plus all display placements without credential leakage', () => {
     const form = sanitizeAdAccountResponse({
+      takuUsername: ' taku-operator ',
       takuAppId: ' taku-app ',
       takuPlacementId: ' reward-slot ',
       splashPlacementId: ' splash-slot ',
@@ -51,6 +53,7 @@ describe('tenant display-ad placement configuration', () => {
       pangleAppId: '',
       panglePlacementId: '',
       pangleEnabled: false,
+      takuUsername: 'taku-operator',
       takuAppId: 'taku-app',
       takuPlacementId: 'reward-slot',
       splashPlacementId: 'splash-slot',
@@ -128,6 +131,7 @@ describe('tenant display-ad placement configuration', () => {
 
   it('allows an unchanged legacy enabled account but requires a complete five-placement migration once edited', () => {
     const legacy = sanitizeAdAccountResponse({
+      takuUsername: 'taku-operator',
       takuAppId: 'taku-app',
       takuPlacementId: 'reward-slot',
       takuEnabled: true,

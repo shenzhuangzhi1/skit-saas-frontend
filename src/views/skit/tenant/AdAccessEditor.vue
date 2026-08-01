@@ -93,6 +93,9 @@
           <el-form-item label="启用">
             <el-switch v-model="accountForm.takuEnabled" />
           </el-form-item>
+          <el-form-item label="Taku 登录账号" :required="accountForm.takuEnabled">
+            <el-input v-model="accountForm.takuUsername" maxlength="128" />
+          </el-form-item>
           <el-form-item label="App ID" :required="accountForm.takuEnabled">
             <el-input v-model="accountForm.takuAppId" maxlength="128" />
           </el-form-item>

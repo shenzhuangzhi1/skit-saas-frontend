@@ -390,6 +390,7 @@ describe('AdAccessEditor', () => {
   it('ignores a stale account save after the platform admin switches tenants', async () => {
     let resolveTenantASave:
       | ((value: {
+          takuUsername: string
           takuAppId: string
           splashPlacementId: string
           takuPlacementId: string
@@ -408,6 +409,7 @@ describe('AdAccessEditor', () => {
     )
     getManagedTenantAdAccount.mockImplementation(({ tenantId }: { tenantId: number }) =>
       Promise.resolve({
+        takuUsername: `tenant-${tenantId}-operator`,
         takuAppId: `tenant-${tenantId}-app`,
         takuPlacementId: `tenant-${tenantId}-reward`,
         splashPlacementId: `tenant-${tenantId}-splash`,
@@ -477,6 +479,7 @@ describe('AdAccessEditor', () => {
     expect(vm.accountForm.splashPlacementId).toBe('tenant-24-splash')
 
     resolveTenantASave?.({
+      takuUsername: 'stale-tenant-23-operator',
       takuAppId: 'stale-tenant-23-app',
       takuPlacementId: 'stale-tenant-23-reward',
       splashPlacementId: 'stale-tenant-23-splash',

@@ -149,6 +149,7 @@ export interface AdAccountResponseLike {
   pangleSecretConfigured?: unknown
   panglePlacementId?: unknown
   pangleRewardSecurityKeyConfigured?: unknown
+  takuUsername?: unknown
   takuAppId?: unknown
   takuPlacementId?: unknown
   splashPlacementId?: unknown
@@ -168,6 +169,7 @@ export interface SafeAdAccountForm {
   pangleEnabled: boolean
   pangleSecretConfigured: boolean
   pangleRewardSecurityKeyConfigured: boolean
+  takuUsername: string
   takuAppId: string
   takuAppKey: string
   takuPlacementId: string
@@ -189,6 +191,7 @@ export interface AdAccountWritePayload {
   panglePlacementId: string
   pangleRewardSecurityKey?: string
   pangleEnabled: boolean
+  takuUsername: string
   takuAppId: string
   takuAppKey?: string
   takuPlacementId: string
@@ -302,6 +305,7 @@ export const sanitizeAdAccountResponse = (source: AdAccountResponseLike): SafeAd
     pangleEnabled: safeBoolean(source.pangleEnabled),
     pangleSecretConfigured: safeBoolean(source.pangleSecretConfigured),
     pangleRewardSecurityKeyConfigured: safeBoolean(source.pangleRewardSecurityKeyConfigured),
+    takuUsername: safeString(source.takuUsername),
     takuAppId: safeString(source.takuAppId),
     takuAppKey: '',
     takuPlacementId: safeString(source.takuPlacementId),
@@ -344,6 +348,9 @@ export const validateAdAccountForm = (
     }
   }
   if (form.takuEnabled) {
+    if (!form.takuUsername.trim()) {
+      return { valid: false, error: '启用 Taku 时登录账号不能为空' }
+    }
     if (!form.takuAppId.trim()) {
       return { valid: false, error: '启用 Taku 时 App ID 不能为空' }
     }
@@ -480,6 +487,7 @@ export const buildAdAccountWritePayload = (
     pangleAppId: form.pangleAppId.trim(),
     panglePlacementId: form.panglePlacementId.trim(),
     pangleEnabled: form.pangleEnabled,
+    takuUsername: form.takuUsername.trim(),
     takuAppId: form.takuAppId.trim(),
     takuPlacementId: form.takuPlacementId.trim(),
     splashPlacementId: form.splashPlacementId.trim(),

@@ -18,6 +18,7 @@
       {{ loadError }}
     </p>
     <el-button type="primary" @click="load">重新加载</el-button>
+    <el-button @click="initializeDraft">初始化/修复发布档案</el-button>
   </section>
   <section
     v-else-if="notFound"
@@ -27,9 +28,10 @@
   >
     <div class="text-16px font-600 text-[var(--el-color-warning)]">未找到发布档案</div>
     <p class="mb-16px mt-6px text-14px text-[var(--el-text-color-secondary)]">
-      当前代理商尚未创建 App 发布档案，请先由服务端完成初始化。
+      当前代理商尚未创建 App 发布档案；可先初始化本地草稿，补全后再保存。
     </p>
     <el-button @click="load">重新加载</el-button>
+    <el-button type="primary" @click="initializeDraft">初始化发布档案</el-button>
   </section>
   <el-form
     v-else-if="loaded && formData"
@@ -132,7 +134,7 @@ import * as TenantApi from '@/api/skit/tenant'
 
 defineOptions({ name: 'SkitAppReleaseEditor' })
 
-const props = defineProps<{ tenantId: number }>()
+const props = defineProps<{ tenantId: number; tenantCode: string }>()
 const message = useMessage()
 const loading = ref(false)
 const loaded = ref(false)
@@ -175,6 +177,31 @@ const isTenantAppReleaseProfile = (
     Number(profile.nativeProtocolVersion) >= 1 &&
     (profile.status === 0 || profile.status === 1)
   )
+}
+
+const initializeDraft = () => {
+  formData.value = {
+    tenantId: props.tenantId,
+    tenantCode: props.tenantCode,
+    profileCode: '',
+    channel: 'production',
+    minNativeVersion: '',
+    hotVersion: '',
+    hotBundleUrl: '',
+    hotBundleSha256: '',
+    hotReleaseNo: 0,
+    hotManifestSignature: '',
+    nativeVersion: '',
+    nativePackage: '',
+    nativeProtocolVersion: 1,
+    runtimeUpdatePublicKey: '',
+    runtimeUpdateKeyFingerprint: '',
+    status: 1
+  }
+  reason.value = ''
+  loadError.value = ''
+  notFound.value = false
+  loaded.value = true
 }
 
 const requiredWhenEnabled = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
@@ -267,6 +294,7 @@ const save = async () => {
   try {
     const response = await TenantApi.updateTenantAppReleaseProfile({
       ...profile,
+      tenantCode: props.tenantCode,
       hotBundleSha256: profile.hotBundleSha256.toLowerCase(),
       hotManifestSignature: profile.hotManifestSignature.trim(),
       runtimeUpdatePublicKey: profile.runtimeUpdatePublicKey.trim(),

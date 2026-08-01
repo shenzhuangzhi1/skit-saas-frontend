@@ -98,7 +98,10 @@ const stubs = {
     template:
       '<textarea :data-placeholder="placeholder" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'
   },
-  'el-input-number': true,
+  'el-input-number': {
+    props: ['modelValue'],
+    template: '<output class="number-field">{{ modelValue }}</output>'
+  },
   'el-select': { template: '<div><slot /></div>' },
   'el-option': true,
   'el-radio-group': { template: '<div><slot /></div>' },
@@ -115,7 +118,7 @@ const stubs = {
 
 const mountEditor = (component: typeof AppBuildMaterialEditor | typeof AppReleaseEditor) =>
   mount(component, {
-    props: { tenantId: 23 },
+    props: { tenantId: 23, tenantCode: 'tenant-23' },
     global: {
       stubs,
       config: {
@@ -366,5 +369,48 @@ describe('编辑器保存期间切换代理商', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="loaded-marker"]').text()).toBe('tenant-24')
+  })
+})
+
+describe('发布档案显式初始化', () => {
+  it('仅在操作员显式初始化后创建禁用的生产草稿，且不会自动保存', async () => {
+    getTenantAppReleaseProfile.mockResolvedValueOnce(null)
+
+    const wrapper = mountEditor(AppReleaseEditor)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="app-release-profile-not-found"]').exists()).toBe(true)
+    expect(updateTenantAppReleaseProfile).not.toHaveBeenCalled()
+
+    await findButton(wrapper, '初始化发布档案')?.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="editor-form"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="loaded-marker"]').text()).toBe('')
+    expect(wrapper.findAll('.number-field').map((field) => field.text())).toEqual(['0', '1'])
+    expect(updateTenantAppReleaseProfile).not.toHaveBeenCalled()
+
+    await findButton(wrapper, '保存发布档案')?.trigger('click')
+    await flushPromises()
+    expect(updateTenantAppReleaseProfile).not.toHaveBeenCalled()
+
+    updateTenantAppReleaseProfile.mockResolvedValueOnce(releaseProfile)
+    await wrapper
+      .find('textarea[data-placeholder^="必填 10"]')
+      .setValue('初始化禁用的生产发布档案，等待后续完整配置')
+    await findButton(wrapper, '保存发布档案')?.trigger('click')
+    await flushPromises()
+
+    expect(updateTenantAppReleaseProfile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 23,
+        tenantCode: 'tenant-23',
+        channel: 'production',
+        hotReleaseNo: 0,
+        nativeProtocolVersion: 1,
+        status: 1,
+        reason: '初始化禁用的生产发布档案，等待后续完整配置'
+      })
+    )
   })
 })
