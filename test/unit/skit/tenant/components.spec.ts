@@ -964,6 +964,117 @@ describe('AdAccessEditor', () => {
     expect(getTenantAdReadiness).toHaveBeenCalledTimes(2)
   })
 
+  it('uses the same-tenant reporting account to save capability when readiness has no binding', async () => {
+    getManagedTenantAdAccount.mockResolvedValue({
+      takuEnabled: true,
+      takuPlacementId: 'reward-placement'
+    })
+    getTenantAdReadiness.mockResolvedValue({
+      ...readiness,
+      adAccountId: null,
+      dedicatedUnlockPlacementId: 'reward-placement',
+      unlockNetworkFirmIds: [],
+      availableNetworkCapabilities: [],
+      networkReadiness: []
+    })
+    getTenantReportingConfiguration.mockResolvedValue({ tenantId: 23, adAccountId: 9 })
+    configureTenantAdCapability.mockResolvedValue({ readinessVersion: 5 })
+
+    const wrapper = mount(AdAccessEditor, {
+      props: { target: { kind: 'platform', tenantId: 23 } },
+      global: {
+        stubs: {
+          AsyncState: { template: '<div><slot /></div>' },
+          AdReadinessChecklist: { template: '<div>readiness</div>' },
+          InputPassword: true,
+          'el-form': { template: '<form><slot /></form>' },
+          'el-form-item': { template: '<label><slot /></label>' },
+          'el-input': { props: ['modelValue'], template: '<input :value="modelValue" />' },
+          'el-input-number': true,
+          'el-switch': true,
+          'el-button': { template: '<button><slot /></button>' },
+          'el-tag': { template: '<span><slot /></span>' },
+          'el-checkbox': { template: '<span><slot /></span>' },
+          'el-alert': true,
+          'el-divider': true,
+          'el-select': { template: '<div><slot /></div>' },
+          'el-option': true,
+          ContentWrap: { template: '<section><slot /></section>' },
+          Dialog: true
+        }
+      }
+    })
+    await flushPromises()
+
+    const vm = wrapper.vm as unknown as {
+      capabilityForm: { reason: string }
+      saveCapability: () => Promise<void>
+    }
+    vm.capabilityForm.reason = '用同租户报表账号初始化验奖配置绑定'
+    await vm.saveCapability()
+
+    expect(getTenantReportingConfiguration).toHaveBeenCalledWith({ kind: 'platform', tenantId: 23 })
+    expect(configureTenantAdCapability).toHaveBeenCalledWith(
+      { kind: 'platform', tenantId: 23 },
+      expect.objectContaining({ adAccountId: 9, expectedReadinessVersion: 4 })
+    )
+  })
+
+  it.each([
+    ['other tenant', { tenantId: 24, adAccountId: 9 }],
+    ['non-positive account id', { tenantId: 23, adAccountId: 0 }],
+    ['non-integer account id', { tenantId: 23, adAccountId: 9.5 }]
+  ])('fails closed when the reporting candidate has an invalid %s', async (_reason, reporting) => {
+    getManagedTenantAdAccount.mockResolvedValue({
+      takuEnabled: true,
+      takuPlacementId: 'reward-placement'
+    })
+    getTenantAdReadiness.mockResolvedValue({
+      ...readiness,
+      adAccountId: null,
+      dedicatedUnlockPlacementId: 'reward-placement',
+      unlockNetworkFirmIds: [],
+      availableNetworkCapabilities: [],
+      networkReadiness: []
+    })
+    getTenantReportingConfiguration.mockResolvedValue(reporting)
+
+    const wrapper = mount(AdAccessEditor, {
+      props: { target: { kind: 'platform', tenantId: 23 } },
+      global: {
+        stubs: {
+          AsyncState: { template: '<div><slot /></div>' },
+          AdReadinessChecklist: { template: '<div>readiness</div>' },
+          InputPassword: true,
+          'el-form': { template: '<form><slot /></form>' },
+          'el-form-item': { template: '<label><slot /></label>' },
+          'el-input': { props: ['modelValue'], template: '<input :value="modelValue" />' },
+          'el-input-number': true,
+          'el-switch': true,
+          'el-button': { template: '<button><slot /></button>' },
+          'el-tag': { template: '<span><slot /></span>' },
+          'el-checkbox': { template: '<span><slot /></span>' },
+          'el-alert': true,
+          'el-divider': true,
+          'el-select': { template: '<div><slot /></div>' },
+          'el-option': true,
+          ContentWrap: { template: '<section><slot /></section>' },
+          Dialog: true
+        }
+      }
+    })
+    await flushPromises()
+
+    const vm = wrapper.vm as unknown as {
+      capabilityForm: { reason: string }
+      saveCapability: () => Promise<void>
+    }
+    vm.capabilityForm.reason = '拒绝使用跨租户或非法报表账号初始化绑定'
+    await vm.saveCapability()
+
+    expect(configureTenantAdCapability).not.toHaveBeenCalled()
+  })
+
   it('lets only a super admin verify or disable an arbitrary network capability', async () => {
     getManagedTenantAdAccount.mockResolvedValue({
       takuEnabled: true,

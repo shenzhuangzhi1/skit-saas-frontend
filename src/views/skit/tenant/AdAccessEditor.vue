@@ -172,7 +172,7 @@
         <el-form-item label="广告账号编号">
           <el-input
             data-testid="capability-ad-account-id"
-            :model-value="capabilityAdAccountId || '-'"
+            :model-value="capabilityBindingAdAccountId || '-'"
             disabled
           />
         </el-form-item>
@@ -479,6 +479,21 @@ const readinessLoading = ref(false)
 const readinessError = ref('')
 const saving = ref(false)
 const capabilityAdAccountId = computed(() => resolveTenantAdAccountId(readiness.value))
+const reportingAccountCandidate = ref<{ tenantId?: unknown; adAccountId?: unknown }>()
+const isPositiveSafeInteger = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value > 0
+const capabilityBindingAdAccountId = computed(() => {
+  if (readiness.value?.adAccountId != null) return capabilityAdAccountId.value
+  const reporting = reportingAccountCandidate.value
+  if (
+    !isPositiveSafeInteger(props.target.tenantId) ||
+    reporting?.tenantId !== props.target.tenantId ||
+    !isPositiveSafeInteger(reporting.adAccountId)
+  ) {
+    return 0
+  }
+  return reporting.adAccountId
+})
 const canManageNetworkCapabilities = computed(
   () => props.target.kind === 'platform' && hasAnyRole(['super_admin'], props.roles)
 )
@@ -598,6 +613,7 @@ const loadReadiness = async (currentRequestId: number) => {
   readinessLoading.value = true
   readinessError.value = ''
   readiness.value = undefined
+  reportingAccountCandidate.value = undefined
   try {
     const response = await TenantApi.getTenantAdReadiness(props.target)
     if (currentRequestId !== requestId) return
@@ -613,11 +629,27 @@ const loadReadiness = async (currentRequestId: number) => {
       minNativeVersion: response.minNativeVersion || '',
       reason: ''
     }
+    if (response.adAccountId == null) {
+      void loadReportingAccountCandidate(currentRequestId)
+    }
   } catch (error) {
     if (currentRequestId !== requestId) return
     readinessError.value = errorText(error, '广告就绪状态加载失败')
   } finally {
     if (currentRequestId === requestId) readinessLoading.value = false
+  }
+}
+
+const loadReportingAccountCandidate = async (currentRequestId: number) => {
+  try {
+    const response = await TenantApi.getTenantReportingConfiguration(props.target)
+    if (currentRequestId !== requestId) return
+    reportingAccountCandidate.value = {
+      tenantId: response?.tenantId,
+      adAccountId: response?.adAccountId
+    }
+  } catch {
+    if (currentRequestId === requestId) reportingAccountCandidate.value = undefined
   }
 }
 
@@ -751,7 +783,7 @@ const saveNetworkCapability = async (enabled: boolean) => {
 const saveCapability = async () => {
   const form = capabilityForm.value
   const currentReadiness = readiness.value
-  const adAccountId = capabilityAdAccountId.value
+  const adAccountId = capabilityBindingAdAccountId.value
   if (!form || !currentReadiness || !adAccountId) {
     ElMessage.warning('未读取到当前租户已启用的 Taku 广告账号')
     return
