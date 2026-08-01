@@ -48,10 +48,16 @@ describe('AG163 configuration bootstrap', () => {
   })
 
   it('propagates the selected tenant code and only creates a disabled production draft after explicit operator action', () => {
+    const apiSource = readSource('src/api/skit/tenant/index.ts')
     const pageSource = readSource('src/views/skit/tenant/index.vue')
     const editorSource = readSource('src/views/skit/tenant/AppReleaseEditor.vue')
+    const releaseProfileContract = apiSource.match(
+      /export interface TenantAppReleaseProfileVO \{([\s\S]*?)\n\}/
+    )?.[1]
 
     expect(pageSource).toContain(':tenant-code="selectedAgent.tenantCode"')
+    expect(releaseProfileContract).toBeDefined()
+    expect(releaseProfileContract).not.toContain('tenantCode')
     expect(editorSource).toContain('tenantCode: string')
     expect(editorSource).toContain('初始化发布档案')
     expect(editorSource).toContain('初始化/修复发布档案')
@@ -59,7 +65,9 @@ describe('AG163 configuration bootstrap', () => {
     expect(editorSource).toContain('hotReleaseNo: 0')
     expect(editorSource).toContain('nativeProtocolVersion: 1')
     expect(editorSource).toContain('status: 1')
-    expect(editorSource).toContain('tenantCode: props.tenantCode')
+    expect(editorSource).toContain('profileCode: props.tenantCode')
+    expect(editorSource).toContain('label="原生包名" prop="nativePackage" required')
+    expect(editorSource).toMatch(/nativePackage:\s*\[[\s\S]*?required:\s*true/)
     expect(editorSource).not.toMatch(
       /getTenantAppReleaseProfile\([\s\S]{0,240}updateTenantAppReleaseProfile/
     )

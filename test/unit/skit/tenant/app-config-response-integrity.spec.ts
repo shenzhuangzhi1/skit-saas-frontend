@@ -26,7 +26,7 @@ vi.mock('@/api/skit/tenant', () => ({
 
 const releaseProfile = {
   tenantId: 23,
-  profileCode: 'tenant-23-staging',
+  profileCode: 'tenant-23',
   channel: 'staging',
   minNativeVersion: '',
   hotVersion: '',
@@ -35,7 +35,7 @@ const releaseProfile = {
   hotReleaseNo: 0,
   hotManifestSignature: '',
   nativeVersion: '',
-  nativePackage: '',
+  nativePackage: 'top.yunque8.xingtufangge',
   nativeProtocolVersion: 7,
   runtimeUpdatePublicKey: '',
   runtimeUpdateKeyFingerprint: '',
@@ -99,7 +99,7 @@ const stubs = {
 
 const mountEditor = (component: typeof AppBuildMaterialEditor | typeof AppReleaseEditor) =>
   mount(component, {
-    props: { tenantId: 23 },
+    props: { tenantId: 23, tenantCode: 'tenant-23' },
     global: {
       stubs,
       config: {
@@ -150,6 +150,69 @@ describe('App 发布档案响应完整性', () => {
     ['字段类型错误', { ...releaseProfile, nativeProtocolVersion: '1' }]
   ])('后端响应%s时进入加载错误', async (_caseName, response) => {
     getTenantAppReleaseProfile.mockResolvedValueOnce(response)
+
+    const wrapper = mountEditor(AppReleaseEditor)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('发布档案加载失败')
+    expect(wrapper.find('[data-testid="editor-form"]').exists()).toBe(false)
+  })
+
+  it('GET 被拒绝后仅由操作员显式创建修复草稿且不自动 PUT', async () => {
+    getTenantAppReleaseProfile.mockRejectedValueOnce(new Error('服务暂时不可用'))
+
+    const wrapper = mountEditor(AppReleaseEditor)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('发布档案加载失败')
+    expect(updateTenantAppReleaseProfile).not.toHaveBeenCalled()
+
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('初始化/修复发布档案'))
+      ?.trigger('click')
+    await flushPromises()
+
+    expect(readFormModel(wrapper)).toEqual(
+      expect.objectContaining({
+        tenantId: 23,
+        profileCode: 'tenant-23',
+        channel: 'production',
+        nativePackage: '',
+        status: 1
+      })
+    )
+    expect(readFormModel(wrapper)).not.toHaveProperty('tenantCode')
+    expect(updateTenantAppReleaseProfile).not.toHaveBeenCalled()
+  })
+
+  it('畸形响应后仅由操作员显式创建修复草稿且不自动 PUT', async () => {
+    getTenantAppReleaseProfile.mockResolvedValueOnce({ tenantId: 23, profileCode: 'tenant-23' })
+
+    const wrapper = mountEditor(AppReleaseEditor)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('发布档案加载失败')
+    expect(updateTenantAppReleaseProfile).not.toHaveBeenCalled()
+
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('初始化/修复发布档案'))
+      ?.trigger('click')
+    await flushPromises()
+
+    expect(readFormModel(wrapper)).toEqual(
+      expect.objectContaining({ tenantId: 23, profileCode: 'tenant-23', status: 1 })
+    )
+    expect(readFormModel(wrapper)).not.toHaveProperty('tenantCode')
+    expect(updateTenantAppReleaseProfile).not.toHaveBeenCalled()
+  })
+
+  it('拒绝 profileCode 不属于当前 tenantCode 的完整响应', async () => {
+    getTenantAppReleaseProfile.mockResolvedValueOnce({
+      ...releaseProfile,
+      profileCode: 'tenant-24'
+    })
 
     const wrapper = mountEditor(AppReleaseEditor)
     await flushPromises()

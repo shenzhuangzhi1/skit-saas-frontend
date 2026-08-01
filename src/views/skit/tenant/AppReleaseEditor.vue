@@ -99,7 +99,7 @@
     <el-form-item label="当前原生版本">
       <el-input v-model="formData.nativeVersion" placeholder="仅供发布记录" />
     </el-form-item>
-    <el-form-item label="原生包名">
+    <el-form-item label="原生包名" prop="nativePackage" required>
       <el-input v-model="formData.nativePackage" placeholder="仅供发布记录，不填写任何密钥" />
     </el-form-item>
     <el-form-item label="原生协议版本" prop="nativeProtocolVersion">
@@ -162,13 +162,15 @@ const releaseProfileStringFields = [
 
 const isTenantAppReleaseProfile = (
   value: unknown,
-  tenantId: number
+  tenantId: number,
+  tenantCode: string
 ): value is TenantApi.TenantAppReleaseProfileVO => {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
   const profile = value as Record<string, unknown>
   return (
     profile.tenantId === tenantId &&
     Number.isInteger(profile.tenantId) &&
+    profile.profileCode === tenantCode &&
     releaseProfileStringFields.every((field) => typeof profile[field] === 'string') &&
     (profile.channel === 'production' || profile.channel === 'staging') &&
     Number.isInteger(profile.hotReleaseNo) &&
@@ -182,8 +184,7 @@ const isTenantAppReleaseProfile = (
 const initializeDraft = () => {
   formData.value = {
     tenantId: props.tenantId,
-    tenantCode: props.tenantCode,
-    profileCode: '',
+    profileCode: props.tenantCode,
     channel: 'production',
     minNativeVersion: '',
     hotVersion: '',
@@ -212,6 +213,14 @@ const requiredWhenEnabled = (_rule: unknown, value: string, callback: (error?: E
   callback()
 }
 const rules = reactive<FormRules<TenantApi.TenantAppReleaseProfileVO>>({
+  nativePackage: [
+    {
+      required: true,
+      whitespace: true,
+      message: '原生包名不能为空',
+      trigger: 'blur'
+    }
+  ],
   minNativeVersion: [{ validator: requiredWhenEnabled, trigger: 'blur' }],
   hotVersion: [{ validator: requiredWhenEnabled, trigger: 'blur' }],
   hotBundleUrl: [
@@ -241,6 +250,7 @@ const rules = reactive<FormRules<TenantApi.TenantAppReleaseProfileVO>>({
 const load = async () => {
   const sequence = loadSequence.value + 1
   const tenantId = props.tenantId
+  const tenantCode = props.tenantCode
   loadSequence.value = sequence
   saveSequence.value += 1
   saving.value = false
@@ -256,7 +266,7 @@ const load = async () => {
       notFound.value = true
       return
     }
-    if (!isTenantAppReleaseProfile(profile, tenantId)) {
+    if (!isTenantAppReleaseProfile(profile, tenantId, tenantCode)) {
       throw new Error('Invalid app release profile response')
     }
     formData.value = { ...profile }
@@ -279,10 +289,22 @@ const save = async () => {
   const profile = formData.value
   if (!loaded.value || !profile) return
   const tenantId = props.tenantId
+  const tenantCode = props.tenantCode
   const sequence = loadSequence.value
   const valid = await formRef.value?.validate()
   if (!valid) return
-  if (tenantId !== props.tenantId || sequence !== loadSequence.value) return
+  if (
+    tenantId !== props.tenantId ||
+    tenantCode !== props.tenantCode ||
+    sequence !== loadSequence.value
+  ) {
+    return
+  }
+  const nativePackage = profile.nativePackage.trim()
+  if (!nativePackage) {
+    message.warning('原生包名不能为空')
+    return
+  }
   const normalizedReason = reason.value.trim()
   if (normalizedReason.length < 10 || normalizedReason.length > 500) {
     message.warning('变更原因长度必须为 10–500 个字符')
@@ -294,7 +316,7 @@ const save = async () => {
   try {
     const response = await TenantApi.updateTenantAppReleaseProfile({
       ...profile,
-      tenantCode: props.tenantCode,
+      nativePackage,
       hotBundleSha256: profile.hotBundleSha256.toLowerCase(),
       hotManifestSignature: profile.hotManifestSignature.trim(),
       runtimeUpdatePublicKey: profile.runtimeUpdatePublicKey.trim(),
@@ -303,11 +325,12 @@ const save = async () => {
     if (
       saveId !== saveSequence.value ||
       tenantId !== props.tenantId ||
+      tenantCode !== props.tenantCode ||
       sequence !== loadSequence.value
     ) {
       return
     }
-    if (!isTenantAppReleaseProfile(response, tenantId)) {
+    if (!isTenantAppReleaseProfile(response, tenantId, tenantCode)) {
       message.warning('服务端未返回完整发布档案，请重新加载确认')
       return
     }
@@ -321,5 +344,5 @@ const save = async () => {
   }
 }
 
-watch(() => props.tenantId, load, { immediate: true })
+watch(() => [props.tenantId, props.tenantCode] as const, load, { immediate: true })
 </script>

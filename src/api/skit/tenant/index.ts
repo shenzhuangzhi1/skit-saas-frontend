@@ -780,7 +780,6 @@ export interface MemberSubtreeSummaryVO {
 
 export interface TenantAppReleaseProfileVO {
   tenantId: number
-  tenantCode?: string
   profileCode: string
   channel: 'production' | 'staging'
   minNativeVersion: string

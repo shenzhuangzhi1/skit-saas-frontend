@@ -214,13 +214,13 @@ describe.each([
   it('代理商快速切换时忽略较晚返回的旧请求', async () => {
     const previousRequest = deferred<typeof response>()
     const currentRequest = deferred<typeof response>()
-    const currentMarker = `${name}-当前代理商`
+    const currentMarker = markerKey === 'profileCode' ? 'tenant-24' : `${name}-当前代理商`
 
     load.mockReturnValueOnce(previousRequest.promise).mockReturnValueOnce(currentRequest.promise)
 
     const wrapper = mountEditor(component)
     await wrapper.vm.$nextTick()
-    await wrapper.setProps({ tenantId: 24 })
+    await wrapper.setProps({ tenantId: 24, tenantCode: 'tenant-24' })
     await wrapper.vm.$nextTick()
 
     currentRequest.resolve({
@@ -235,7 +235,7 @@ describe.each([
     previousRequest.resolve({
       ...response,
       tenantId: 23,
-      [markerKey]: `${name}-旧代理商`
+      [markerKey]: markerKey === 'profileCode' ? 'tenant-23' : `${name}-旧代理商`
     } as typeof response)
     await flushPromises()
 
@@ -245,10 +245,11 @@ describe.each([
 
   it('表单校验期间切换代理商不会提交旧点击意图', async () => {
     const validation = deferred<boolean>()
+    const currentMarker = markerKey === 'profileCode' ? 'tenant-24' : `${name}-当前代理商`
     load.mockResolvedValueOnce(response).mockResolvedValueOnce({
       ...response,
       tenantId: 24,
-      [markerKey]: `${name}-当前代理商`
+      [markerKey]: currentMarker
     } as typeof response)
     validateForm.mockReturnValueOnce(validation.promise)
 
@@ -259,7 +260,7 @@ describe.each([
       .setValue('这是一条足够长的旧代理商变更原因')
     await findButton(wrapper, '保存')?.trigger('click')
 
-    await wrapper.setProps({ tenantId: 24 })
+    await wrapper.setProps({ tenantId: 24, tenantCode: 'tenant-24' })
     await flushPromises()
     await wrapper
       .find('textarea[data-placeholder^="必填 10"]')
@@ -276,7 +277,7 @@ describe.each([
     const currentResponse = {
       ...response,
       tenantId: 24,
-      [markerKey]: `${name}-当前代理商`
+      [markerKey]: markerKey === 'profileCode' ? 'tenant-24' : `${name}-当前代理商`
     } as typeof response
     load.mockResolvedValueOnce(response).mockResolvedValueOnce(currentResponse)
     save.mockReturnValueOnce(previousSave.promise).mockReturnValueOnce(currentSave.promise)
@@ -289,7 +290,7 @@ describe.each([
     await findButton(wrapper, '保存')?.trigger('click')
     await flushPromises()
 
-    await wrapper.setProps({ tenantId: 24 })
+    await wrapper.setProps({ tenantId: 24, tenantCode: 'tenant-24' })
     await flushPromises()
     expect(findButton(wrapper, '保存')?.attributes('data-loading')).toBe('false')
 
@@ -331,7 +332,7 @@ describe('编辑器保存期间切换代理商', () => {
     await findButton(wrapper, '保存构建资料版本')?.trigger('click')
     await flushPromises()
 
-    await wrapper.setProps({ tenantId: 24 })
+    await wrapper.setProps({ tenantId: 24, tenantCode: 'tenant-24' })
     await flushPromises()
     expect(wrapper.text()).toContain('构建资料版本 24')
     expect(wrapper.find('[data-testid="loaded-marker"]').text()).toBe('当前代理商构建资料')
@@ -361,7 +362,7 @@ describe('编辑器保存期间切换代理商', () => {
     await findButton(wrapper, '保存发布档案')?.trigger('click')
     await flushPromises()
 
-    await wrapper.setProps({ tenantId: 24 })
+    await wrapper.setProps({ tenantId: 24, tenantCode: 'tenant-24' })
     await flushPromises()
     expect(wrapper.find('[data-testid="loaded-marker"]').text()).toBe('tenant-24')
 
@@ -386,31 +387,49 @@ describe('发布档案显式初始化', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="editor-form"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="loaded-marker"]').text()).toBe('')
+    expect(wrapper.find('[data-testid="loaded-marker"]').text()).toBe('tenant-23')
     expect(wrapper.findAll('.number-field').map((field) => field.text())).toEqual(['0', '1'])
     expect(updateTenantAppReleaseProfile).not.toHaveBeenCalled()
+  })
 
-    await findButton(wrapper, '保存发布档案')?.trigger('click')
+  it('草稿只填原因仍不保存，填写原生包名后才允许保存', async () => {
+    getTenantAppReleaseProfile.mockResolvedValueOnce(null)
+
+    const wrapper = mountEditor(AppReleaseEditor)
     await flushPromises()
-    expect(updateTenantAppReleaseProfile).not.toHaveBeenCalled()
+    await findButton(wrapper, '初始化发布档案')?.trigger('click')
+    await flushPromises()
 
-    updateTenantAppReleaseProfile.mockResolvedValueOnce(releaseProfile)
     await wrapper
       .find('textarea[data-placeholder^="必填 10"]')
       .setValue('初始化禁用的生产发布档案，等待后续完整配置')
     await findButton(wrapper, '保存发布档案')?.trigger('click')
     await flushPromises()
+    expect(updateTenantAppReleaseProfile).not.toHaveBeenCalled()
 
-    expect(updateTenantAppReleaseProfile).toHaveBeenCalledWith(
+    updateTenantAppReleaseProfile.mockResolvedValueOnce({
+      ...releaseProfile,
+      nativePackage: 'top.yunque8.xingtufangge'
+    })
+    await wrapper
+      .find('textarea[data-placeholder="仅供发布记录，不填写任何密钥"]')
+      .setValue('top.yunque8.xingtufangge')
+    await findButton(wrapper, '保存发布档案')?.trigger('click')
+    await flushPromises()
+
+    const payload = updateTenantAppReleaseProfile.mock.calls[0]?.[0]
+    expect(payload).toEqual(
       expect.objectContaining({
         tenantId: 23,
-        tenantCode: 'tenant-23',
+        profileCode: 'tenant-23',
         channel: 'production',
         hotReleaseNo: 0,
+        nativePackage: 'top.yunque8.xingtufangge',
         nativeProtocolVersion: 1,
         status: 1,
         reason: '初始化禁用的生产发布档案，等待后续完整配置'
       })
     )
+    expect(payload).not.toHaveProperty('tenantCode')
   })
 })

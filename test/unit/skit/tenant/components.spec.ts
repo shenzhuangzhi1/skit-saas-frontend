@@ -442,7 +442,10 @@ describe('AdAccessEditor', () => {
           AdReadinessChecklist: { template: '<div>readiness</div>' },
           InputPassword: true,
           'el-form': { template: '<form><slot /></form>' },
-          'el-form-item': { template: '<label><slot /></label>' },
+          'el-form-item': {
+            props: ['label'],
+            template: '<label>{{ label }}<slot /></label>'
+          },
           'el-input': { props: ['modelValue'], template: '<input :value="modelValue" />' },
           'el-input-number': true,
           'el-switch': true,
@@ -460,6 +463,8 @@ describe('AdAccessEditor', () => {
     })
     await flushPromises()
 
+    expect(wrapper.text()).toContain('Taku 登录账号')
+
     const vm = wrapper.vm as unknown as {
       accountForm: { takuAppId: string; splashPlacementId: string }
       accountReason: string
@@ -470,7 +475,10 @@ describe('AdAccessEditor', () => {
     await flushPromises()
     expect(saveManagedTenantAdAccount).toHaveBeenCalledWith(
       { kind: 'platform', tenantId: 23 },
-      expect.objectContaining({ takuAppId: 'tenant-23-app' })
+      expect.objectContaining({
+        takuUsername: 'tenant-23-operator',
+        takuAppId: 'tenant-23-app'
+      })
     )
 
     await wrapper.setProps({ target: { kind: 'platform', tenantId: 24 } })
