@@ -184,10 +184,10 @@ onBeforeUnmount(() => {
 <template>
   <div class="particle-field" aria-hidden="true">
     <!-- 氛围光晕（CSS 层） -->
-    <span class="glow glow--primary" />
-    <span class="glow glow--accent" />
-    <span class="glow glow--tertiary" />
-    <canvas ref="canvasRef" class="particle-canvas" />
+    <span class="glow glow--primary"></span>
+    <span class="glow glow--accent"></span>
+    <span class="glow glow--tertiary"></span>
+    <canvas ref="canvasRef" class="particle-canvas"></canvas>
   </div>
 </template>
 
@@ -246,6 +246,7 @@ onBeforeUnmount(() => {
   from {
     transform: translate3d(0, 0, 0) scale(1);
   }
+
   to {
     transform: translate3d(-6vw, 5vh, 0) scale(1.12);
   }
@@ -255,6 +256,7 @@ onBeforeUnmount(() => {
   from {
     transform: translate3d(0, 0, 0) scale(1);
   }
+
   to {
     transform: translate3d(5vw, -6vh, 0) scale(1.08);
   }
@@ -264,6 +266,7 @@ onBeforeUnmount(() => {
   from {
     transform: translate3d(0, 0, 0) scale(1);
   }
+
   to {
     transform: translate3d(-3vw, -4vh, 0) scale(1.18);
   }
