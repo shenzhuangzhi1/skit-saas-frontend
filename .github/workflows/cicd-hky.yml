@@ -75,6 +75,7 @@ jobs:
           docker buildx build \
             --label app=skit-saas-frontend \
             --label org.opencontainers.image.revision="${GITHUB_SHA}" \
+            -f deploy/Dockerfile \
             -t "${IMAGE_NAME}:${IMAGE_TAG}" \
             --load \
             --cache-from type=gha \
