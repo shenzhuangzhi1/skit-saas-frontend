@@ -4,6 +4,7 @@ import { useAppStore } from '@/store/modules/app'
 import { useLocaleStore } from '@/store/modules/locale'
 import { useLocale } from '@/hooks/web/useLocale'
 import { LoginForm } from './components'
+import VisualParticleField from './components/VisualParticleField.vue'
 import { runThemeTransition } from '@/plugins/microInteractions/transitions'
 
 defineOptions({ name: 'Login' })
@@ -41,6 +42,7 @@ const setLang = (lang: LocaleType) => {
 
 <template>
   <main class="skit-login-page" :class="{ 'is-dark': isDark }">
+    <VisualParticleField :is-dark="isDark" />
     <header class="login-topbar">
       <RouterLink to="/" class="brand-link" aria-label="返回首页">
         <span class="brand-mark" aria-hidden="true">
@@ -187,6 +189,7 @@ const setLang = (lang: LocaleType) => {
 
 <style lang="scss" scoped>
 .skit-login-page {
+  position: relative;
   display: grid;
   min-height: 100vh;
   min-height: 100dvh;
@@ -195,6 +198,13 @@ const setLang = (lang: LocaleType) => {
   color: var(--login-text);
   background: var(--el-bg-color-page);
   grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.login-topbar,
+.login-shell,
+.page-footer {
+  position: relative;
+  z-index: 1;
 }
 
 .login-topbar {

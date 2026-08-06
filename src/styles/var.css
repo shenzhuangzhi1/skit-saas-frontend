@@ -29,6 +29,9 @@
   --skit-overlay: rgb(15 23 42 / 42%);
   --skit-page-glow-primary: rgb(99 102 241 / 10%);
   --skit-page-glow-accent: rgb(15 159 145 / 8%);
+  --skit-glow-primary: rgb(99 102 241 / 16%);
+  --skit-glow-accent: rgb(15 159 145 / 13%);
+  --skit-glow-tertiary: rgb(168 85 247 / 9%);
   --skit-header-bg: rgb(255 255 255 / 84%);
   --skit-tags-bg: rgb(255 255 255 / 72%);
   --skit-sidebar-decoration: rgb(99 102 241 / 8%);
@@ -195,6 +198,9 @@
   --skit-overlay: rgb(2 6 23 / 68%);
   --skit-page-glow-primary: rgb(99 102 241 / 14%);
   --skit-page-glow-accent: rgb(45 212 191 / 8%);
+  --skit-glow-primary: rgb(99 102 241 / 24%);
+  --skit-glow-accent: rgb(45 212 191 / 17%);
+  --skit-glow-tertiary: rgb(192 132 252 / 13%);
   --skit-header-bg: rgb(15 23 42 / 84%);
   --skit-tags-bg: rgb(15 23 42 / 74%);
   --skit-sidebar-decoration: rgb(129 140 248 / 12%);
