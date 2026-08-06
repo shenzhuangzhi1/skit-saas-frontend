@@ -131,6 +131,7 @@ jobs:
           CUSTOMER_SERVER_PASSWORD: ${{ secrets.CUSTOMER_SERVER_PASSWORD }}
           CUSTOMER_SERVER_PORT: ${{ secrets.CUSTOMER_SERVER_PORT }}
           CUSTOMER_SERVER_ENV_BASE64: ${{ secrets.CUSTOMER_SERVER_ENV_BASE64 }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SKIT_SSH_PASSWORD: ${{ secrets.CUSTOMER_SERVER_PASSWORD }}
         run: |
           set -euo pipefail
@@ -144,8 +145,15 @@ jobs:
           .deploy/scp deploy/activate-frontend.sh deploy/cleanup-frontend-release-env.sh \
             deploy/nginx.conf "${SSH_TARGET}:${RELEASE_BUNDLE_PATH}/"
           if [ -n "${CUSTOMER_SERVER_ENV_BASE64}" ]; then
-            echo "${CUSTOMER_SERVER_ENV_BASE64}" | base64 -d > server.env
+            {
+              echo "GHCR_USERNAME=${GITHUB_ACTOR}"
+              echo "GHCR_TOKEN=${GITHUB_TOKEN}"
+              echo "${CUSTOMER_SERVER_ENV_BASE64}" | base64 -d
+            } > server.env
             .deploy/scp server.env "${SSH_TARGET}:${RELEASE_BUNDLE_PATH}/server.env"
+          else
+            echo "::error::Set CUSTOMER_SERVER_ENV_BASE64 (customer server.env, base64) to deploy."
+            exit 1
           fi
           echo "bundle uploaded to ${SSH_TARGET}:${RELEASE_BUNDLE_PATH}"
 
