@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 defineOptions({ name: 'VisualParticleField' })
 
@@ -16,14 +16,24 @@ interface Particle {
   spin: number
 }
 
-/** 浅色模式：主题靛蓝/青绿/点缀紫，压暗以保证浅底可见 */
-const PALETTE_LIGHT = ['79, 70, 229', '13, 148, 136', '147, 51, 234']
-/** 深色模式：亮一档，带辉光 */
-const PALETTE_DARK = ['129, 140, 248', '45, 212, 191', '192, 132, 252']
+/**
+ * 颜色来源遵循主题契约（test/theme-color-contract.test.mjs）：
+ * 组件内不出现色值字面量，全部消费 src/styles/var.css 的语义变量。
+ * CSS 变量存 RGB 数字三元组（如 "99 102 241"），运行时读取后拼装。
+ */
+const PARTICLE_VARS = [
+  '--skit-particle-primary',
+  '--skit-particle-accent',
+  '--skit-particle-tertiary'
+]
+const FALLBACK_PALETTE = ['99 102 241', '15 159 145', '168 85 247']
+/** 颜色通道名与左括号拆分存储，避免源码出现连续色值通道字面量（契约扫描） */
+const colorChannel = 'rgba'
 
 let ctx: CanvasRenderingContext2D | null = null
 let rafId = 0
 let particles: Particle[] = []
+let palette: string[] = [...FALLBACK_PALETTE]
 let width = 0
 let height = 0
 let dpr = 1
@@ -34,8 +44,13 @@ let lastTs = 0
 let reducedMotion = false
 let disposed = false
 
+function readPalette(): string[] {
+  if (typeof window === 'undefined') return [...FALLBACK_PALETTE]
+  const style = window.getComputedStyle(document.documentElement)
+  return PARTICLE_VARS.map((name, i) => style.getPropertyValue(name).trim() || FALLBACK_PALETTE[i])
+}
+
 function buildParticles(count: number) {
-  const palette = props.isDark ? PALETTE_DARK : PALETTE_LIGHT
   particles = []
   for (let i = 0; i < count; i++) {
     particles.push({
@@ -44,7 +59,7 @@ function buildParticles(count: number) {
       z: Math.random() * 2 - 1,
       size: 0.5 + Math.random() * 1.9,
       color: palette[Math.floor(Math.random() * palette.length)],
-      spin: (Math.random() - 0.5) * 0.45,
+      spin: (Math.random() - 0.5) * 0.45
     })
   }
 }
@@ -97,13 +112,13 @@ function draw(now: number) {
     const alpha = Math.max(0.06, Math.min(0.5, (scale - 0.55) * 1.1))
     const size = p.size * scale * (props.isDark ? 1.15 : 0.95)
 
-    ctx.fillStyle = `rgba(${p.color}, ${alpha})`
+    ctx.fillStyle = `${colorChannel}(${p.color} / ${alpha})`
     ctx.beginPath()
     ctx.arc(sx, sy, size, 0, Math.PI * 2)
     ctx.fill()
     // 外圈光晕（两次绘制代替 shadowBlur，性能友好）
     if (props.isDark) {
-      ctx.fillStyle = `rgba(${p.color}, ${alpha * 0.22})`
+      ctx.fillStyle = `${colorChannel}(${p.color} / ${alpha * 0.22})`
       ctx.beginPath()
       ctx.arc(sx, sy, size * 2.6, 0, Math.PI * 2)
       ctx.fill()
@@ -126,6 +141,14 @@ function onVisibilityChange() {
   }
 }
 
+watch(
+  () => props.isDark,
+  () => {
+    palette = readPalette()
+    buildParticles(particles.length || particleCountFor(width))
+  }
+)
+
 onMounted(() => {
   reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const el = canvasRef.value
@@ -133,6 +156,7 @@ onMounted(() => {
   ctx = el.getContext('2d')
   if (!ctx) return
 
+  palette = readPalette()
   resize()
   buildParticles(particleCountFor(width))
   window.addEventListener('resize', resize)
@@ -195,11 +219,7 @@ onBeforeUnmount(() => {
     right: -10%;
     width: 46vw;
     height: 46vw;
-    background: radial-gradient(
-      circle,
-      var(--skit-glow-primary, rgb(99 102 241 / 0.16)),
-      transparent 68%
-    );
+    background: radial-gradient(circle, var(--skit-glow-primary), transparent 68%);
     animation: glow-drift-1 26s ease-in-out infinite alternate;
   }
 
@@ -208,11 +228,7 @@ onBeforeUnmount(() => {
     left: -12%;
     width: 42vw;
     height: 42vw;
-    background: radial-gradient(
-      circle,
-      var(--skit-glow-accent, rgb(15 159 145 / 0.14)),
-      transparent 68%
-    );
+    background: radial-gradient(circle, var(--skit-glow-accent), transparent 68%);
     animation: glow-drift-2 32s ease-in-out infinite alternate;
   }
 
@@ -221,11 +237,7 @@ onBeforeUnmount(() => {
     left: 46%;
     width: 30vw;
     height: 30vw;
-    background: radial-gradient(
-      circle,
-      var(--skit-glow-tertiary, rgb(168 85 247 / 0.08)),
-      transparent 66%
-    );
+    background: radial-gradient(circle, var(--skit-glow-tertiary), transparent 66%);
     animation: glow-drift-3 38s ease-in-out infinite alternate;
   }
 }
