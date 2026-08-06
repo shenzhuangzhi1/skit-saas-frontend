@@ -13,6 +13,7 @@ permissions:
 env:
   IMAGE_NAME: ghcr.io/shenzhuangzhi1/skit-saas-frontend
   IMAGE_TAG: hky-${{ github.sha }}
+  RELEASE_ID: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
 
 jobs:
   test-and-build:
@@ -136,9 +137,10 @@ jobs:
           : "${CUSTOMER_SERVER_USER:?Set CUSTOMER_SERVER_USER secret}"
           SERVER_PORT="${CUSTOMER_SERVER_PORT:-22}"
           SSH_TARGET="${CUSTOMER_SERVER_USER}@${CUSTOMER_SERVER_HOST}"
-          RELEASE_BUNDLE_PATH="skit-saas/releases/frontend-${IMAGE_TAG}"
+          DEPLOY_PATH="skit-saas"
+          RELEASE_BUNDLE_PATH="${DEPLOY_PATH}/releases/frontend-${RELEASE_ID}"
           .deploy/ssh "${SSH_TARGET}" \
-            "mkdir -p '${RELEASE_BUNDLE_PATH}' && mkdir -p skit-saas/releases"
+            "mkdir -p '${DEPLOY_PATH}/releases' && mkdir -- '${RELEASE_BUNDLE_PATH}'"
           .deploy/scp deploy/activate-frontend.sh deploy/cleanup-frontend-release-env.sh \
             deploy/nginx.conf "${SSH_TARGET}:${RELEASE_BUNDLE_PATH}/"
           if [ -n "${CUSTOMER_SERVER_ENV_BASE64}" ]; then
@@ -159,9 +161,10 @@ jobs:
           set -euo pipefail
           SERVER_PORT="${CUSTOMER_SERVER_PORT:-22}"
           SSH_TARGET="${CUSTOMER_SERVER_USER}@${CUSTOMER_SERVER_HOST}"
-          RELEASE_BUNDLE_PATH="skit-saas/releases/frontend-${IMAGE_TAG}"
+          DEPLOY_PATH="skit-saas"
+          RELEASE_BUNDLE_PATH="${DEPLOY_PATH}/releases/frontend-${RELEASE_ID}"
           .deploy/ssh "${SSH_TARGET}" \
-            "cd '${RELEASE_BUNDLE_PATH}' && DEPLOY_PATH=skit-saas \
-             RELEASE_BUNDLE_PATH='${RELEASE_BUNDLE_PATH}' \
+            "DEPLOY_PATH='${DEPLOY_PATH}' \
+             RELEASE_BUNDLE_PATH='releases/frontend-${RELEASE_ID}' \
              IMAGE_NAME='${IMAGE_NAME}' IMAGE_TAG='${IMAGE_TAG}' \
-             bash activate-frontend.sh"
+             bash '${RELEASE_BUNDLE_PATH}/activate-frontend.sh'"
