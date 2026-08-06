@@ -74,6 +74,14 @@ EOF
 exit 0
 EOF
   chmod +x "${workspace}/bin/sleep"
+
+  cat > "${workspace}/bin/timeout" <<'EOF'
+#!/usr/bin/env bash
+# Portable test stub: drop the duration argument and run the wrapped command.
+shift
+exec "$@"
+EOF
+  chmod +x "${workspace}/bin/timeout"
 }
 
 run_activation() {
