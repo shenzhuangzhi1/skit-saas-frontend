@@ -171,7 +171,15 @@ upsert_env FRONTEND_IMAGE "${IMAGE_NAME}"
 upsert_env FRONTEND_IMAGE_TAG "${IMAGE_TAG}"
 upsert_env FRONTEND_PORT "${FRONTEND_PORT:-48081}"
 
-compose -f docker-compose.prod.yml --env-file .env pull frontend
+if docker_cmd image inspect "${IMAGE_NAME}:${IMAGE_TAG}" >/dev/null 2>&1; then
+  echo "Image ${IMAGE_NAME}:${IMAGE_TAG} already present locally; skipping registry pull."
+else
+  echo "Image ${IMAGE_NAME}:${IMAGE_TAG} not present locally; pulling (bounded to 10 minutes)."
+  timeout 600 compose -f docker-compose.prod.yml --env-file .env pull frontend || {
+    echo "Frontend image pull failed or timed out; cannot activate without the image."
+    exit 1
+  }
+fi
 compose -f docker-compose.prod.yml --env-file .env up -d --no-deps --force-recreate frontend
 
 expected_image="${IMAGE_NAME}:${IMAGE_TAG}"
