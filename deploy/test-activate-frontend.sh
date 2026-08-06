@@ -49,6 +49,14 @@ case "$*" in
     printf '%s\n' "${FAKE_FRONTEND_IMAGE}"
     exit 0
     ;;
+  "image inspect "*)
+    # Image-presence probe: exit 0 when the image is present locally (pull skipped),
+    # exit 1 when missing (registry pull required).
+    if [ "${FAKE_IMAGE_PRESENT:-1}" = "0" ]; then
+      exit 0
+    fi
+    exit 1
+    ;;
 esac
 EOF
   chmod +x "${workspace}/bin/docker"
@@ -66,6 +74,14 @@ EOF
 exit 0
 EOF
   chmod +x "${workspace}/bin/sleep"
+
+  cat > "${workspace}/bin/timeout" <<'EOF'
+#!/usr/bin/env bash
+# Portable test stub: drop the duration argument and run the wrapped command.
+shift
+exec "$@"
+EOF
+  chmod +x "${workspace}/bin/timeout"
 }
 
 run_activation() {
@@ -75,6 +91,7 @@ run_activation() {
     FAKE_DOCKER_CALLS="${workspace}/calls.log" \
     FAKE_FRONTEND_IMAGE="${actual_image}" \
     FAKE_CURL_EXIT="${curl_exit}" \
+    FAKE_IMAGE_PRESENT="${FAKE_IMAGE_PRESENT:-1}" \
     EXPECTED_REMOVED_SERVER_ENV="${workspace}/stack/releases/frontend-${release_id}/server.env" \
     SECRET_ARG_SENTINEL="${secret_arg_sentinel}" \
     DEPLOY_PATH="${workspace}/stack" \
@@ -103,6 +120,13 @@ grep -Fx 'compose -f docker-compose.prod.yml --env-file .env up -d --no-deps --f
   || fail "frontend was not recreated independently"
 if grep -Fq 'backend' "${workspace}/calls.log"; then
   fail "frontend activation touched backend"
+fi
+
+prepare_workspace
+FAKE_IMAGE_PRESENT=0 run_activation "${expected_image}" 0 \
+  || fail "image-present frontend activation should succeed"
+if grep -Fx 'compose -f docker-compose.prod.yml --env-file .env pull frontend' "${workspace}/calls.log"; then
+  fail "an already-present frontend image must not trigger a registry pull"
 fi
 
 prepare_workspace
