@@ -148,6 +148,50 @@ export interface AdConsumptionPageVO {
   total: number
 }
 
+/** Per-member aggregate row; one row per (member, currency, amountScale). */
+export interface AdConsumptionMemberRowVO {
+  tenantId: AdConsumptionId
+  memberId: AdConsumptionId
+  memberNickname?: string | null
+  memberMobileMasked?: string | null
+  currency?: string | null
+  amountScale?: number | null
+  settledImpressionCount: number
+  /** Exact integer units of the settled amount, rendered at amountScale. */
+  settledAmountUnits?: number | string | null
+  /** Exact integer units of the platform estimate for the same impressions. */
+  estimatedAmountUnits?: number | string | null
+  firstConsumedAt?: number | null
+  lastConsumedAt?: number | null
+}
+
+export interface AdConsumptionMemberCurrencySummaryVO {
+  currency: string
+  amountScale: number
+  settledImpressionCount: number
+  settledAmountUnits?: number | string | null
+  estimatedAmountUnits?: number | string | null
+}
+
+export interface AdConsumptionMemberSummaryVO {
+  tenantId?: AdConsumptionId | null
+  asOf: number
+  timezone: string
+  memberCount: number
+  settledImpressionCount: number
+  currencyGroups: AdConsumptionMemberCurrencySummaryVO[]
+}
+
+export interface AdConsumptionMemberPageVO {
+  tenantId?: AdConsumptionId | null
+  asOf: number
+  timezone: string
+  pageNo: number
+  pageSize: number
+  list: AdConsumptionMemberRowVO[]
+  total: number
+}
+
 const silent = { skipErrorMessage: true }
 
 export const getAdConsumptionSummary = (params: AdConsumptionBaseQuery) =>
@@ -168,5 +212,19 @@ export const getAdConsumption = (id: AdConsumptionId, params: AdConsumptionScope
   request.get<AdConsumptionDetailVO>({
     url: '/skit/tenant/ad-consumptions/get',
     params: { ...params, id },
+    ...silent
+  })
+
+export const getAdConsumptionMemberPage = (params: AdConsumptionPageQuery) =>
+  request.get<AdConsumptionMemberPageVO>({
+    url: '/skit/tenant/ad-consumptions/member-page',
+    params,
+    ...silent
+  })
+
+export const getAdConsumptionMemberSummary = (params: AdConsumptionBaseQuery) =>
+  request.get<AdConsumptionMemberSummaryVO>({
+    url: '/skit/tenant/ad-consumptions/member-summary',
+    params,
     ...silent
   })

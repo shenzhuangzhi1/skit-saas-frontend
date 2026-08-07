@@ -38,6 +38,27 @@ export const buildScopedConsumptionParams = (
   return params
 }
 
+/**
+ * Params for the per-member settled aggregate. The aggregate counts only
+ * reconciled + rewarded events, so the session-level status and transaction
+ * filters are meaningless here and must never be sent.
+ */
+const MEMBER_QUERY_FIELDS = ALLOWED_QUERY_FIELDS.filter(
+  (field) => field !== 'status' && field !== 'providerTransactionId'
+)
+
+export const buildScopedMemberParams = (
+  scope: TenantScope,
+  input: ConsumptionQueryInput
+): Record<string, string | number> => {
+  const params: Record<string, string | number> = { ...tenantScopeQuery(scope) }
+  for (const field of MEMBER_QUERY_FIELDS) {
+    const value = input[field]
+    if (value !== undefined && value !== '') params[field] = value as string | number
+  }
+  return params
+}
+
 export const formatConversionRate = (numerator: number, denominator: number): string => {
   if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator <= 0) return '—'
   return `${((numerator / denominator) * 100).toFixed(1)}%`
