@@ -13,8 +13,18 @@
           </p>
         </div>
         <div class="hero__meta">
-          <span v-if="page">数据截至 {{ formatDate(page.asOf) }} · {{ page.timezone }}</span>
-          <el-button :loading="summaryLoading || pageLoading" @click="refresh">
+          <el-radio-group v-model="viewMode" size="small">
+            <el-radio-button value="detail">逐条记录</el-radio-button>
+            <el-radio-button value="member">按用户汇总</el-radio-button>
+          </el-radio-group>
+          <span v-if="page || memberPage"
+            >数据截至 {{ formatDate(page?.asOf || memberPage?.asOf) }} ·
+            {{ page?.timezone || memberPage?.timezone }}</span
+          >
+          <el-button
+            :loading="summaryLoading || pageLoading || memberSummaryLoading || memberPageLoading"
+            @click="refresh"
+          >
             <Icon icon="ep:refresh" />刷新真实数据
           </el-button>
         </div>
@@ -103,6 +113,7 @@
               clearable
               placeholder="全部阶段"
               class="filter-control"
+              :disabled="viewMode === 'member'"
             >
               <el-option label="会话已创建" value="CREATED" />
               <el-option label="开始加载" value="LOAD_STARTED" />
@@ -134,6 +145,7 @@
               maxlength="128"
               placeholder="精确查询交易"
               class="filter-control"
+              :disabled="viewMode === 'member'"
               @keyup.enter="query"
             />
           </el-form-item>
@@ -148,12 +160,29 @@
     <ContentWrap>
       <div class="section-heading">
         <div>
-          <h2>消费质量与收益</h2>
-          <p>转化率用于排查损耗；预估收益与平台已结算收益始终分开。</p>
+          <h2>{{ viewMode === 'member' ? '结算消费概览' : '消费质量与收益' }}</h2>
+          <p v-if="viewMode === 'member'">
+            仅统计结算正常（平台已结算 + 奖励达标）的消费；预估与结算始终分开。
+          </p>
+          <p v-else>转化率用于排查损耗；预估收益与平台已结算收益始终分开。</p>
         </div>
-        <span v-if="summary">共 {{ count(summary.sessionCount) }} 条真实会话</span>
+        <span v-if="viewMode === 'member' && memberSummary"
+          >共 {{ count(memberSummary.memberCount) }} 位结算用户</span
+        >
+        <span v-else-if="summary">共 {{ count(summary.sessionCount) }} 条真实会话</span>
       </div>
-      <AsyncState :loading="summaryLoading" :error="summaryError" :empty="false">
+      <AsyncState
+        v-if="viewMode === 'member'"
+        :loading="memberSummaryLoading"
+        :error="memberSummaryError"
+        :empty="false"
+      >
+        <ConsumptionMemberSummaryCards v-if="memberSummary" :summary="memberSummary" />
+        <div v-else-if="!memberSummaryLoading && !memberSummaryError" class="section-state">
+          等待汇总数据
+        </div>
+      </AsyncState>
+      <AsyncState v-else :loading="summaryLoading" :error="summaryError" :empty="false">
         <ConsumptionSummaryCards v-if="summary" :summary="summary" />
         <div v-else-if="!summaryLoading && !summaryError" class="section-state">等待汇总数据</div>
       </AsyncState>
@@ -162,13 +191,43 @@
     <ContentWrap>
       <div class="section-heading">
         <div>
-          <h2>逐条消费记录</h2>
-          <p>筛选与分页由服务端执行；点击记录查看广告、奖励、权益及授权证据链。</p>
+          <h2>{{ viewMode === 'member' ? '按用户汇总' : '逐条消费记录' }}</h2>
+          <p v-if="viewMode === 'member'"> 点击用户查看其逐条消费记录；筛选与分页由服务端执行。 </p>
+          <p v-else>筛选与分页由服务端执行；点击记录查看广告、奖励、权益及授权证据链。</p>
         </div>
-        <span v-if="page">{{ count(page.total) }} 条 · 第 {{ page.pageNo }} 页</span>
+        <span v-if="viewMode === 'member' && memberPage"
+          >{{ count(memberPage.total) }} 行 · 第 {{ memberPage.pageNo }} 页</span
+        >
+        <span v-else-if="page">{{ count(page.total) }} 条 · 第 {{ page.pageNo }} 页</span>
       </div>
 
-      <div v-if="pageError" class="error-panel" role="alert">
+      <div v-if="viewMode === 'member' && memberPageError" class="error-panel" role="alert">
+        <el-alert :closable="false" :title="memberPageError" show-icon type="error" />
+        <el-button type="primary" plain @click="loadMemberPage">重新加载</el-button>
+      </div>
+      <template v-else-if="viewMode === 'member'">
+        <ConsumptionMemberTable
+          :loading="memberPageLoading"
+          :rows="memberPage?.list || []"
+          :show-tenant="scopeModel.kind === 'all'"
+          @select="openMemberDetail"
+        />
+        <div
+          v-if="memberLoaded && !memberPageLoading && memberPage?.list.length === 0"
+          class="empty-hint"
+        >
+          当前筛选范围没有结算正常的广告消费
+        </div>
+        <Pagination
+          v-if="memberPage"
+          v-model:limit="memberPagination.pageSize"
+          v-model:page="memberPagination.pageNo"
+          :total="memberPage.total"
+          @pagination="loadMemberPage"
+        />
+      </template>
+
+      <div v-else-if="pageError" class="error-panel" role="alert">
         <el-alert :closable="false" :title="pageError" show-icon type="error" />
         <el-button type="primary" plain @click="loadPage">重新加载</el-button>
       </div>
@@ -206,6 +265,8 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import type {
   AdConsumptionDetailVO,
   AdConsumptionId,
+  AdConsumptionMemberPageVO,
+  AdConsumptionMemberSummaryVO,
   AdConsumptionPageQuery,
   AdConsumptionPageVO,
   AdConsumptionProvider,
@@ -214,6 +275,8 @@ import type {
 } from '@/api/skit/adConsumption'
 import {
   getAdConsumption,
+  getAdConsumptionMemberPage,
+  getAdConsumptionMemberSummary,
   getAdConsumptionPage,
   getAdConsumptionSummary
 } from '@/api/skit/adConsumption'
@@ -224,9 +287,11 @@ import TenantScopeBar from '@/views/skit/shared/TenantScopeBar.vue'
 import type { TenantScope, TenantScopeSelection } from '@/views/skit/shared/tenantScope'
 import { useTenantScope } from '@/views/skit/shared/useTenantScope'
 import ConsumptionDetailDrawer from './ConsumptionDetailDrawer.vue'
+import ConsumptionMemberSummaryCards from './ConsumptionMemberSummaryCards.vue'
+import ConsumptionMemberTable from './ConsumptionMemberTable.vue'
 import ConsumptionSummaryCards from './ConsumptionSummaryCards.vue'
 import ConsumptionTable from './ConsumptionTable.vue'
-import { buildScopedConsumptionParams } from './consumptionModel'
+import { buildScopedConsumptionParams, buildScopedMemberParams } from './consumptionModel'
 
 defineOptions({ name: 'SkitAdConsumption' })
 
@@ -250,10 +315,20 @@ const detail = ref<AdConsumptionDetailVO>()
 const detailLoading = ref(false)
 const detailError = ref('')
 const liveWindow = ref(true)
+const viewMode = ref<'detail' | 'member'>('detail')
+const memberSummary = ref<AdConsumptionMemberSummaryVO>()
+const memberPage = ref<AdConsumptionMemberPageVO>()
+const memberSummaryLoading = ref(false)
+const memberPageLoading = ref(false)
+const memberLoaded = ref(false)
+const memberSummaryError = ref('')
+const memberPageError = ref('')
 let summaryRequestSeq = 0
 let pageRequestSeq = 0
 let detailRequestSeq = 0
 let tenantOptionsRequestSeq = 0
+let memberSummaryRequestSeq = 0
+let memberPageRequestSeq = 0
 
 const filters = reactive({
   dateRange: [initialNow - 7 * DAY_MS, initialNow] as number[],
@@ -267,6 +342,7 @@ const filters = reactive({
 })
 
 const pagination = reactive({ pageNo: 1, pageSize: 20 })
+const memberPagination = reactive({ pageNo: 1, pageSize: 20 })
 
 const scopeModel = computed<TenantScope>({
   get: () => scopeManager.scope.value,
@@ -297,6 +373,20 @@ const baseQuery = () => {
     status: filters.status || undefined,
     memberKeyword: filters.memberKeyword.trim() || undefined,
     providerTransactionId: filters.providerTransactionId.trim() || undefined
+  })
+}
+
+const baseMemberQuery = () => {
+  const [start, end] = filters.dateRange || []
+  return buildScopedMemberParams(scopeModel.value, {
+    startTime: start ? formatDate(start) : undefined,
+    endTime: end ? formatDate(end) : undefined,
+    timezone: 'UTC+8',
+    dramaId: filters.dramaId.trim() || undefined,
+    episodeNo: filters.episodeNo,
+    provider: filters.provider || undefined,
+    networkFirmId: filters.networkFirmId,
+    memberKeyword: filters.memberKeyword.trim() || undefined
   })
 }
 
@@ -349,6 +439,54 @@ const loadAll = async () => {
   await Promise.all([loadSummary(), loadPage()])
 }
 
+const loadMemberSummary = async () => {
+  const requestSeq = ++memberSummaryRequestSeq
+  const requestedScope = scopeKey()
+  memberSummaryLoading.value = true
+  memberSummaryError.value = ''
+  try {
+    const result = await getAdConsumptionMemberSummary(baseMemberQuery())
+    if (requestSeq !== memberSummaryRequestSeq || requestedScope !== scopeKey()) return
+    memberSummary.value = result
+  } catch (cause) {
+    if (requestSeq !== memberSummaryRequestSeq || requestedScope !== scopeKey()) return
+    memberSummary.value = undefined
+    memberSummaryError.value = errorText(cause, '按用户汇总加载失败')
+  } finally {
+    if (requestSeq === memberSummaryRequestSeq) memberSummaryLoading.value = false
+  }
+}
+
+const loadMemberPage = async () => {
+  const requestSeq = ++memberPageRequestSeq
+  const requestedScope = scopeKey()
+  memberPageLoading.value = true
+  memberPageError.value = ''
+  try {
+    const params = {
+      ...baseMemberQuery(),
+      pageNo: memberPagination.pageNo,
+      pageSize: memberPagination.pageSize
+    } as AdConsumptionPageQuery
+    const result = await getAdConsumptionMemberPage(params)
+    if (requestSeq !== memberPageRequestSeq || requestedScope !== scopeKey()) return
+    memberPage.value = result
+  } catch (cause) {
+    if (requestSeq !== memberPageRequestSeq || requestedScope !== scopeKey()) return
+    memberPage.value = undefined
+    memberPageError.value = errorText(cause, '按用户汇总记录加载失败')
+  } finally {
+    if (requestSeq === memberPageRequestSeq) {
+      memberPageLoading.value = false
+      memberLoaded.value = true
+    }
+  }
+}
+
+const loadMemberAll = async () => {
+  await Promise.all([loadMemberSummary(), loadMemberPage()])
+}
+
 const updateLiveWindow = () => {
   if (!liveWindow.value) return
   const now = Date.now()
@@ -361,13 +499,18 @@ const markDateRangeCustom = () => {
 
 const query = () => {
   updateLiveWindow()
-  pagination.pageNo = 1
-  loadAll()
+  if (viewMode.value === 'member') {
+    memberPagination.pageNo = 1
+    loadMemberAll()
+  } else {
+    pagination.pageNo = 1
+    loadAll()
+  }
 }
 
 const refresh = () => {
   updateLiveWindow()
-  return loadAll()
+  return viewMode.value === 'member' ? loadMemberAll() : loadAll()
 }
 
 const resetFilters = () => {
@@ -404,6 +547,15 @@ const openDetail = async (id: AdConsumptionId) => {
   } finally {
     if (requestSeq === detailRequestSeq) detailLoading.value = false
   }
+}
+
+/** Drill from the per-member aggregate into that member's per-session records. */
+const openMemberDetail = (memberId: AdConsumptionId) => {
+  filters.memberKeyword = String(memberId)
+  liveWindow.value = false
+  viewMode.value = 'detail'
+  pagination.pageNo = 1
+  loadAll()
 }
 
 const loadTenantOptions = async (keyword = '') => {
@@ -456,6 +608,13 @@ watch(
     query()
   }
 )
+
+watch(viewMode, (mode) => {
+  if (mode === 'member') {
+    memberPagination.pageNo = 1
+    loadMemberAll()
+  }
+})
 
 onMounted(async () => {
   await Promise.all([loadTenantOptions(), loadAll()])
