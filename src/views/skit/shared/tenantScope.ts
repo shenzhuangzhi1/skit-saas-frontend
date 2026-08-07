@@ -111,8 +111,8 @@ export const groupMoneyByCurrency = (items: readonly MoneyUnits[]): GroupedMoney
   const groups = new Map<string, GroupedMoneyUnits>()
   for (const item of items) {
     if (!/^[A-Z]{3}$/.test(item.currency)) throw new Error('Currency must be an ISO code')
-    if (!Number.isInteger(item.amountScale) || item.amountScale < 0 || item.amountScale > 18) {
-      throw new Error('Money scale must be an integer from 0 to 18')
+    if (!Number.isInteger(item.amountScale) || item.amountScale < 0 || item.amountScale > 30) {
+      throw new Error('Money scale must be an integer from 0 to 30')
     }
     const existing = groups.get(item.currency)
     if (existing && existing.amountScale !== item.amountScale) {
@@ -142,4 +142,27 @@ export const formatMoneyUnits = (item: MoneyUnits): string => {
   const integer = padded.slice(0, -exact.amountScale)
   const fraction = padded.slice(-exact.amountScale)
   return `${exact.currency} ${negative ? '-' : ''}${integer}.${fraction}`
+}
+
+/**
+ * Display rounding for money that must stay exact in storage/computation.
+ * Pure BigInt arithmetic (never passes through a JS number), so the rounded
+ * display value can never lose precision that later calculations depend on.
+ * Half-up on the first dropped digit; trailing zeros are trimmed.
+ */
+export const formatMoneyUnitsRounded = (item: MoneyUnits, decimals: number): string => {
+  const exact = groupMoneyByCurrency([item])[0]
+  const negative = exact.amountUnits < 0n
+  const absolute = negative ? -exact.amountUnits : exact.amountUnits
+  // Clamp to the stored scale: asking for more digits than the value has is
+  // meaningless, and the unified path below also trims trailing zeros.
+  const keep = Math.max(0, Math.min(decimals, exact.amountScale))
+  const divisor = 10n ** BigInt(exact.amountScale - keep)
+  const quotient = absolute / divisor
+  const remainder = absolute % divisor
+  const rounded = remainder * 2n >= divisor ? quotient + 1n : quotient
+  const factor = 10n ** BigInt(keep)
+  const integer = (rounded / factor).toString()
+  const fraction = (rounded % factor).toString().padStart(keep, '0').replace(/0+$/, '')
+  return `${exact.currency} ${negative ? '-' : ''}${integer}${fraction ? '.' + fraction : ''}`
 }

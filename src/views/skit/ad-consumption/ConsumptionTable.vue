@@ -58,9 +58,12 @@
           </td>
           <td class="money-cell" data-label="收入证据">
             <div>
-              <span>预估（未结算）</span>
+              <span>广告价值（预估）</span>
               <strong v-if="row.currency && hasAmount(row.estimatedAmount)">
-                <MoneyText v-bind="money(row.currency, row.estimatedAmount as string)" />
+                <MoneyText
+                  v-bind="money(row.currency, row.estimatedAmount as string)"
+                  :decimals="4"
+                />
               </strong>
               <small v-else>无平台收益事实</small>
             </div>

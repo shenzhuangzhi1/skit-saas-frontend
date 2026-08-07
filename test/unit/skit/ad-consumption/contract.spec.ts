@@ -126,7 +126,7 @@ describe('advertising consumption management contract', () => {
     expect(summary).toContain('失败率')
     expect(summary).toContain('预估收益')
     expect(summary).toContain('平台结算收益')
-    expect(table).toContain('预估（未结算）')
+    expect(table).toContain('广告价值（预估）')
     expect(table).toContain('平台已结算')
     expect(table).toContain('尚未结算')
   })

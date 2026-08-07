@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createTenantScope,
   formatMoneyUnits,
+  formatMoneyUnitsRounded,
   groupMoneyByCurrency,
   selectTenantScope,
   tenantScopeQuery
@@ -44,9 +45,7 @@ describe('currency aware totals', () => {
     expect(formatMoneyUnits({ currency: 'CNY', amountUnits: 1234, amountScale: 2 })).toBe(
       'CNY 12.34'
     )
-    expect(formatMoneyUnits({ currency: 'USD', amountUnits: -5, amountScale: 2 })).toBe(
-      'USD -0.05'
-    )
+    expect(formatMoneyUnits({ currency: 'USD', amountUnits: -5, amountScale: 2 })).toBe('USD -0.05')
   })
 
   it('groups exact integer units by currency and scale without merging currencies', () => {
@@ -69,5 +68,41 @@ describe('currency aware totals', () => {
         { currency: 'CNY', amountUnits: 1, amountScale: 4 }
       ])
     ).toThrow(/scale/i)
+  })
+})
+
+describe('display rounding keeps storage exact', () => {
+  it('rounds the real 22-scale CNY estimate to a readable ad value', () => {
+    // 0.0340172045180000067358 CNY (fx-converted estimate, 22 decimals)
+    expect(
+      formatMoneyUnitsRounded(
+        { currency: 'CNY', amountUnits: 340172045180000067358n, amountScale: 22 },
+        4
+      )
+    ).toBe('CNY 0.034')
+  })
+
+  it('carries into the integer part on half-up', () => {
+    expect(
+      formatMoneyUnitsRounded({ currency: 'CNY', amountUnits: 99996n, amountScale: 5 }, 4)
+    ).toBe('CNY 1')
+    expect(
+      formatMoneyUnitsRounded({ currency: 'CNY', amountUnits: 99994n, amountScale: 5 }, 4)
+    ).toBe('CNY 0.9999')
+  })
+
+  it('trims trailing zeros and keeps negative signs', () => {
+    expect(
+      formatMoneyUnitsRounded({ currency: 'CNY', amountUnits: -3400n, amountScale: 4 }, 4)
+    ).toBe('CNY -0.34')
+    expect(
+      formatMoneyUnitsRounded({ currency: 'USD', amountUnits: 3400n, amountScale: 4 }, 0)
+    ).toBe('USD 0')
+  })
+
+  it('clamps decimals above the stored scale to the exact value', () => {
+    expect(
+      formatMoneyUnitsRounded({ currency: 'CNY', amountUnits: 3400n, amountScale: 4 }, 6)
+    ).toBe('CNY 0.34')
   })
 })
