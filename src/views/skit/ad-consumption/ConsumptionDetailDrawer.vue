@@ -68,9 +68,12 @@
           <small>启动状态未上报</small>
         </div>
         <div>
-          <span>预估收益（未结算）</span>
+          <span>广告价值（预估）</span>
           <strong v-if="detail.currency && hasAmount(detail.estimatedAmount)">
-            <MoneyText v-bind="money(detail.currency, detail.estimatedAmount as string)" />
+            <MoneyText
+              v-bind="money(detail.currency, detail.estimatedAmount as string)"
+              :decimals="4"
+            />
           </strong>
           <strong v-else>无平台收益事实</strong>
           <small>预估 eCPM {{ detail.estimatedEcpm || '暂无' }}</small>

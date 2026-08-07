@@ -4,8 +4,10 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { formatMoneyUnits, type MoneyUnits } from './tenantScope'
+import { formatMoneyUnits, formatMoneyUnitsRounded, type MoneyUnits } from './tenantScope'
 
-const props = defineProps<MoneyUnits>()
-const text = computed(() => formatMoneyUnits(props))
+const props = defineProps<MoneyUnits & { decimals?: number }>()
+const text = computed(() =>
+  props.decimals != null ? formatMoneyUnitsRounded(props, props.decimals) : formatMoneyUnits(props)
+)
 </script>

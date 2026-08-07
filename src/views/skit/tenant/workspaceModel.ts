@@ -570,8 +570,8 @@ export const groupLedgerAmounts = (rows: readonly LedgerMoneyRow[]): GroupedLedg
   const grouped = new Map<string, GroupedLedgerMoney>()
   for (const row of rows) {
     if (!/^[A-Z]{3}$/.test(row.currency)) throw new Error('Currency must be an ISO code')
-    if (!Number.isInteger(row.amountScale) || row.amountScale < 0 || row.amountScale > 18) {
-      throw new Error('Money scale must be an integer from 0 to 18')
+    if (!Number.isInteger(row.amountScale) || row.amountScale < 0 || row.amountScale > 30) {
+      throw new Error('Money scale must be an integer from 0 to 30')
     }
     const key = `${row.balanceBucket}:${row.currency}`
     const current = grouped.get(key)
